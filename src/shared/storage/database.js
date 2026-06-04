@@ -37,6 +37,7 @@ export async function initDB() {
         repeat_end TEXT,
         reminder_minutes INT,
 
+        notification_id TEXT,
         category_id TEXT,
         FOREIGN KEY (category_id) REFERENCES categories(id)
       );
@@ -140,6 +141,7 @@ export async function getAllTasks() {
       repeat_days: task.repeat_days || null,
       repeat_end: task.repeat_end || null,
       reminder_minutes: task.reminder_minutes ?? null,
+      notification_id: task.notification_id || null,
 
       subtasks: subtasks
         .filter((s) => s.task_id === task.id)

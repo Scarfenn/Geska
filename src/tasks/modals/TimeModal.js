@@ -9,9 +9,11 @@ import {
   Easing,
 } from "react-native";
 import createStyles from "../styles/styles";
+import { themes } from "../styles/themes";
 import { Ionicons } from "@expo/vector-icons";
 import RepeatModal from "./SubModals/RepeatModal";
 import CustomRepeatModal from "./SubModals/CustomRepeatModal";
+import HourModal from "./SubModals/HourModal";
 
 export default function TimeModal({
   visible,
@@ -40,10 +42,13 @@ export default function TimeModal({
   closeModal,
 }) {
   const styles = createStyles(themeName, mode);
+  const theme = themes[themeName][mode];
 
-  
+  const [quickSelected, setQuickSelected] = useState(null);
+  const [hourVisible, setHourVisible] = useState(false);
   const [repeatVisible, setRepeatVisible] = useState(false);
   const [customRepeatVisible, setCustomRepeatVisible] = useState(false);
+
 
   // -------------------------------------------------
   // Animaciones principales del modal
@@ -145,6 +150,16 @@ export default function TimeModal({
 
     return d.toLocaleDateString("es-CL", { day: "numeric", month: "short" });
   }
+
+  function formatHumanTime(date) {
+  if (!date) return "En cualquier momento";
+
+  const h = date.getHours().toString().padStart(2, "0");
+  const m = date.getMinutes().toString().padStart(2, "0");
+
+  return `${h}:${m}`;
+  }
+
   
   // -------------------------------------------------
   // Repetición
@@ -192,7 +207,17 @@ export default function TimeModal({
             if (data.endDate !== undefined) setEndDate(data.endDate);
         }}
         closeModal={() => setCustomRepeatVisible(false)}
-    />
+      />
+
+      {/* Modal de Hora */}
+      <HourModal
+        visible={hourVisible}
+        themeName={themeName}
+        mode={mode}
+        selectedTime={selectedTime}
+        setSelectedTime={setSelectedTime}
+        closeModal={() => setHourVisible(false)}
+      />
 
       {/* ============================================ */}
       {/* =============== MODAL BASE ================= */}
@@ -234,20 +259,41 @@ export default function TimeModal({
                     { label: "Hoy", key: "today" },
                     { label: "Mañana", key: "tomorrow" },
                     { label: "Próx. Lun", key: "next_monday" },
-                  ].map((btn) => (
-                    <TouchableOpacity
-                      key={btn.key}
-                      onPress={() => quickSelect(btn.key)}
-                      style={{
-                        paddingVertical: 6,
-                        paddingHorizontal: 12,
-                        backgroundColor: mode === "light" ? "#eee" : "#333",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text style={styles.text}>{btn.label}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  ].map((btn) => {
+                    const isActive = quickSelected === btn.key;
+
+                    return (
+                      <TouchableOpacity
+                        key={btn.key}
+                        onPress={() => {
+                          setQuickSelected(btn.key);
+                          quickSelect(btn.key);
+                        }}
+                        style={{
+                          paddingVertical: 6,
+                          paddingHorizontal: 14,
+                          borderRadius: 10,
+                          backgroundColor: theme.card,
+                          borderWidth: 1.5,
+                          borderColor: isActive ? theme.primary : theme.border,
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.text,
+                            {
+                              color: isActive
+                                ? theme.primary
+                                : theme.inactiveCategoryText,
+                              fontWeight: isActive ? "600" : "400",
+                            },
+                          ]}
+                        >
+                          {btn.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
 
                 {/* FECHA */}
@@ -262,23 +308,31 @@ export default function TimeModal({
                       Fecha
                     </Text>
                   </View>
-                  <Text style={styles.optionValue}>
+                  <Text style={{...styles.optionValue, fontStyle: "italic", opacity:0.8}}>
                     {formatHumanDate(selectedDate)}
                   </Text>
                 </View>
 
                 {/* HORA */}
-                <View style={styles.optionRow}>
+                <TouchableOpacity
+                  style={styles.optionRow}
+                  onPress={() => setHourVisible(true)}
+                >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Ionicons name="time-outline" size={20} color={styles.text.color} />
+                    <Ionicons
+                      name="time-outline"
+                      size={20}
+                      color={styles.text.color}
+                    />
                     <Text style={[styles.optionLabel, { marginLeft: 8 }]}>
                       Hora
                     </Text>
                   </View>
                   <Text style={styles.optionValue}>
-                    {selectedTime || "En cualquier momento"}
+                    {formatHumanTime(selectedTime)}
                   </Text>
-                </View>
+                </TouchableOpacity>
+
 
                 {/* REPETICIÓN */}
                 <Text style={{ color: styles.optionLabel.color, marginTop: 18, marginBottom: 4 }}>
@@ -308,9 +362,13 @@ export default function TimeModal({
                       Recordatorio
                     </Text>
                   </View>
-                  <Text style={styles.optionValue}>
-                    {reminder ? `${reminder} min antes` : "Sin recordatorio"}
-                  </Text>
+                    <Text style={{ ...styles.optionValue, fontStyle: "italic", opacity: 0.5}}>
+                      {reminder === 0
+                        ? "A la hora exacta"
+                        : reminder
+                        ? `${reminder} min antes`
+                        : "Sin recordatorio"}
+                    </Text>
                 </View>
 
                 {/* BOTÓN APLICAR */}

@@ -111,10 +111,12 @@ export default function RepeatModal({
 
               {/* OPCIÓN PERSONALIZADO */}
               <TouchableOpacity
-                style={[styles.optionRow, { justifyContent: "space-between" }]}
+                style={[styles.optionRow, { justifyContent: "space-between", opacity:0.5
+                 }]}
                 onPress={() => {
-                  closeModal();
-                  openCustomRepeat();
+                  {/*closeModal();
+                  openCustomRepeat();*/}
+                  
                 }}
               >
                 <Text style={styles.optionLabel}>Personalizado</Text>

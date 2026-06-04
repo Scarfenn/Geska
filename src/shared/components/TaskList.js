@@ -70,6 +70,7 @@ export default function TaskList({
       closeOptions();
     });
   };
+
   return (
     <TouchableWithoutFeedback onPress={closeMenu}>
       <View style={{ flex: 1 }}>
@@ -119,6 +120,7 @@ export default function TaskList({
                 const done = item.subtasks?.filter(s => s.done).length ?? 0;
               return( 
               <View style={{ marginBottom: 3 }}>
+                <View style={{ marginBottom: 6 }}>
                 {/* Tarea principal */}
                 <TouchableOpacity
                   activeOpacity={0.6}
@@ -132,6 +134,7 @@ export default function TaskList({
                   }}
                   onLongPress={() => openMenu(item.id)}
                 >
+                  {/* Icono */}
                   <Ionicons
                     name={
                       item.done
@@ -149,69 +152,89 @@ export default function TaskList({
                           : styles.pendingCheck.color
                     }
                   />
-                  <Text
-                    style={{
-                      color: item.done ? styles.doneText.color : styles.pendingText.color,
-                      fontSize: 18,
-                      flex: 1,
-                      marginLeft: 8
-                    }}
-                  >
-                    {item.title}
-                  </Text>
 
-                  {/* Collapse / Expand Subtareas */}
-                  {total > 0 && (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginLeft: 6,
-                      }}
-                    >
-                      {/* Badge contador */}
-                      <View
-                        style={{
-                          paddingHorizontal: 8,
-                          paddingVertical: 2,
-                          borderRadius: 8,
-                          backgroundColor:
-                            done === total
-                              ? styles.doneCheck.color + "22"
-                              : styles.pendingCheck.color + "22",
-                        }}
-                      >
+                  {/* CONTENIDO EN COLUMNA */}
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      {/* TITULO Y HORA */}
+                      <View style={{ flex: 1 }}>
                         <Text
                           style={{
-                            fontSize: 12,
-                            fontWeight: "600",
-                            color:
-                              done === total
-                                ? styles.doneCheck.color
-                                : styles.pendingText.color,
+                            color: item.done
+                              ? styles.doneText.color
+                              : styles.pendingText.color,
+                            fontSize: 18,
                           }}
                         >
-                          {done}/{total}
+                          {item.title}
                         </Text>
+
+                        {item.time && (
+                          <Text
+                            style={{
+                              marginTop: 2,
+                              fontSize: 13,
+                              color: styles.pendingText.color + "AA",
+                              opacity: item.done ? 0.45 : 0.85,
+                            }}
+                          >
+                            {item.time}
+                          </Text>
+                        )}
                       </View>
 
-                      {/* Botón collapse */}
-                      <TouchableOpacity
-                        onPress={() => toggleCollapse(item.id)}
-                        style={{ marginLeft: 6 }}
-                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                      >
-                        <Ionicons
-                          name={collapsedTasks[item.id] ? "chevron-down" : "chevron-up"}
-                          size={18}
-                          color={styles.pendingText.color}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                      {/* CONTADOR + CHEVRON */}
+                      {total > 0 && (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            marginLeft: 8,
+                          }}
+                        >
+                          <View
+                            style={{
+                              paddingHorizontal: 8,
+                              paddingVertical: 2,
+                              borderRadius: 8,
+                              backgroundColor:
+                                done === total
+                                  ? styles.doneCheck.color + "22"
+                                  : styles.pendingCheck.color + "22",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: "600",
+                                color:
+                                  done === total
+                                    ? styles.doneCheck.color
+                                    : styles.pendingText.color,
+                              }}
+                            >
+                              {done}/{total}
+                            </Text>
+                          </View>
 
-                
+                          <TouchableOpacity
+                            onPress={() => toggleCollapse(item.id)}
+                            style={{ marginLeft: 6 }}
+                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          >
+                            <Ionicons
+                              name={collapsedTasks[item.id] ? "chevron-down" : "chevron-up"}
+                              size={18}
+                              color={styles.pendingText.color}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </View>             
 
                 {/* Subtareas */}
                 {item.subtasks && item.subtasks.length > 0 &&!collapsedTasks[item.id] && (

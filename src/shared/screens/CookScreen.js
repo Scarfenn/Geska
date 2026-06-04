@@ -17,12 +17,16 @@ import { themes } from '../../tasks/styles/themes';
 import { TODAS_LAS_RECETAS } from '../storage/recetas';
 import { CATEGORIAS, ALERGENOS, TAGS_ESPECIALES } from '../../cocina/CategoriasC';
 import { obtenerRecomendacionesAleatorias, obtenerRecomendacionesPersonalizadas, tiempoAMinutos } from '../../cocina/recomendaciones';
+import { saveTask } from '../storage/database';
 import RecipeCard from '../../cocina/recipeCard';
 import ModalFiltros from '../../cocina/ModalFiltros';
+import ModalRecomendacion from '../../cocina/ModalRecomendacion';
+import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons as MCI} from '@expo/vector-icons';
 
 
 // ==================== COMPONENTE PRINCIPAL ====================
-export default function CookScreen({themeName, mode, setThemeName, setMode}) {
+export default function CookScreen({themeName, mode, setThemeName, setMode, onTaskCreated}) {
   const [recetas, setRecetas] = useState(TODAS_LAS_RECETAS);
   const [favoritos, setFavoritos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
@@ -107,6 +111,44 @@ useEffect(() => {
       console.error('Error al cargar favoritos:', error);
     }
   };
+
+const crearTareaDesdeReceta = async (receta) => {
+  try {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${(today.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${today.getDate().toString().padStart(2, "0")}`;
+
+    const newTask = {
+      id: Date.now().toString(),
+      title: `Preparar ${receta.nombre}`,
+      description: `Receta: ${receta.nombre}`,
+      done: false,
+
+      categoryId: "cocina", // o el id real de tu categoría
+      date: dateStr,
+      time: null,
+
+      repeat_mode: "none",
+      repeat_days: null,
+      repeat_end: null,
+      reminder_minutes: null,
+
+      subtasks: [],
+    };
+
+    await saveTask(newTask);
+
+    onTaskCreated?.();
+
+    setModalVisible(false);
+  } catch (e) {
+    console.error("Error creando tarea desde receta", e);
+  }
+};
+
+
+
 
  // Función para generar recomendaciones
   const generarRecomendaciones = (personalizadas = false) => {
@@ -284,311 +326,6 @@ const paginaAnterior = () => {
   }
 };
 
-    // Renderizar modal de recomendación
-  const RenderModalRecomendacion = () => (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={mostrarRecomendador}
-      onRequestClose={() => setMostrarRecomendador(false)}
-    >
-      <View style={styles.modalRecomendacion}>
-        <View style={[styles.modalRecomendacionContent, { backgroundColor: temaActual.fondoModal }]}>
-          <View style={[styles.modalRecomendacionHeader, { borderBottomColor: temaActual.borde }]}>
-            <Text style={[styles.modalRecomendacionTitulo, { color: temaActual.texto }]}>
-            {"\u{1F3AF}"} Recomendador de Recetas
-            </Text>
-            <TouchableOpacity onPress={() => setMostrarRecomendador(false)}>
-              <Text style={[styles.cerrarRecomendacion, { color: temaActual.textoSubtitulo }]}>{"\u{2715}"}</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView style={styles.recomendacionScroll}>
-            {/* Preferencias de recomendación */}
-            <View style={styles.recomendacionGrupo}>
-              <Text style={[styles.recomendacionTitulo, { color: temaActual.texto }]}>
-                📝 Preferencias de Recomendación
-              </Text>
-              
-              {/* Categoría - CON MEJOR CONTRASTE */}
-<View style={styles.recomendacionItem}>
-  <Text style={[styles.recomendacionLabel, { color: modoOscuro ? '#FFFFFF' : '#2C3E50' }]}>
-    📂 Categoría:
-  </Text>
-  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriasRecomendacion}>
-    {CATEGORIAS.map(categoria => {
-      const estaActivo = preferenciasRecomendacion.categoria === categoria.id;
-      
-      // COLORES PARA MODO DÍA
-      let colorFondo, colorBorde, colorTexto;
-      
-      if (modoOscuro) {
-        // Modo oscuro
-        colorFondo = estaActivo ? '#3f7c78ff' : '#2D2D2D';
-        colorBorde = estaActivo ? '#FFFFFF' : '#444444';
-        colorTexto = estaActivo ? '#FFFFFF' : '#B0B0B0';
-      } else {
-        // Modo día - USAR CONTRASTE FUERTE
-        colorFondo = estaActivo ? '#3f7c78ff' : '#f5f5f5';
-        colorBorde = estaActivo ? '#FF6B35' : '#d0d0d0'; // NARANJA para destacar
-        colorTexto = estaActivo ? '#FFFFFF' : '#555555';
-      }
-      
-      return (
-        <TouchableOpacity
-          key={categoria.id}
-          style={[
-            styles.categoriaRecomendacionBtn,
-            estaActivo && styles.categoriaRecomendacionBtnActive,
-            {
-              backgroundColor: colorFondo,
-              borderColor: colorBorde,
-              borderWidth: estaActivo ? 3 : 1, // Borde más grueso cuando está activo
-              borderRadius: 20,
-              elevation: estaActivo ? 4 : 1, // Sombra más fuerte cuando está activo
-              shadowColor: '#000',
-              shadowOffset: estaActivo ? { width: 0, height: 3 } : { width: 0, height: 1 },
-              shadowOpacity: estaActivo ? 0.3 : 0.1,
-              shadowRadius: estaActivo ? 4 : 2,
-            }
-          ]}
-          onPress={() => setPreferenciasRecomendacion(prev => ({
-            ...prev,
-            categoria: prev.categoria === categoria.id ? '' : categoria.id
-          }))}
-        >
-          <Text style={[
-            styles.categoriaRecomendacionText,
-            estaActivo && styles.categoriaRecomendacionTextActive,
-            {
-              color: colorTexto,
-              fontWeight: estaActivo ? 'bold' : '600',
-              fontSize: 14,
-              textShadowColor: estaActivo ? 'rgba(0, 0, 0, 0.2)' : 'transparent',
-              textShadowOffset: estaActivo ? { width: 1, height: 1 } : { width: 0, height: 0 },
-              textShadowRadius: estaActivo ? 2 : 0,
-            }
-          ]}>
-            {categoria.icono} {categoria.nombre}
-          </Text>
-        </TouchableOpacity>
-      );
-    })}
-  </ScrollView>
-</View>
-              
-              {/* Tiempo máximo - VERSIÓN MEJORADA */}
-<View style={styles.recomendacionItem}>
-  <Text style={[styles.recomendacionLabel, { color: temaActual.texto }]}>
-    ⏱️ Tiempo máximo: {preferenciasRecomendacion.tiempoMaximo} min
-  </Text>
-  
-  <View style={styles.sliderRecomendacionContainer}>
-    <Text style={[styles.sliderMin, { color: temaActual.textoSubtitulo }]}>15</Text>
-    <View style={[styles.sliderTrack, { backgroundColor: temaActual.borde }]}>
-      <View style={[styles.sliderFill, { 
-        width: `${((preferenciasRecomendacion.tiempoMaximo - 15) / (180 - 15)) * 100}%`,
-        backgroundColor: '#4ECDC4'
-      }]} />
-    </View>
-    <Text style={[styles.sliderMax, { color: temaActual.textoSubtitulo }]}>180</Text>
-  </View>
-  
-  <View style={styles.sliderButtons}>
-    {[15, 30, 45, 60, 90, 120, 180].map(min => {
-      const estaActivo = preferenciasRecomendacion.tiempoMaximo === min;
-      return (
-        <TouchableOpacity 
-          key={min} 
-          style={[
-            styles.sliderBtn, 
-            estaActivo && styles.sliderBtnActive,
-            { 
-              backgroundColor: estaActivo 
-                ? '#3f7c78ff' 
-                : temaActual.borde,
-              borderColor: estaActivo 
-                ? (modoOscuro ? '#FFFFFF' : '#2C3E50')
-                : 'transparent',
-              borderWidth: estaActivo ? 2 : 1,
-            }
-          ]}
-          onPress={() => setPreferenciasRecomendacion(prev => ({ ...prev, tiempoMaximo: min }))}
-        >
-          <Text style={[
-            styles.sliderBtnText, 
-            estaActivo && styles.sliderBtnTextActive,
-            { 
-              color: estaActivo 
-                ? 'white' 
-                : temaActual.textoSubtitulo,
-              fontWeight: estaActivo ? 'bold' : '600'
-            }
-          ]}>
-            {min} min
-          </Text>
-        </TouchableOpacity>
-      );
-    })}
-  </View>
-</View>
-              
-              {/* Preferencias especiales */}
-<View style={styles.recomendacionItem}>
-  <Text style={[styles.recomendacionLabel, { color: modoOscuro ? '#FFFFFF' : '#2C3E50' }]}>
-    ⭐ Preferencias especiales:
-  </Text>
-  <View style={styles.preferenciasGrid}>
-    {[
-      { id: 'sinGluten', label: 'Sin Gluten', icon: '🌾' },
-      { id: 'vegetariano', label: 'Vegetariano', icon: '🌱' },
-      { id: 'vegano', label: 'Vegano', icon: '🌿' },
-      { id: 'saludable', label: 'Saludable', icon: '🥗' },
-      { id: 'rapido', label: 'Rápido (<30 min)', icon: '⚡' },
-    ].map(pref => {
-      const estaActivo = preferenciasRecomendacion[pref.id];
-      
-      // COLORES PARA MODO DÍA CON CONTRASTE
-      let colorFondo, colorBorde, colorTexto;
-      
-      if (modoOscuro) {
-        colorFondo = estaActivo ? '#3f7c78ff' : '#2D2D2D';
-        colorBorde = estaActivo ? '#FFFFFF' : '#444444';
-        colorTexto = estaActivo ? '#FFFFFF' : '#B0B0B0';
-      } else {
-        // MODO DÍA: Borde NARANJA para destacar
-        colorFondo = estaActivo ? '#3f7c78ff' : '#f5f5f5';
-        colorBorde = estaActivo ? '#FF6B35' : '#d0d0d0'; // NARANJA brillante
-        colorTexto = estaActivo ? '#FFFFFF' : '#555555';
-      }
-      
-      return (
-        <TouchableOpacity
-          key={pref.id}
-          style={[
-            styles.preferenciaBtn,
-            estaActivo && styles.preferenciaBtnActive,
-            {
-              backgroundColor: colorFondo,
-              borderColor: colorBorde,
-              borderWidth: estaActivo ? 3 : 1,
-              borderRadius: 20,
-              elevation: estaActivo ? 4 : 1,
-              shadowColor: '#000',
-              shadowOffset: estaActivo ? { width: 0, height: 3 } : { width: 0, height: 1 },
-              shadowOpacity: estaActivo ? 0.3 : 0.1,
-              shadowRadius: estaActivo ? 4 : 2,
-              transform: estaActivo ? [{ scale: 1.05 }] : [{ scale: 1 }],
-            }
-          ]}
-          onPress={() => setPreferenciasRecomendacion(prev => ({
-            ...prev,
-            [pref.id]: !prev[pref.id]
-          }))}
-        >
-          <Text style={[
-            styles.preferenciaText,
-            estaActivo && styles.preferenciaTextActive,
-            {
-              color: colorTexto,
-              fontWeight: estaActivo ? 'bold' : '600',
-              fontSize: 14,
-              textShadowColor: estaActivo ? 'rgba(0, 0, 0, 0.2)' : 'transparent',
-              textShadowOffset: estaActivo ? { width: 1, height: 1 } : { width: 0, height: 0 },
-              textShadowRadius: estaActivo ? 2 : 0,
-            }
-          ]}>
-            {pref.icon} {pref.label}
-          </Text>
-        </TouchableOpacity>
-      );
-    })}
-  </View>
-</View>
-              
-              {/* Contador de preferencias */}
-              <View style={styles.contadorPreferencias}>
-                <Text style={[styles.contadorTexto, { color: temaActual.textoSubtitulo }]}>
-                  Preferencias seleccionadas: {
-                    (preferenciasRecomendacion.categoria ? 1 : 0) +
-                    Object.values(preferenciasRecomendacion).filter(val => val === true).length - 1
-                  }
-                </Text>
-              </View>
-            </View>
-            
-            {/* Recomendaciones generadas */}
-            {recomendaciones.length > 0 && (
-              <View style={styles.recomendacionesGrupo}>
-                <Text style={[styles.recomendacionTitulo, { color: temaActual.texto }]}>
-                  🍽️ Recetas Recomendadas ({recomendaciones.length})
-                </Text>
-                {recomendaciones.map((receta, index) => (
-                  <TouchableOpacity
-                    key={receta.id}
-                    style={[
-                      styles.recomendacionCard,
-                      { 
-  backgroundColor: modoOscuro ? temaActual.fondoCard : '#e1e1e1ff',
-  borderLeftColor: receta.color,
-  borderWidth: 1,
-  borderColor: modoOscuro ? temaActual.borde : '#d1d1d1',
-}
-                    ]}
-                    onPress={() => {
-                      setMostrarRecomendador(false);
-                      setTimeout(() => mostrarDetalleReceta(receta), 300);
-                    }}
-                  >
-                    <View style={styles.recomendacionCardHeader}>
-                      <Text style={[styles.recomendacionCardTitulo, { color: temaActual.texto }]}>
-                        #{index + 1}. {receta.nombre}
-                      </Text>
-                      <Text style={[styles.recomendacionCardCategoria, { color: temaActual.textoSubtitulo }]}>
-                        {receta.categoria}
-                      </Text>
-                    </View>
-                    <View style={styles.recomendacionCardInfo}>
-                      <Text style={[styles.recomendacionCardInfoItem, { color: temaActual.textoSubtitulo }]}>
-                        ⏱️ {receta.tiempo}
-                      </Text>
-                      <Text style={[styles.recomendacionCardInfoItem, { color: temaActual.textoSubtitulo }]}>
-                        📊 {receta.dificultad}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </ScrollView>
-          
-          <View style={[styles.modalRecomendacionFooter, { borderTopColor: temaActual.borde }]}>
-            <TouchableOpacity 
-              style={styles.botonRecomendacionSecundario}
-              onPress={resetearPreferencias}
-            >
-              <Text style={styles.botonRecomendacionSecundarioTexto}>🔄 Reiniciar</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.botonRecomendacionAleatorio}
-              onPress={() => generarRecomendaciones(false)}
-            >
-              <Text style={styles.botonRecomendacionAleatorioTexto}>🎲 Aleatorio</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.botonRecomendacionPrincipal}
-              onPress={() => generarRecomendaciones(true)}
-            >
-              <Text style={styles.botonRecomendacionPrincipalTexto}>🎯 Personalizado</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-
     // Renderizar modal de detalle de receta
   const RenderModalDetalle = () => {
     if (!recetaDetalle) return null;
@@ -602,88 +339,158 @@ const paginaAnterior = () => {
       >
         <View style={[styles.modalContainer, { backgroundColor: temaActual.fondo }]}>
           <ScrollView style={styles.modalScroll}>
-            <View style={[styles.modalHeader, { backgroundColor: recetaDetalle.color }]}>
-              <TouchableOpacity 
-                style={styles.botonCerrar}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.botonCerrarTexto}>← Volver</Text>
-              </TouchableOpacity>
-              
-              <Text style={styles.modalTitulo}>{recetaDetalle.nombre}</Text>
-              
-              <TouchableOpacity 
-                onPress={() => guardarFavorito(recetaDetalle.id)}
-                style={styles.favoritoModal}
-              >
-                <Text style={styles.favoritoIconoGrande}>
-                  {recetaDetalle.esFavorita ? '❤️' : '🤍'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+<View style={[styles.modalHeader, { backgroundColor: recetaDetalle.color }]}>
+  
+  {/* IZQUIERDA — VOLVER */}
+  <View style={styles.headerSide}>
+    <TouchableOpacity
+      onPress={() => setModalVisible(false)}
+      style={{ flexDirection: 'row', alignItems: 'center' }}
+    >
+      <Ionicons name="arrow-back-outline" size={20} color="#fff" />
+    </TouchableOpacity>
+  </View>
+
+  {/* CENTRO — TÍTULO */}
+  <View style={styles.headerCenter}>
+    <Text
+      style={styles.modalTitulo}
+      numberOfLines={2}
+      ellipsizeMode="tail"
+    >
+      {recetaDetalle.nombre}
+    </Text>
+  </View>
+
+{/* DERECHA — ACCIONES */}
+<View style={[styles.headerSide, { flexDirection: "row", gap: 14 }]}>
+  {/* Crear tarea */}
+  <TouchableOpacity
+    onPress={() => crearTareaDesdeReceta(recetaDetalle)}
+  >
+    <Ionicons
+      name="time-outline"
+      size={22}
+      color="#fff"
+    />
+  </TouchableOpacity>
+
+  {/* Favorito */}
+  <TouchableOpacity
+    onPress={() => guardarFavorito(recetaDetalle.id)}
+  >
+    <Ionicons
+      name={recetaDetalle.esFavorita ? 'heart' : 'heart-outline'}
+      size={24}
+      color="#fff"
+    />
+  </TouchableOpacity>
+</View>
+
+</View>
+
             
             <View style={styles.modalContent}>
               <View style={[styles.detalleInfo, { backgroundColor: temaActual.fondoCard }]}>
-                <View style={[styles.detalleInfoItem, { borderBottomColor: temaActual.borde }]}>
-                  <Text style={[styles.detalleInfoLabel, { color: temaActual.textoSubtitulo }]}>⏱️ Tiempo:</Text>
-                  <Text style={[styles.detalleInfoValor, { color: temaActual.texto }]}>{recetaDetalle.tiempo}</Text>
-                </View>
+<View style={styles.detalleInfoItem}>
+  <View style={styles.detalleInfoLeft}>
+    <Ionicons
+      name="time-outline"
+      size={16}
+      color={temaActual.textoSubtitulo}
+    />
+    <Text style={styles.detalleInfoLabel}>Tiempo:</Text>
+  </View>
+
+  <Text style={styles.detalleInfoValor}>
+    {recetaDetalle.tiempo}
+  </Text>
+</View>
                 
                 {/* Continúa actualizando el resto del modal de detalle... */}
                 
-                <View style={styles.detalleInfoItem}>
-                  <Text style={styles.detalleInfoLabel}>{"\u{23F1}\u{FE0F}"} Dificultad:</Text>
-                  <Text style={[
-                    styles.detalleInfoValor,
-                    recetaDetalle.dificultad === 'Fácil' && styles.facil,
-                    recetaDetalle.dificultad === 'Media' && styles.media,
-                    recetaDetalle.dificultad === 'Difícil' && styles.dificil
-                  ]}>
-                    {recetaDetalle.dificultad}
-                  </Text>
-                </View>
+<View style={styles.detalleInfoItem}>
+  <View style={styles.detalleInfoLeft}>
+    <Ionicons
+      name="bar-chart"
+      size={16}
+      color={temaActual.textoSubtitulo}
+    />
+    <Text style={styles.detalleInfoLabel}>Dificultad:</Text>
+  </View>
+
+  <Text
+    style={[
+      styles.detalleInfoValor,
+      recetaDetalle.dificultad === 'Fácil' && styles.facil,
+      recetaDetalle.dificultad === 'Media' && styles.media,
+      recetaDetalle.dificultad === 'Difícil' && styles.dificil,
+    ]}
+  >
+    {recetaDetalle.dificultad}
+  </Text>
+</View>
+
                 
-                <View style={styles.detalleInfoItem}>
-                  <Text style={styles.detalleInfoLabel}>{"\u{1F465}"} Porciones:</Text>
-                  <Text style={styles.detalleInfoValor}>{recetaDetalle.porciones}</Text>
-                </View>
+<View style={styles.detalleInfoItem}>
+  <View style={styles.detalleInfoLeft}>
+    <Ionicons
+      name="people"
+      size={16}
+      color={temaActual.textoSubtitulo}
+    />
+    <Text style={styles.detalleInfoLabel}>Porciones:</Text>
+  </View>
+
+  <Text style={styles.detalleInfoValor}>
+    {recetaDetalle.porciones}
+  </Text>
+</View>
+
                 
-                <View style={styles.detalleInfoItem}>
-                  <Text style={styles.detalleInfoLabel}>{"\u{1F4C2}"} Categoría:</Text>
-                  <Text style={styles.detalleInfoValor}>{recetaDetalle.categoria}</Text>
-                </View>
+<View style={styles.detalleInfoItem}>
+  <View style={styles.detalleInfoLeft}>
+    <Ionicons
+      name="folder"
+      size={16}
+      color={temaActual.textoSubtitulo}
+    />
+    <Text style={styles.detalleInfoLabel}>Categoría:</Text>
+  </View>
+
+  <Text style={styles.detalleInfoValor}>
+    {recetaDetalle.categoria}
+  </Text>
+</View>
+
               </View>
               
-              <Text style={[styles.seccionTituloModal, { color: modoOscuro ? '#FFFFFF' : '#2C3E50' }]}>
-  {"\u{1F4DD}"} Descripción
-</Text>
+<View style={styles.seccionTituloRow}>
+  <Ionicons name="document-text-outline" size={20} color={temaActual.texto} />
+  <Text style={styles.seccionTituloModal}>Descripción</Text>
+</View>
 <View style={[
   styles.descripcionContainer,
-  { 
-    backgroundColor: modoOscuro ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
-    borderColor: modoOscuro ? '#555555' : '#d0d0d0',
-    borderWidth: 2,
-    borderLeftWidth: 4,
-    borderLeftColor: recetaDetalle.color || '#4ECDC4',
-  }
 ]}>
   <Text style={[
     styles.descripcion, 
-    { color: modoOscuro ? '#F0F0F0' : '#333333' }
+    { color: temaActual.texto }
   ]}>
     {recetaDetalle.descripcion}
   </Text>
 </View>
 
-<Text style={[styles.seccionTituloModal, { color: modoOscuro ? '#FFFFFF' : '#2C3E50' }]}>
-  {"\u{1F6D2}"} Ingredientes
-</Text>
+<View style={styles.seccionTituloRow}>
+  <Ionicons name="cart-outline" size={18} color={temaActual.texto}/>
+  <Text style={styles.seccionTituloModal}>Ingredientes</Text>
+</View>
 <View style={[
   styles.ingredientesContainer,
   { 
-    backgroundColor: modoOscuro ? 'rgba(40, 40, 40, 0.8)' : 'rgba(255, 255, 255, 0.95)',
-    borderColor: modoOscuro ? '#555555' : '#d0d0d0',
+    backgroundColor: temaActual.fondoCard,
+    borderColor: temaActual.borde,
     borderWidth: 2,
+    borderRadius: 5,
   }
 ]}>
   {recetaDetalle.ingredientes.map((ingrediente, index) => (
@@ -691,14 +498,12 @@ const paginaAnterior = () => {
       styles.itemLista,
       index !== recetaDetalle.ingredientes.length - 1 && {
         borderBottomWidth: 1,
-        borderBottomColor: modoOscuro ? '#444444' : '#f0f0f0',
-        paddingBottom: 10,
-        marginBottom: 10,
+        borderBottomColor: temaActual.borde + 40,
       }
     ]}>
       <Text style={[
         styles.itemListaIcono,
-        { color: recetaDetalle.color || (modoOscuro ? '#4ECDC4' : '#3f7c78ff') }
+        { color: temaActual.fondoHeader }
       ]}>•</Text>
       <Text style={[
         styles.itemListaTexto,
@@ -710,20 +515,18 @@ const paginaAnterior = () => {
   ))}
 </View>
 
-<Text style={[styles.seccionTituloModal, { color: modoOscuro ? '#FFFFFF' : '#2C3E50' }]}>
-  {"\u{1F468}\u{200D}\u{1F373}"} Preparación
-</Text>
+<View style={styles.seccionTituloRow}>
+  <Ionicons name="restaurant-outline" size={18} color={temaActual.texto}/>
+  <Text style={styles.seccionTituloModal}>Preparación</Text>
+</View>
 {recetaDetalle.preparacion.map((paso, index) => (
   <View key={index} style={[
     styles.pasoContainer, 
     { 
-      backgroundColor: modoOscuro 
-        ? 'rgba(122, 175, 177, 0.15)' 
-        : 'rgba(255, 255, 255, 0.95)',
-      borderColor: recetaDetalle.color || (modoOscuro ? '#74a09dff' : '#5ca6a1ff'),
+      borderColor: temaActual.borde,
       borderWidth: 2,
       borderLeftWidth: 5,
-      borderLeftColor: recetaDetalle.color || '#4ECDC4',
+      borderLeftColor: recetaDetalle.color,
       elevation: 2,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
@@ -758,7 +561,10 @@ const paginaAnterior = () => {
               
               {recetaDetalle.tags && recetaDetalle.tags.length > 0 && (
   <>
-    <Text style={styles.seccionTituloModal}>{"\u{1F3F7}\u{FE0F}"} Características</Text>
+<View style={styles.seccionTituloRow}>
+  <Ionicons name="pricetag-outline" size={18} color={temaActual.texto}/>
+  <Text style={styles.seccionTituloModal}>Características</Text>
+</View>
     <View style={styles.tagsContainerModal}>
       {recetaDetalle.tags.map((tag, index) => (
         <View key={index} style={styles.tagModal}>
@@ -775,20 +581,27 @@ const paginaAnterior = () => {
     );
   };
 
-  // Renderizar categorías
-  const RenderCategoria = ({ categoria }) => (
-    <TouchableOpacity
-      style={[
-        styles.categoriaBoton,
-        { backgroundColor: categoria.color },
-        categoriaSeleccionada === categoria.id && styles.categoriaBotonActivo
-      ]}
-      onPress={() => setCategoriaSeleccionada(categoria.id)}
-    >
-      <Text style={styles.categoriaIcono}>{categoria.icono}</Text>
-      <Text style={styles.categoriaTexto}>{categoria.nombre}</Text>
-    </TouchableOpacity>
-  );
+const RenderCategoria = ({ categoria }) => (
+  <TouchableOpacity
+    style={[
+      styles.categoriaBoton,
+      { backgroundColor: categoria.color },
+      categoriaSeleccionada === categoria.id && styles.categoriaBotonActivo
+    ]}
+    onPress={() => setCategoriaSeleccionada(categoria.id)}
+  >
+    <MCI
+      name={categoria.icono}
+      size={18}
+      color="#fff"
+      style={styles.categoriaIcono}
+    />
+
+    <Text style={styles.categoriaTexto}>
+      {categoria.nombre}
+    </Text>
+  </TouchableOpacity>
+);
 
   // Contar filtros activos para mostrar en badge
   const filtrosActivosCount = 
@@ -825,8 +638,13 @@ const paginaAnterior = () => {
           ]}
           onPress={() => setPantallaActual('inicio')}
         >
+          <Ionicons
+            name="home-outline"
+            size={18}
+            color={temaActual.texto}
+          />
           <Text style={[styles.navText, pantallaActual === 'inicio' && styles.navTextActive]}>
-            🏠 Inicio
+            Inicio
           </Text>
         </TouchableOpacity>
         
@@ -837,8 +655,17 @@ const paginaAnterior = () => {
           ]}
           onPress={() => setPantallaActual('favoritos')}
         >
+          <Ionicons
+            name="heart"
+            size={18}
+            color={
+              pantallaActual === 'favoritos'
+                ? 'red'
+                : temaActual.texto
+            }
+          />
           <Text style={[styles.navText, pantallaActual === 'favoritos' && styles.navTextActive]}>
-            ❤️ Favoritos ({favoritos.length})
+            Favoritos ({favoritos.length})
           </Text>
         </TouchableOpacity>
         
@@ -861,8 +688,13 @@ const paginaAnterior = () => {
             generarRecomendaciones(true);
           }}
         >
+          <Ionicons
+            name='sparkles'
+            size={18}
+            color={modoOscuro ? 'yellow' : 'orange'}
+          />
           <Text style={[styles.navText, pantallaActual === 'recomendacion' && styles.navTextActive]}>
-            🎯 Recomendar
+            Recomendar
           </Text>
         </TouchableOpacity>
       </View>
@@ -873,9 +705,15 @@ const paginaAnterior = () => {
           backgroundColor: temaActual.fondoCard,
           borderColor: temaActual.borde 
         }]}>
+          <Ionicons
+            name="search-outline"
+            size={18}
+            color={temaActual.texto}
+            style={{ marginRight: 8 }}
+          />
           <TextInput
             style={[styles.inputBusqueda, { color: temaActual.textoInput }]}
-            placeholder="🔍 Buscar recetas..."
+            placeholder="Buscar recetas..."
             placeholderTextColor={modoOscuro ? '#888' : '#999'}
             value={busqueda}
             onChangeText={setBusqueda}
@@ -887,7 +725,13 @@ const paginaAnterior = () => {
           style={styles.botonFiltros}
           onPress={() => setMostrarFiltros(true)}
         >
-          <Text style={styles.botonFiltrosTexto}>⚙️ Filtros</Text>
+            <Ionicons
+              name="options-outline"
+              size={18}
+              color={'white'}
+              style={{ marginRight: 6 }}
+            />
+          <Text style={styles.botonFiltrosTexto}>Filtros</Text>
           {filtrosActivosCount > 0 && (
             <View style={styles.badgeFiltros}>
               <Text style={styles.badgeText}>{filtrosActivosCount}</Text>
@@ -998,23 +842,42 @@ const paginaAnterior = () => {
         
       </>
     ) : (
-      <View style={styles.vacio}>
-        <Text style={styles.vacioIcono}>🍽️</Text>
-        <Text style={styles.vacioTexto}>No se encontraron recetas</Text>
-        <Text style={styles.vacioSubtexto}>
-          {filtrosActivosCount > 0 
-            ? 'Prueba con menos filtros' 
-            : 'Intenta con otra búsqueda'}
-        </Text>
-        <TouchableOpacity 
-          style={styles.botonRecomendacionVacio}
-          onPress={() => generarRecomendaciones(false)}
-        >
-          <Text style={styles.botonRecomendacionVacioTexto}>
-            🎲 ¿Necesitas inspiración? Prueba recetas aleatorias
-          </Text>
-        </TouchableOpacity>
-      </View>
+<View style={styles.vacio}>
+  <Ionicons
+    name="restaurant-outline"
+    size={56}
+    color={temaActual.textoSubtitulo}
+    style={{ marginBottom: 12 }}
+  />
+
+  <Text style={[styles.vacioTexto, { color: temaActual.texto }]}>
+    No se encontraron recetas
+  </Text>
+
+  <Text style={[styles.vacioSubtexto, { color: temaActual.textoSubtitulo }]}>
+    {filtrosActivosCount > 0
+      ? 'Prueba con menos filtros'
+      : 'Intenta con otra búsqueda'}
+  </Text>
+
+  <TouchableOpacity
+    style={styles.botonRecomendacionVacio}
+    onPress={() => generarRecomendaciones(false)}
+  >
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <Ionicons
+        name="shuffle-outline"
+        size={16}
+        color="#fff"
+        style={{ marginRight: 6 }}
+      />
+      <Text style={styles.botonRecomendacionVacioTexto}>
+        Prueba recetas aleatorias
+      </Text>
+    </View>
+  </TouchableOpacity>
+</View>
+
     )
   ) : recetasFavoritas.length > 0 ? (
   <FlatList
@@ -1037,19 +900,40 @@ const paginaAnterior = () => {
     contentContainerStyle={styles.listaContenido}
   />
                 ) : (
-          <View style={styles.vacio}>
-            <Text style={styles.vacioIcono}>❤️</Text>
-            <Text style={styles.vacioTexto}>No tienes recetas favoritas</Text>
-            <Text style={styles.vacioSubtexto}>Toca el corazón en las recetas</Text>
-            <TouchableOpacity 
-              style={styles.botonRecomendacionVacio}
-              onPress={() => generarRecomendaciones(false)}
-            >
-              <Text style={styles.botonRecomendacionVacioTexto}>
-                🎲 ¿No sabes por dónde empezar? Prueba recetas aleatorias
-              </Text>
-            </TouchableOpacity>
-          </View>
+<View style={styles.vacio}>
+  <Ionicons
+    name="heart-outline"
+    size={56}
+    color={temaActual.textoSubtitulo}
+    style={{ marginBottom: 12 }}
+  />
+
+  <Text style={[styles.vacioTexto, { color: temaActual.texto }]}>
+    No tienes recetas favoritas
+  </Text>
+
+  <Text style={[styles.vacioSubtexto, { color: temaActual.textoSubtitulo }]}>
+    Toca el corazón en las recetas para guardarlas aquí
+  </Text>
+
+  <TouchableOpacity
+    style={styles.botonRecomendacionVacio}
+    onPress={() => generarRecomendaciones(false)}
+  >
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <Ionicons
+        name="shuffle-outline"
+        size={16}
+        color="#fff"
+        style={{ marginRight: 6 }}
+      />
+      <Text style={styles.botonRecomendacionVacioTexto}>
+        Prueba recetas aleatorias
+      </Text>
+    </View>
+  </TouchableOpacity>
+</View>
+
         )}
       </View>
 
@@ -1078,7 +962,15 @@ const paginaAnterior = () => {
         limpiarFiltros={limpiarFiltros}
       />
 
-      <RenderModalRecomendacion />
+<ModalRecomendacion
+  visible={mostrarRecomendador}
+  onClose={() => setMostrarRecomendador(false)}
+  temaActual={temaActual}
+  themeName={themeName}
+  mode={mode}
+  onSelectReceta={mostrarDetalleReceta}
+/>
+
       <RenderModalDetalle />
     </View>
   );

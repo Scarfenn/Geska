@@ -169,6 +169,7 @@ export default function TaskModal({
                     name="pricetag-outline"
                     size={24}
                     color={styles.iconColor.color}
+                    opacity={0.4}
                   />
                 </TouchableOpacity>
 
@@ -178,6 +179,7 @@ export default function TaskModal({
                     name="list-outline"
                     size={24}
                     color={styles.iconColor.color}
+                    opacity={0.4}
                   />
                 </TouchableOpacity>
 
@@ -187,6 +189,7 @@ export default function TaskModal({
                     name="ellipsis-horizontal"
                     size={26}
                     color={styles.iconColor.color}
+                    opacity={0.4}
                   />
                 </TouchableOpacity>
               </View>

@@ -41,7 +41,10 @@ return StyleSheet.create({
   navButton: {
     flex: 1,
     paddingVertical: 7,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6
   },
   navButtonActive: {
     backgroundColor: '#FF5252',
@@ -49,7 +52,7 @@ return StyleSheet.create({
   navText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#666',
+    color: theme.text,
   },
   navTextActive: {
     color: 'white',
@@ -76,12 +79,13 @@ return StyleSheet.create({
   },
   inputBusqueda: {
     flex: 1,
+    alignItems: 'center',
     height: '100%',
     fontSize: 15,
     color: '#333',
   },
   botonFiltros: {
-    backgroundColor: '#4ECDC4',
+    backgroundColor: theme.primary,
     paddingHorizontal: 10,
     paddingVertical: 10,
     borderRadius: 20,
@@ -138,6 +142,10 @@ return StyleSheet.create({
   fontSize: 16,                  
   marginRight: 4,
   color: 'white',
+},
+iconLabel: {
+  flexDirection: 'row',
+  alignItems: 'center'
 },
 categoriaTexto: {
   fontSize: 11,                 
@@ -226,6 +234,7 @@ categoriaTexto: {
   },
   infoValor: {
     fontSize: 12,
+    textAlign: 'center',
     fontWeight: '600',
     color: '#2C3E50',
   },
@@ -310,6 +319,10 @@ categoriaTexto: {
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  modalFiltrosHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
   modalFiltrosTitulo: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -331,6 +344,9 @@ categoriaTexto: {
     color: theme.text,
     marginBottom: 12,
   },
+  filtroTituloRow: {
+    flexDirection: 'row'
+  },
   sliderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -345,6 +361,7 @@ categoriaTexto: {
     flex: 1,
     height: 6,
     backgroundColor: theme.border,
+    color: theme.border,
     borderRadius: 3,
     marginHorizontal: 10,
     overflow: 'hidden',
@@ -352,6 +369,7 @@ categoriaTexto: {
   sliderFill: {
     height: '100%',
     backgroundColor: theme.primary,
+    color: theme.primary
   },
   sliderMax: {
     fontSize: 14,
@@ -476,13 +494,25 @@ categoriaTexto: {
     flex: 1,
   },
   modalHeader: {
-    paddingTop: Platform.OS === 'web' ? 20 : 50,
-    paddingBottom: 25,
-    paddingHorizontal: 20,
-    minHeight: 120,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+  },
+
+  headerSide: {
+    width: 60,               // ancho fijo
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
   },
   botonCerrar: {
     position: 'absolute',
+    flexDirection: 'row',
     top: Platform.OS === 'web' ? 20 : 50,
     left: 20,
     zIndex: 1,
@@ -534,7 +564,7 @@ categoriaTexto: {
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   detalleInfoItem: {
     flexDirection: 'row',
@@ -543,31 +573,39 @@ categoriaTexto: {
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  detalleInfoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   detalleInfoLabel: {
     fontSize: 14,
-    color: '#666',
+    color: theme.text,
     fontWeight: '500',
   },
   detalleInfoValor: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#2C3E50',
+    color: theme.text,
+  },
+  seccionTituloRow:{
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginVertical: 12
   },
   seccionTituloModal: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#2C3E50',
-    marginBottom: 12,
-    marginTop: 8,
+    color: theme.text,
   },
   descripcion: {
   fontSize: 17, // Aumentado de 16
   color: '#444444', // Gris oscuro
   lineHeight: 26, // Mejor espaciado
-  marginBottom: 20,
   fontWeight: '500',
   padding: 12,
-  backgroundColor: 'rgba(0, 0, 0, 0.02)', // Fondo muy suave
+  backgroundColor: theme.card, // Fondo muy suave
   borderRadius: 8,
   borderLeftWidth: 4,
   borderLeftColor: '#4ECDC4',
@@ -575,33 +613,32 @@ categoriaTexto: {
   // PARA INGREDIENTES (itemLista)
 itemLista: {
   flexDirection: 'row',
-  marginBottom: 10,
-  paddingLeft: 4,
+  marginVertical: 12,
+  paddingLeft: 10,
   backgroundColor: 'transparent',
 },
 itemListaIcono: {
   fontSize: 18,
   color: '#4ECDC4', // Color turquesa fijo que funciona en ambos modos
   marginRight: 10,
-  lineHeight: 22,
+  paddingVertical: 4,
   fontWeight: 'bold',
 },
 itemListaTexto: {
   flex: 1,
   fontSize: 16, // Aumentado de 15
   color: '#616161', // Gris más oscuro para modo día
-  lineHeight: 24, // Aumentado para mejor espaciado
+  paddingVertical: 4,
   fontWeight: '500', // Peso medio para mejor legibilidad
 },
   // PARA PASOS DE PREPARACIÓN (pasoContainer)
 pasoContainer: {
   flexDirection: 'row',
   marginBottom: 16,
-  backgroundColor: 'rgba(78, 205, 196, 0.1)', // Fondo turquesa muy suave
+  backgroundColor: theme.card,
   borderRadius: 12, // Bordes más redondeados
   padding: 16, // Más padding
   borderWidth: 2, // Borde más grueso
-  borderColor: '#4ECDC4', // Borde turquesa
   elevation: 2, // Sombra para modo día
   shadowColor: '#000',
   shadowOffset: { width: 0, height: 1 },
@@ -672,10 +709,15 @@ pasoTexto: {
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  modalRecomendacionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
   modalRecomendacionTitulo: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#2C3E50',
+    color: theme.text,
   },
   cerrarRecomendacion: {
     fontSize: 24,
@@ -691,7 +733,6 @@ pasoTexto: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2C3E50',
-    marginBottom: 16,
   },
   recomendacionItem: {
     marginBottom: 20,
@@ -700,7 +741,6 @@ pasoTexto: {
     fontSize: 16,
     fontWeight: '600',
     color: '#2C3E50',
-    marginBottom: 10,
   },
   categoriasRecomendacion: {
     flexDirection: 'row',
@@ -797,9 +837,9 @@ preferenciaTextActive: {
 },
   contadorPreferencias: {
     alignItems: 'center',
-    marginVertical: 15,
+    marginVertical: 2,
     padding: 10,
-    backgroundColor: '#333333ff',
+    backgroundColor: theme.card,
     borderRadius: 10,
   },
   contadorTexto: {
@@ -808,7 +848,7 @@ preferenciaTextActive: {
     fontWeight: '600',
   },
   recomendacionesGrupo: {
-    marginTop: 20,
+    marginTop: 8,
   },
   recomendacionCard: {
     backgroundColor: 'white',
@@ -841,7 +881,7 @@ preferenciaTextActive: {
   },
   modalRecomendacionFooter: {
     flexDirection: 'row',
-    padding: 20,
+    padding: 24,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
     gap: 10,
@@ -854,7 +894,7 @@ preferenciaTextActive: {
     borderRadius: 10,
   },
   botonRecomendacionSecundarioTexto: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#666',
     fontWeight: '600',
   },
@@ -866,7 +906,7 @@ preferenciaTextActive: {
     borderRadius: 10,
   },
   botonRecomendacionAleatorioTexto: {
-    fontSize: 16,
+    fontSize: 12,
     color: 'white',
     fontWeight: '600',
   },
@@ -878,7 +918,7 @@ preferenciaTextActive: {
     borderRadius: 10,
   },
   botonRecomendacionPrincipalTexto: {
-    fontSize: 16,
+    fontSize: 12,
     color: 'white',
     fontWeight: '600',
   },

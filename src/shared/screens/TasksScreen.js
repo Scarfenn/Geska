@@ -26,6 +26,8 @@ import {
   updateSubtaskDone
 } from "../storage/database";
 
+import { scheduleTaskReminder, cancelTaskReminder } from "../components/notifications";
+
 import createStyles from "../../tasks/styles/styles";
 import { themes } from "../../tasks/styles/themes";
 import AllTasks from "../components/AllTasks";
@@ -36,7 +38,7 @@ import TaskModal from "../../tasks/modals/TaskModal"
 import TimeModal from "../../tasks/modals/TimeModal"
 import AddSubtaskModal from "../../tasks/modals/AddSubtaskModal";
 
-export default function TasksScreen({ themeName, mode, setThemeName, setMode }) {
+export default function TasksScreen({ themeName, mode, setThemeName, setMode, tasksVersion }) {
   const [tasks, setTasks] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -65,7 +67,7 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode }) 
   const [selectedTime, setSelectedTime] = useState(null);
   const [repeatMode, setRepeatMode] = useState("none");
   const [repeatDays, setRepeatDays] = useState([]);
-  const [reminder, setReminder] = useState(null);
+  const [reminder, setReminder] = useState(0);
   const [endDate, setEndDate] = useState(null);
 
   const styles = createStyles(themeName, mode);
@@ -79,8 +81,14 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode }) 
   }
 
 
-  const formatTime = (timeObj) =>
-    timeObj ? timeObj : null;
+  const formatTime = (timeObj) => {
+    if (!timeObj) return null;
+
+    const h = timeObj.getHours().toString().padStart(2, "0");
+    const m = timeObj.getMinutes().toString().padStart(2, "0");
+
+    return `${h}:${m}`;
+  };
 
   // ======================================================
   // DB SETUP
@@ -94,6 +102,10 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode }) 
     };
     setup();
   }, []);
+
+  useEffect(() => {
+    loadTasks();
+  }, [tasksVersion]);
 
   const loadTasks = async () => {
     const loadedTasks = await getAllTasks();
@@ -146,8 +158,24 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode }) 
     };
 
     await saveTask(newTask);
+
+    if (newTask.time && newTask.reminder_minutes !== null) {
+      const notificationId = await scheduleTaskReminder(newTask);
+
+      if (notificationId) {
+        await updateTask({
+          ...newTask,
+          notification_id: notificationId,
+        });
+      }
+    }
+
     await loadTasks();
   };
+
+  const handleExternalTaskCreated = async () => {
+  await loadTasks();
+};
 
   const saveEditTaskHandler = async (taskData) => {
     if (!taskToEdit) return;
@@ -171,14 +199,36 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode }) 
       repeat_end: formatDateLocal(endDate),
     };
 
+    if (taskToEdit.notification_id) {
+      await cancelTaskReminder(taskToEdit.notification_id);
+    }
+
     await updateTask(updatedTask);
+
+    if (updatedTask.time && updatedTask.reminder_minutes !== null) {
+      const notificationId = await scheduleTaskReminder(updatedTask);
+
+      if (notificationId) {
+        await updateTask({
+          ...updatedTask,
+          notification_id: notificationId,
+        });
+      }
+    }
+    
     await loadTasks();
   };
 
-  const removeTask = async (id) => {
-    await deleteTask(id);
-    await loadTasks();
-  };
+const removeTask = async (id) => {
+  const taskToRemove = tasks.find(t => t.id === id);
+
+  if (taskToRemove?.notification_id) {
+    await cancelTaskReminder(taskToRemove.notification_id);
+  }
+
+  await deleteTask(id);
+  await loadTasks();
+};
 
 const toggleTaskDone = async (task, selectedDay) => {
   const dateStr = formatDateLocal(selectedDay);
@@ -215,6 +265,23 @@ function getTaskDoneForDate(task, selectedDay) {
   return occ ? occ.done : false;
 }
 
+  function parseTimeString(timeStr) {
+    if (!timeStr) return null;
+
+    const [h, m] = timeStr.split(":").map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+  }
+
+  function timeToMinutes(time) {
+    if (!time) return null;
+    const [h, m] = time.split(":").map(Number);
+    return h * 60 + m;
+  }
+
+
+
   // ======================================================
   // FILTRO POR DÍA + CATEGORÍA
   // ======================================================
@@ -229,10 +296,24 @@ function getTaskDoneForDate(task, selectedDay) {
       ? tasksForSelectedDay
       : tasksForSelectedDay.filter((t) => t.categoryId === selectedCategory);
 
-  const tasksForRender = filteredTasks.map((task) => ({
-      ...task,
-      done: getTaskDoneForDate(task, selectedDay),
-    }));
+const tasksForRender = filteredTasks
+  .map((task) => ({
+    ...task,
+    done: getTaskDoneForDate(task, selectedDay),
+  }))
+  .sort((a, b) => {
+    const aTime = timeToMinutes(a.time);
+    const bTime = timeToMinutes(b.time);
+
+    if (aTime === null && bTime === null) return 0;
+
+    if (aTime === null) return 1;
+
+    if (bTime === null) return -1;
+
+    return aTime - bTime;
+  });
+
 
   // ======================================================
   // SUBTAREAS
@@ -312,7 +393,7 @@ const toggleSubtaskDone = async (taskId, subtaskId) => {
 
     // Pre-cargar valores de tiempo de la tarea
     setSelectedDate(task.date ? parseLocalDateString(task.date) : new Date());
-    setSelectedTime(task.time || null);
+    setSelectedTime(parseTimeString(task.time));
     setRepeatMode(task.repeat_mode || "none");
     setRepeatDays(
       task.repeat_days ? task.repeat_days.split(",") : []

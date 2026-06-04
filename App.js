@@ -7,6 +7,7 @@ import TasksScreen from "./src/shared/screens/TasksScreen";
 import CookScreen from "./src/shared/screens/CookScreen";
 import CalendarScreen from "./src/shared/screens/CalendarScreen";
 import CustomDrawer from "./src/shared/components/CustomDrawer";
+import { initNotifications } from "./src/shared/components/notifications";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { themes } from "./src/tasks/styles/themes";
@@ -18,6 +19,15 @@ export default function App() {
   const [themeName, setThemeName] = useState("basic");
   const [mode, setMode] = useState("light");
   const [isThemeLoaded, setIsThemeLoaded] = useState(false);
+  const [tasksVersion, setTasksVersion] = useState(0);
+
+  const handleExternalTaskCreated = () => {
+    setTasksVersion(v => v + 1);
+  };
+
+    useEffect(() => {
+    initNotifications();
+  }, []);
 
   // ============================
   // Cargar tema desde AsyncStorage
@@ -100,6 +110,7 @@ export default function App() {
                 mode={mode}
                 setThemeName={setThemeName}
                 setMode={setMode}
+                tasksVersion={tasksVersion} 
               />
             )}
           </Drawer.Screen>
@@ -118,6 +129,7 @@ export default function App() {
               {(props) => (
                 <CookScreen
                   {...props}
+                  onTaskCreated={handleExternalTaskCreated}
                   themeName={themeName}
                   mode={mode}
                   setThemeName={setThemeName}
@@ -129,7 +141,7 @@ export default function App() {
           {/* ============================
               PANTALLA CALENDARIO
           ============================= */}
-          <Drawer.Screen
+          {/*<Drawer.Screen
             name="Calendario"
             options={{
               drawerIcon: ({ color, size }) => (
@@ -144,7 +156,7 @@ export default function App() {
                 mode={mode}
               />
             )}
-          </Drawer.Screen>
+          </Drawer.Screen>*/}
         </Drawer.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

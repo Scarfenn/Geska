@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RecipeCard({
   item,
@@ -47,9 +48,12 @@ export default function RecipeCard({
           }}
           style={styles.favoritoBoton}
         >
-          <Text style={styles.favoritoIcono}>
-            {item.esFavorita ? '❤️' : '🤍'}
-          </Text>
+                  <Ionicons
+          name={item.esFavorita ? 'heart' : 'heart-outline'}
+          size={20}
+          color={item.esFavorita ? '#e74c3c' : temaActual.textoSubtitulo}
+        />
+
         </TouchableOpacity>
       </View>
 
@@ -65,12 +69,22 @@ export default function RecipeCard({
 
       <View style={[styles.tarjetaInfo, { borderTopColor: temaActual.borde }]}>
         <View style={styles.infoItem}>
-          <Text style={[styles.infoLabel, { color: modoOscuro ? '#CCCCCC' : temaActual.textoSubtitulo }]}>⏱️</Text>
+          <Ionicons
+            name="time"
+            size={14}
+            color={modoOscuro ? '#CCCCCC' : temaActual.textoSubtitulo}
+          />
+
           <Text style={[styles.infoValor, { color: modoOscuro ? '#FFFFFF' : temaActual.texto }]}>{item.tiempo}</Text>
         </View>
 
         <View style={styles.infoItem}>
-          <Text style={[styles.infoLabel, { color: modoOscuro ? '#CCCCCC' : temaActual.textoSubtitulo }]}>📊</Text>
+          <Ionicons
+            name="bar-chart"
+            size={14}
+            color={modoOscuro ? '#CCCCCC' : temaActual.textoSubtitulo}
+          />
+
           <Text
             style={[
               styles.infoValor,
@@ -85,7 +99,11 @@ export default function RecipeCard({
         </View>
 
         <View style={styles.infoItem}>
-          <Text style={[styles.infoLabel, { color: modoOscuro ? '#ffffffff' : temaActual.textoSubtitulo }]}>📂</Text>
+          <Ionicons
+            name="folder-outline"
+            size={14}
+            color={modoOscuro ? '#CCCCCC' : temaActual.textoSubtitulo}
+          />
           <Text style={[styles.infoValor, { color: modoOscuro ? '#FFFFFF' : temaActual.texto }]}>{item.categoria}</Text>
         </View>
       </View>

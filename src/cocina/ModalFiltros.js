@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons as MCI } from "@expo/vector-icons";
 
 const ModalFiltros = React.memo(({
   visible,
@@ -49,24 +51,24 @@ const ModalFiltros = React.memo(({
               { borderBottomColor: temaActual.borde },
             ]}
           >
-            <Text
-              style={[
-                styles.modalFiltrosTitulo,
-                { color: temaActual.texto },
-              ]}
-            >
-              🔍 Filtros
-            </Text>
+            <View style={styles.modalFiltrosHeaderLeft}>
+              <Ionicons
+                name="search-outline"
+                size={20}
+                color={temaActual.texto}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={[styles.modalFiltrosTitulo, { color: temaActual.texto }]}>
+                Filtros
+              </Text>
+            </View>
 
             <TouchableOpacity onPress={onClose}>
-              <Text
-                style={[
-                  styles.cerrarFiltros,
-                  { color: temaActual.textoSubtitulo },
-                ]}
-              >
-                ✕
-              </Text>
+              <Ionicons
+                name="close"
+                size={20}
+                color={temaActual.textoSubtitulo}
+              />
             </TouchableOpacity>
           </View>
 
@@ -74,10 +76,17 @@ const ModalFiltros = React.memo(({
           <ScrollView style={styles.filtrosScroll}>
             {/* TIEMPO */}
             <View style={styles.filtroGrupo}>
-                <Text style={[styles.filtroTitulo, { color: temaActual.texto }]}>
-                    ⏱️ Tiempo máximo: {tiempoMaximo} min
-                </Text>
-
+                <View style={styles.filtroTituloRow}>
+                  <Ionicons
+                    name="time-outline"
+                    size={18}
+                    color={temaActual.texto}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={[styles.filtroTitulo, { color: temaActual.texto }]}>
+                    Tiempo máximo: {tiempoMaximo} min
+                  </Text>
+                </View>
                 <View style={styles.sliderContainer}>
                     <Text style={styles.sliderMin}> 0 </Text>
 
@@ -98,15 +107,15 @@ const ModalFiltros = React.memo(({
                     <TouchableOpacity
                         key={min}
                         style={[
-                        styles.sliderBtn,
-                        tiempoMaximo === min && styles.sliderBtnActive,
+                        styles.filtroItem,
+                        tiempoMaximo === min && styles.filtroItemActive,
                         ]}
                         onPress={() => setTiempoMaximo(min)}
                     >
                         <Text
                         style={[
-                            styles.sliderBtnText,
-                            tiempoMaximo === min && styles.sliderBtnTextActive
+                            styles.filtroItemText,
+                            tiempoMaximo === min && styles.filtroItemTextActive
                         ]}
                         >
                         {min} min
@@ -119,7 +128,16 @@ const ModalFiltros = React.memo(({
 
             {/* DIFICULTAD */}
             <View style={styles.filtroGrupo}>
-              <Text style={styles.filtroTitulo}>📊 Dificultad</Text>
+              <View style={styles.filtroTituloRow}>
+                <Ionicons
+                  name="bar-chart"
+                  size={18}
+                  color={temaActual.texto}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.filtroTitulo}>Dificultad</Text>
+              </View>
+
               <View style={styles.dificultadContainer}>
                 {["Fácil", "Media", "Difícil"].map((diff) => (
                   <TouchableOpacity
@@ -153,10 +171,15 @@ const ModalFiltros = React.memo(({
 
             {/* ALÉRGENOS */}
             <View style={styles.filtroGrupo}>
-              <Text style={styles.filtroTitulo}>
-                🚫 Excluir alérgenos
-              </Text>
-
+              <View style={styles.filtroTituloRow}>
+                <Ionicons
+                  name="ban"
+                  size={18}
+                  color={temaActual.texto}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.filtroTitulo}>Excluir alérgenos</Text>
+              </View>
               <View style={styles.filtrosGrid}>
                 {filtrosAlergenos.map((a) => (
                   <TouchableOpacity
@@ -167,6 +190,13 @@ const ModalFiltros = React.memo(({
                     ]}
                     onPress={() => toggleAlergeno(a.id)}
                   >
+                  <View style={styles.iconLabel}>
+                    <MCI
+                      name={a.icono}
+                      size={16}
+                      color={a.activo ? temaActual.acento : temaActual.texto}
+                      style={{ marginRight: 6 }}
+                    />
                     <Text
                       style={[
                         styles.filtroItemText,
@@ -175,6 +205,7 @@ const ModalFiltros = React.memo(({
                     >
                       {a.nombre}
                     </Text>
+                  </View>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -182,9 +213,16 @@ const ModalFiltros = React.memo(({
 
             {/* TAGS */}
             <View style={styles.filtroGrupo}>
-              <Text style={styles.filtroTitulo}>
-                ⭐ Recetas especiales
-              </Text>
+              <View style={styles.filtroTituloRow}>
+                <Ionicons
+                  name="star"
+                  size={18}
+                  color={temaActual.texto}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.filtroTitulo}>Recetas especiales</Text>
+              </View>
+
 
               <View style={styles.filtrosGrid}>
                 {filtrosTags.map((t) => (
@@ -196,14 +234,23 @@ const ModalFiltros = React.memo(({
                     ]}
                     onPress={() => toggleTag(t.id)}
                   >
-                    <Text
-                      style={[
-                        styles.filtroItemText,
-                        t.activo && styles.filtroItemTextActive,
-                      ]}
-                    >
-                      {t.nombre}
-                    </Text>
+                    <View style={styles.iconLabel}>
+                <MCI
+                  name={t.icono}
+                  size={16}
+                  color={t.activo ? temaActual.acento : temaActual.texto}
+                  style={{ marginRight: 6 }}
+                />
+                <Text
+                  style={[
+                    styles.filtroItemText,
+                    t.activo && styles.filtroItemTextActive,
+                  ]}
+                >
+                  {t.nombre}
+                </Text>
+              </View>
+
                   </TouchableOpacity>
                 ))}
               </View>
@@ -216,18 +263,20 @@ const ModalFiltros = React.memo(({
               style={styles.botonLimpiar}
               onPress={limpiarFiltros}
             >
-              <Text style={styles.botonLimpiarTexto}>
-                🔄 Limpiar filtros
-              </Text>
+              <View style={styles.iconLabel}>
+                <Ionicons name="refresh" size={16} color={temaActual.texto} />
+                <Text style={styles.botonLimpiarTexto}> Limpiar filtros</Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.botonAplicar}
               onPress={onClose}
             >
-              <Text style={styles.botonAplicarTexto}>
-                ✅ Aplicar filtros
-              </Text>
+              <View style={styles.iconLabel}>
+                <Ionicons name="checkmark" size={16} color="#fff" />
+                <Text style={styles.botonAplicarTexto}>Aplicar filtros</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
