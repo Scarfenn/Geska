@@ -1,6 +1,6 @@
 import TaskList from './TaskList';
 import {View} from 'react-native';
-import createStyles from '../../tasks/styles/styles';
+import createStyles from '@/tasks/styles/styles';
 
 export default function AllTasks({ tasks, toggleTaskDone, toggleSubtaskDone, removeTask, removeSubtask, themeName, mode, openOptions, closeOptions, activeTaskId, setModalTaskId, startEditTask, setActiveModal}) {
   const styles = createStyles(themeName, mode);

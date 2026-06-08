@@ -2,7 +2,7 @@ import { FlatList, Text, TouchableOpacity, TouchableWithoutFeedback, View, Anima
 import { useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import ConfirmDialog from './Alert';
-import createStyles from '../../tasks/styles/styles';
+import createStyles from '@/tasks/styles/styles';
 
 export default function TaskList({
   tasks,

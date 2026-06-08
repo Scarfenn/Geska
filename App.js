@@ -3,14 +3,13 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import TasksScreen from "./src/shared/screens/TasksScreen";
-import CookScreen from "./src/shared/screens/CookScreen";
-import CalendarScreen from "./src/shared/screens/CalendarScreen";
-import CustomDrawer from "./src/shared/components/CustomDrawer";
-import { initNotifications } from "./src/shared/components/notifications";
+import TasksScreen from "@/shared/screens/TasksScreen";
+import CalendarScreen from "@/shared/screens/CalendarScreen";
+import CustomDrawer from "@/shared/components/CustomDrawer";
+import { initNotifications } from "@/shared/components/notifications";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { themes } from "./src/tasks/styles/themes";
+import { themes } from "@/tasks/styles/themes";
 import { Ionicons } from "@expo/vector-icons";
 
 const Drawer = createDrawerNavigator();
@@ -19,19 +18,12 @@ export default function App() {
   const [themeName, setThemeName] = useState("basic");
   const [mode, setMode] = useState("light");
   const [isThemeLoaded, setIsThemeLoaded] = useState(false);
-  const [tasksVersion, setTasksVersion] = useState(0);
-
-  const handleExternalTaskCreated = () => {
-    setTasksVersion(v => v + 1);
-  };
 
     useEffect(() => {
     initNotifications();
   }, []);
 
-  // ============================
   // Cargar tema desde AsyncStorage
-  // ============================
   useEffect(() => {
     const loadTheme = async () => {
       try {
@@ -88,9 +80,7 @@ export default function App() {
             },
           }}
         >
-          {/* ============================
-              PANTALLA PRINCIPAL: TAREAS
-          ============================= */}
+          {/* PANTALLA TAREAS */}
           <Drawer.Screen
             name="Tareas"
             options={{
@@ -110,37 +100,11 @@ export default function App() {
                 mode={mode}
                 setThemeName={setThemeName}
                 setMode={setMode}
-                tasksVersion={tasksVersion} 
               />
             )}
           </Drawer.Screen>
 
-          {/* =============================
-              PANTALLA COCINA
-          ============================== */}
-            <Drawer.Screen
-              name="Cocina"
-              options={{
-                drawerIcon: ({ color, size }) => (
-                  <Ionicons name="restaurant-outline" size={size} color={color} />
-                ),
-              }}
-            >
-              {(props) => (
-                <CookScreen
-                  {...props}
-                  onTaskCreated={handleExternalTaskCreated}
-                  themeName={themeName}
-                  mode={mode}
-                  setThemeName={setThemeName}
-                  setMode={setMode}
-                />
-              )}
-            </Drawer.Screen>
-
-          {/* ============================
-              PANTALLA CALENDARIO
-          ============================= */}
+          {/* PANTALLA CALENDARIO */}
           {/*<Drawer.Screen
             name="Calendario"
             options={{

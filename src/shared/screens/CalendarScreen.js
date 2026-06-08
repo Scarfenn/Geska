@@ -1,5 +1,5 @@
 import { View, Text, StatusBar } from "react-native";
-import createStyles from "../../tasks/styles/styles";
+import createStyles from "@/tasks/styles/styles";
 
 export default function CalendarScreen({ themeName, mode }) {
 

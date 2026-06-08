@@ -9,7 +9,7 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import createStyles from "../styles/styles";
+import createStyles from "@/tasks/styles/styles";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function TaskModal({

@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import { themes } from "../tasks/styles/themes";
+import { themes } from "@/tasks/styles/themes";
 import { Platform } from "react-native";
 
 export default function createStylesC(themeName = "basic", mode = "light") {

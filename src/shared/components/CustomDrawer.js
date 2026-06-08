@@ -1,7 +1,7 @@
 import { View, Text } from "react-native";
 import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
-import createStyles from "../../tasks/styles/styles";
-import { themes } from "../../tasks/styles/themes";
+import createStyles from "@/tasks/styles/styles";
+import { themes } from "@/tasks/styles/themes";
 
 export default function CustomDrawer(props) {
   const styles = createStyles(props.themeName, props.mode);

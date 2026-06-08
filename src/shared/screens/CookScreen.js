@@ -11,16 +11,15 @@ import {
   Alert
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import createStylesC from '../../cocina/stylesC';
-import ThemeSelector from '../components/ThemeSelector';
-import { themes } from '../../tasks/styles/themes';
-import { TODAS_LAS_RECETAS } from '../storage/recetas';
-import { CATEGORIAS, ALERGENOS, TAGS_ESPECIALES } from '../../cocina/CategoriasC';
-import { obtenerRecomendacionesAleatorias, obtenerRecomendacionesPersonalizadas, tiempoAMinutos } from '../../cocina/recomendaciones';
-import { saveTask } from '../storage/database';
-import RecipeCard from '../../cocina/recipeCard';
-import ModalFiltros from '../../cocina/ModalFiltros';
-import ModalRecomendacion from '../../cocina/ModalRecomendacion';
+import createStylesC from '@/cocina/stylesC';
+import ThemeSelector from '@/shared/components/ThemeSelector';
+import { themes } from '@/tasks/styles/themes';
+import { CATEGORIAS, ALERGENOS, TAGS_ESPECIALES } from '@/cocina/CategoriasC';
+import { obtenerRecomendacionesAleatorias, obtenerRecomendacionesPersonalizadas, tiempoAMinutos } from '@/cocina/recomendaciones';
+import { saveTask } from '@/shared/storage/database';
+import RecipeCard from '@/cocina/recipeCard';
+import ModalFiltros from '@/cocina/ModalFiltros';
+import ModalRecomendacion from '@/cocina/ModalRecomendacion';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons as MCI} from '@expo/vector-icons';
 
@@ -28,35 +27,15 @@ import { MaterialCommunityIcons as MCI} from '@expo/vector-icons';
 // ==================== COMPONENTE PRINCIPAL ====================
 export default function CookScreen({themeName, mode, setThemeName, setMode, onTaskCreated}) {
   const [recetas, setRecetas] = useState(TODAS_LAS_RECETAS);
-  const [favoritos, setFavoritos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('todas');
-  const [pantallaActual, setPantallaActual] = useState('inicio');
   const [recetaDetalle, setRecetaDetalle] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   
   // Estados para filtros avanzados
-  const [mostrarFiltros, setMostrarFiltros] = useState(false);
-  const [filtrosAlergenos, setFiltrosAlergenos] = useState(ALERGENOS);
-  const [filtrosTags, setFiltrosTags] = useState(TAGS_ESPECIALES);
-  const [tiempoMaximo, setTiempoMaximo] = useState(240);
-  const [dificultadFiltro, setDificultadFiltro] = useState(['Fácil', 'Media', 'Difícil']);
-  const [mostrarRecomendador, setMostrarRecomendador] = useState(false);
-  const [recomendaciones, setRecomendaciones] = useState([]);
-  const [preferenciasRecomendacion, setPreferenciasRecomendacion] = useState({
-    categoria: '',
-    tiempoMaximo: 60,
-    sinGluten: false,
-    vegetariano: false,
-    vegano: false,
-    saludable: false,
-    rapido: false
-  });
-
-  // ==================== ESTADOS PARA PAGINACIÓN ====================
-const [paginaActual, setPaginaActual] = useState(1);
-const [recetasPorPagina, setRecetasPorPagina] = useState(12);
-const [totalPaginas, setTotalPaginas] = useState(1);
+  const [filters, setFilters] = useState(DEFAULT_RECIPE_FILTERS);
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [favoriteIds, setFavoriteIds] = useState([]);
 
   // Estado para modo oscuro
   const styles = createStylesC(themeName, mode);

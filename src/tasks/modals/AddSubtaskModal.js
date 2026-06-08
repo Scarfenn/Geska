@@ -1,6 +1,6 @@
 import {Modal, View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback} from "react-native";
 
-import createStyles from "../styles/styles";
+import createStyles from "@/tasks/styles/styles";
 
 export default function AddSubtaskModal({visible, themeName, mode, modalTaskId, subtaskText, setSubtaskText, addSubtask, closeModal}){
     const styles = createStyles(themeName, mode)

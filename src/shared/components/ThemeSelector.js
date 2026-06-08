@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { themes } from "../../tasks/styles/themes"
+import { themes } from "@/tasks/styles/themes"
 
 export default function ThemeSelector({
   themeName,

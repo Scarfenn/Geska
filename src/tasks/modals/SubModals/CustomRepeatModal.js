@@ -9,7 +9,7 @@ import {
   PanResponder,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import createStyles from "../../styles/styles";
+import createStyles from "@/tasks/styles/styles";
 
 export default function CustomRepeatModal({
   visible,
