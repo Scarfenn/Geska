@@ -9,7 +9,7 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import createStyles from "@/tasks/styles/styles";
+import createStyles from "@/styles/styles";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function TaskModal({
@@ -32,9 +32,7 @@ export default function TaskModal({
   const [taskText, setTaskText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  useEffect(() => {
-  if (visible) {
-    // Animación de entrada
+  const animateOpen = () => {
     opacityAnim.setValue(0);
     slideAnim.setValue(30);
 
@@ -52,8 +50,7 @@ export default function TaskModal({
         useNativeDriver: true,
       }),
     ]).start();
-  }
-}, [visible]);
+  };
 
 
   // Cargar datos previos
@@ -109,7 +106,7 @@ export default function TaskModal({
 
 
   return (
-    <Modal visible={visible} transparent animationType="none">
+    <Modal visible={visible} transparent animationType="none" onShow={animateOpen}>
       <TouchableWithoutFeedback onPress={animateClose}>
         <Animated.View
           style={[

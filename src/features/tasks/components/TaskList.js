@@ -1,8 +1,8 @@
 import { FlatList, Text, TouchableOpacity, TouchableWithoutFeedback, View, Animated, Easing} from 'react-native';
 import { useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import ConfirmDialog from './Alert';
-import createStyles from '@/tasks/styles/styles';
+import ConfirmDialog from '../../../components/Alert';
+import createStyles from '@/styles/styles';
 
 export default function TaskList({
   tasks,

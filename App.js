@@ -3,13 +3,13 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import TasksScreen from "@/shared/screens/TasksScreen";
-import CalendarScreen from "@/shared/screens/CalendarScreen";
-import CustomDrawer from "@/shared/components/CustomDrawer";
-import { initNotifications } from "@/shared/components/notifications";
+import TasksScreen from "@/features/tasks/TasksScreen";
+import CalendarScreen from "@/features/calendar/CalendarScreen";
+import CustomDrawer from "@/components/CustomDrawer";
+import { initNotifications } from "@/components/notifications";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { themes } from "@/tasks/styles/themes";
+import { themes } from "@/styles/themes";
 import { Ionicons } from "@expo/vector-icons";
 
 const Drawer = createDrawerNavigator();

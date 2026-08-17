@@ -9,8 +9,8 @@ import {
   Easing,
   FlatList,
 } from "react-native";
-import createStyles from "@/tasks/styles/styles";
-import { themes } from "@/tasks/styles/themes";
+import createStyles from "@/styles/styles";
+import { themes } from "@/styles/themes";
 
 const ITEM_HEIGHT = 44;
 const VISIBLE_ITEMS = 5;

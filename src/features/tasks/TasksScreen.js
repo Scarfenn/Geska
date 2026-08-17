@@ -24,19 +24,19 @@ import {
   addSubtask,
   deleteSubtask,
   updateSubtaskDone
-} from "@/shared/storage/database";
+} from "@/storage/database";
 
-import { scheduleTaskReminder, cancelTaskReminder } from "@/shared/components/notifications";
+import { scheduleTaskReminder, cancelTaskReminder } from "@/components/notifications";
 
-import createStyles from "@/tasks/styles/styles";
-import { themes } from "@/tasks/styles/themes";
-import AllTasks from "@/shared/components/AllTasks";
-import DaySelector from "@/shared/components/DaySelector";
-import ThemeSelector from "@/shared/components/ThemeSelector";
-import CategoryModal from "@/tasks/modals/CategoryModal"
-import TaskModal from "@/tasks/modals/TaskModal"
-import TimeModal from "@/tasks/modals/TimeModal"
-import AddSubtaskModal from "@/tasks/modals/AddSubtaskModal";
+import createStyles from "@/styles/styles";
+import { themes } from "@/styles/themes";
+import AllTasks from "@/features/tasks/components/AllTasks";
+import DaySelector from "@/features/tasks/components/DaySelector";
+import ThemeSelector from "@/components/ThemeSelector";
+import CategoryModal from "@/features/tasks/modals/CategoryModal"
+import TaskModal from "@/features/tasks/modals/TaskModal"
+import TimeModal from "@/features/tasks/modals/TimeModal"
+import AddSubtaskModal from "@/features/tasks/modals/AddSubtaskModal";
 
 export default function TasksScreen({ themeName, mode, setThemeName, setMode, tasksVersion }) {
   const [tasks, setTasks] = useState([]);

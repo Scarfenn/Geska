@@ -1,6 +1,6 @@
-import { Modal, View, Text, TouchableWithoutFeedback, Animated, Easing } from "react-native";
+import { Modal, View, Text, TouchableWithoutFeedback, Animated } from "react-native";
 import { useRef, useEffect } from "react";
-import createStyles from "@/tasks/styles/styles";
+import createStyles from "@/styles/styles";
 
 export default function ConfirmDialog({
   visible,

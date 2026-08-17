@@ -12,14 +12,14 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createStylesC from '@/cocina/stylesC';
-import ThemeSelector from '@/shared/components/ThemeSelector';
-import { themes } from '@/tasks/styles/themes';
-import { CATEGORIAS, ALERGENOS, TAGS_ESPECIALES } from '@/cocina/CategoriasC';
-import { obtenerRecomendacionesAleatorias, obtenerRecomendacionesPersonalizadas, tiempoAMinutos } from '@/cocina/recomendaciones';
-import { saveTask } from '@/shared/storage/database';
-import RecipeCard from '@/cocina/recipeCard';
-import ModalFiltros from '@/cocina/ModalFiltros';
-import ModalRecomendacion from '@/cocina/ModalRecomendacion';
+import ThemeSelector from '@/components/ThemeSelector';
+import { themes } from '@/styles/themes';
+import { CATEGORIAS, ALERGENOS, TAGS_ESPECIALES } from '@/features/cocina/CategoriasC';
+import { obtenerRecomendacionesAleatorias, obtenerRecomendacionesPersonalizadas, tiempoAMinutos } from '@/features/cocina/recomendaciones';
+import { saveTask } from '@/storage/database';
+import RecipeCard from '@/features/cocina/recipeCard';
+import ModalFiltros from '@/features/cocina/ModalFiltros';
+import ModalRecomendacion from '@/features/cocina/ModalRecomendacion';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons as MCI} from '@expo/vector-icons';
 

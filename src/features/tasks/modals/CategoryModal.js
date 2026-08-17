@@ -8,7 +8,7 @@ import {
   TouchableWithoutFeedback,
   LayoutAnimation,
 } from "react-native";
-import createStyles from "@/tasks/styles/styles";
+import createStyles from "@/styles/styles";
 
 export default function CategoryModal({
   visible,

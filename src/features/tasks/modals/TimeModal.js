@@ -8,8 +8,8 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import createStyles from "@/tasks/styles/styles";
-import { themes } from "@/tasks/styles/themes";
+import createStyles from "@/styles/styles";
+import { themes } from "@/styles/themes";
 import { Ionicons } from "@expo/vector-icons";
 import RepeatModal from "./SubModals/RepeatModal";
 import CustomRepeatModal from "./SubModals/CustomRepeatModal";

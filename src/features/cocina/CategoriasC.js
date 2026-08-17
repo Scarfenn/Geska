@@ -12,8 +12,6 @@ export const CATEGORIAS = [
   { id: 'vegano', nombre: 'Vegano', icono: 'soy-sauce', color: '#16a085' }
 ];
 
-
-
 // ==================== FILTROS DE ALERGENOS Y DIETAS ====================
 export const ALERGENOS = [
   { id: 'gluten', nombre: 'Sin Gluten', icono: 'barley-off', activo: false },

@@ -1,4 +1,4 @@
-import { TODAS_LAS_RECETAS as recetas } from "@/shared/storage/recetas";
+import { TODAS_LAS_RECETAS as recetas } from "@/storage/recetas";
 import { CATEGORIAS } from "./CategoriasC";
 
 
