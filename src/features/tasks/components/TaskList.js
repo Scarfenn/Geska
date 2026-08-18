@@ -1,7 +1,6 @@
 import { FlatList, Text, TouchableOpacity, TouchableWithoutFeedback, View, Animated, Easing} from 'react-native';
 import { useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import ConfirmDialog from '../../../components/Alert';
 import createStyles from '@/styles/styles';
 
 export default function TaskList({
@@ -29,14 +28,6 @@ export default function TaskList({
       ...prev,
       [taskId]: !prev[taskId],
     }));
-  };
-
-  const [confirmFuture, setConfirmFuture] = useState(null);
-  const isFutureTask = (task) => {
-    if (!task.date) return false;
-
-    const today = new Date().toISOString().split("T")[0];
-    return task.date > today;
   };
 
 
@@ -124,13 +115,7 @@ export default function TaskList({
                 <TouchableOpacity
                   activeOpacity={0.6}
                   style={styles.task}
-                  onPress={() => {
-                    if (isFutureTask(item) && !item.done) {
-                      setConfirmFuture(item.id);
-                    } else {
-                      toggleTaskDone(item.id);
-                    }
-                  }}
+                  onPress={() => {toggleTaskDone(item.id);}}
                   onLongPress={() => openMenu(item.id)}
                 >
                   {/* Icono */}
@@ -138,17 +123,13 @@ export default function TaskList({
                     name={
                       item.done
                         ? "checkmark-circle"
-                        : isFutureTask(item)
-                          ? "lock-closed-outline"
-                          : "ellipse-outline"
+                        : "ellipse-outline"
                     }
                     size={24}
                     color={
                       item.done
                         ? styles.doneCheck.color
-                        : isFutureTask(item)
-                          ? styles.pendingText.color + "AA"
-                          : styles.pendingCheck.color
+                        : styles.pendingCheck.color
                     }
                   />
 
@@ -341,18 +322,6 @@ export default function TaskList({
             )}}
           />
         )}
-      <ConfirmDialog
-        visible={!!confirmFuture}
-        themeName={themeName}
-        mode={mode}
-        title="Tarea futura"
-        message="Esta tarea pertenece a un día posterior. ¿Quieres marcarla de todas formas?"
-        onCancel={() => setConfirmFuture(null)}
-        onConfirm={() => {
-          toggleTaskDone(confirmFuture);
-          setConfirmFuture(null);
-        }}
-      />
       </View>
     </TouchableWithoutFeedback>
   );

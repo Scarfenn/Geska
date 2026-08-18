@@ -404,13 +404,7 @@ export default function TimeModal({
                       alignItems: "center",
                     }}
                   >
-                    <Text
-                      style={{
-                        ...styles.optionValue,
-                        fontStyle: "italic",
-                        opacity: 0.8,
-                      }}
-                    >
+                    <Text style={styles.optionValue}>
                       {formatHumanDate(selectedDate)}
                     </Text>
 

@@ -24,7 +24,8 @@ import {
   addSubtask,
   updateSubtaskText,
   deleteSubtask,
-  updateSubtaskDone
+  updateSubtaskDone,
+  setSubtaskOccurrenceDone,
 } from "@/storage/database";
 
 import {
@@ -436,6 +437,27 @@ function getTaskDoneForDate(task, selectedDay) {
   return occ ? occ.done : false;
 }
 
+function getSubtaskDoneForDate(
+  subtask,
+  selectedDay
+) {
+  const dateStr =
+    formatDateLocal(
+      selectedDay
+    );
+
+  const occurrence =
+    subtask.occurrences?.find(
+      (occurrence) =>
+        occurrence.date ===
+        dateStr
+    );
+
+  return occurrence
+    ? occurrence.done
+    : false;
+}
+
   function parseTimeString(timeStr) {
     if (!timeStr) return null;
 
@@ -467,23 +489,33 @@ function getTaskDoneForDate(task, selectedDay) {
       ? tasksForSelectedDay
       : tasksForSelectedDay.filter((t) => t.categoryId === selectedCategory);
 
-const tasksForRender = filteredTasks
-  .map((task) => ({
-    ...task,
-    done: getTaskDoneForDate(task, selectedDay),
-  }))
-  .sort((a, b) => {
-    const aTime = timeToMinutes(a.time);
-    const bTime = timeToMinutes(b.time);
+const tasksForRender =
+  filteredTasks
+    .map((task) => ({
+      ...task,
 
-    if (aTime === null && bTime === null) return 0;
+      done:
+        getTaskDoneForDate(
+          task,
+          selectedDay
+        ),
 
-    if (aTime === null) return 1;
+      subtasks:
+        (task.subtasks || []).map(
+          (subtask) => ({
+            ...subtask,
 
-    if (bTime === null) return -1;
-
-    return aTime - bTime;
-  });
+            done:
+              task.repeat_mode ===
+              "none"
+                ? subtask.done
+                : getSubtaskDoneForDate(
+                    subtask,
+                    selectedDay
+                  ),
+          })
+        ),
+    }))
 
 
   // ======================================================
@@ -586,14 +618,68 @@ const tasksForRender = filteredTasks
     }
   };
 
-const toggleSubtaskDone = async (taskId, subtaskId) => {
-  const task = tasks.find(t => t.id === taskId);
-  const sub = task.subtasks.find(s => s.id === subtaskId);
+const toggleSubtaskDone =
+  async (
+    taskId,
+    subtaskId
+  ) => {
+    const task =
+      tasks.find(
+        (task) =>
+          task.id === taskId
+      );
 
-  await updateSubtaskDone(subtaskId, !sub.done);
-  await loadTasks();
-};
+    if (!task) return;
 
+    const subtask =
+      task.subtasks?.find(
+        (subtask) =>
+          subtask.id ===
+          subtaskId
+      );
+
+    if (!subtask) return;
+
+    // TAREA NORMAL
+    if (
+      task.repeat_mode ===
+      "none"
+    ) {
+      await updateSubtaskDone(
+        subtaskId,
+        !subtask.done
+      );
+
+      await loadTasks();
+      return;
+    }
+
+    // TAREA REPETITIVA
+    const dateStr =
+      formatDateLocal(
+        selectedDay
+      );
+
+    const occurrence =
+      subtask.occurrences?.find(
+        (occurrence) =>
+          occurrence.date ===
+          dateStr
+      );
+
+    const newDone =
+      occurrence
+        ? !occurrence.done
+        : true;
+
+    await setSubtaskOccurrenceDone(
+      subtaskId,
+      dateStr,
+      newDone
+    );
+
+    await loadTasks();
+  };
 
   // ======================================================
   // CATEGORÍAS
@@ -885,6 +971,7 @@ const toggleSubtaskDone = async (taskId, subtaskId) => {
           visible={taskModalVisible}
           themeName={themeName}
           mode={mode}
+          selectedDate={selectedDate}
           selectedTime={selectedTime}
           repeatMode={repeatMode}
           reminder={reminder}

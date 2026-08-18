@@ -27,6 +27,7 @@ export default function TaskModal({
   selectedCategoryForTask,
   clearSelectedCategoryForTask,
 
+  selectedDate,
   selectedTime,
   repeatMode,
   reminder,
@@ -55,7 +56,29 @@ export default function TaskModal({
   const [subtaskModalVisible, setSubtaskModalVisible] = useState(false);
   const [draftSubtasks, setDraftSubtasks] = useState([]);
 
-  const hasCustomTimeConfig = selectedTime !== null || repeatMode !== "none" || reminder !== null || endDate !== null;
+
+  // ======================================================
+  // FUNCIONES AUXILIARES
+  // ======================================================
+  function isToday(date) {
+    if (!date) return true;
+
+    const today = new Date();
+    const target = new Date(date);
+
+    return (
+      today.getFullYear() === target.getFullYear() &&
+      today.getMonth() === target.getMonth() &&
+      today.getDate() === target.getDate()
+    );
+  }
+
+  const hasCustomTimeConfig =
+    !isToday(selectedDate) ||
+    selectedTime !== null ||
+    repeatMode !== "none" ||
+    reminder !== null ||
+    endDate !== null;
 
   // ======================================================
   // MODAL PRINCIPAL

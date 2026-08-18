@@ -144,11 +144,16 @@ export async function initDB() {
         done INT NOT NULL DEFAULT 0,
         FOREIGN KEY (task_id) REFERENCES tasks(id)
       );
+
+      CREATE TABLE IF NOT EXISTS subtask_occurrences (
+        id TEXT PRIMARY KEY NOT NULL,
+        subtask_id TEXT NOT NULL,
+        date TEXT NOT NULL,
+        done INT NOT NULL DEFAULT 0,
+        FOREIGN KEY (subtask_id) REFERENCES subtasks(id)
+      );
     `);
 
-    // CREATE TABLE IF NOT EXISTS no agrega columnas
-    // a instalaciones existentes. Esta migración
-    // mantiene las BD de Geska 0.8.x.
     await ensureTaskColumns();
 
     console.log("Base de datos lista");
@@ -217,7 +222,7 @@ export async function getAllTasks() {
     const tasks = await db.getAllAsync("SELECT * FROM tasks");
     const subtasks = await db.getAllAsync("SELECT * FROM subtasks");
     const occurrences = await db.getAllAsync("SELECT * FROM task_occurrences");
-
+    const subtaskOccurrences = await db.getAllAsync("SELECT * FROM subtask_occurrences");
 
     return tasks.map((task) => ({
       id: task.id,
@@ -233,9 +238,6 @@ export async function getAllTasks() {
       repeat_days: task.repeat_days || null,
       repeat_end: task.repeat_end || null,
 
-      // Modelo nuevo de recordatorios.
-      // Si la fila viene de una versión antigua,
-      // reminder_minutes se interpreta como relative/minutes.
       reminder_type:
         task.reminder_type ||
         (
@@ -266,7 +268,6 @@ export async function getAllTasks() {
       reminder_at:
         task.reminder_at ?? null,
 
-      // Se mantiene durante la transición.
       reminder_minutes:
         task.reminder_minutes ?? null,
 
@@ -280,8 +281,31 @@ export async function getAllTasks() {
         task.notification_id || null,
 
       subtasks: subtasks
-        .filter((s) => s.task_id === task.id)
-        .map((s) => ({ ...s, done: !!s.done })),
+        .filter(
+          (s) =>
+            s.task_id === task.id
+        )
+        .map((s) => ({
+          ...s,
+
+          done:
+            !!s.done,
+
+          occurrences:
+            subtaskOccurrences
+              .filter(
+                (occurrence) =>
+                  occurrence.subtask_id ===
+                  s.id
+              )
+              .map(
+                (occurrence) => ({
+                  ...occurrence,
+                  done:
+                    !!occurrence.done,
+                })
+              ),
+        })),
 
       occurrences: occurrences
         .filter(o => o.task_id === task.id)
@@ -423,11 +447,37 @@ export async function updateTask(task) {
 
 export async function deleteTask(id) {
   try {
-    await db.runAsync("DELETE FROM task_occurrences WHERE task_id=?", [id]);
-    await db.runAsync("DELETE FROM subtasks WHERE task_id=?", [id]);
-    await db.runAsync("DELETE FROM tasks WHERE id=?", [id]);
+    await db.runAsync(
+      "DELETE FROM task_occurrences WHERE task_id=?",
+      [id]
+    );
+
+    await db.runAsync(
+      `
+      DELETE FROM subtask_occurrences
+      WHERE subtask_id IN (
+        SELECT id
+        FROM subtasks
+        WHERE task_id=?
+      )
+      `,
+      [id]
+    );
+
+    await db.runAsync(
+      "DELETE FROM subtasks WHERE task_id=?",
+      [id]
+    );
+
+    await db.runAsync(
+      "DELETE FROM tasks WHERE id=?",
+      [id]
+    );
   } catch (e) {
-    console.error("deleteTask error:", e);
+    console.error(
+      "deleteTask error:",
+      e
+    );
   }
 }
 
@@ -514,9 +564,23 @@ export async function addSubtask(taskId, text) {
 
 export async function deleteSubtask(id) {
   try {
-    await db.runAsync("DELETE FROM subtasks WHERE id=?", [id]);
+    await db.runAsync(
+      `
+      DELETE FROM subtask_occurrences
+      WHERE subtask_id=?
+      `,
+      [id]
+    );
+
+    await db.runAsync(
+      "DELETE FROM subtasks WHERE id=?",
+      [id]
+    );
   } catch (e) {
-    console.error("deleteSubtask error:", e);
+    console.error(
+      "deleteSubtask error:",
+      e
+    );
   }
 }
 
@@ -525,6 +589,75 @@ export async function updateSubtaskDone(id, done) {
     "UPDATE subtasks SET done=? WHERE id=?",
     [done ? 1 : 0, id]
   );
+}
+
+export async function getSubtaskOccurrence(
+  subtaskId,
+  date
+) {
+  try {
+    return await db.getFirstAsync(
+      `
+      SELECT *
+      FROM subtask_occurrences
+      WHERE subtask_id=? AND date=?
+      `,
+      [subtaskId, date]
+    );
+  } catch (e) {
+    console.error(
+      "getSubtaskOccurrence error:",
+      e
+    );
+
+    return null;
+  }
+}
+
+export async function setSubtaskOccurrenceDone(
+  subtaskId,
+  date,
+  done
+) {
+  try {
+    await db.runAsync(
+      `
+      INSERT OR IGNORE INTO subtask_occurrences (
+        id,
+        subtask_id,
+        date,
+        done
+      )
+      VALUES (?, ?, ?, ?)
+      `,
+      [
+        `${subtaskId}_${date}`,
+        subtaskId,
+        date,
+        done ? 1 : 0,
+      ]
+    );
+
+    await db.runAsync(
+      `
+      UPDATE subtask_occurrences
+      SET done=?
+      WHERE subtask_id=? AND date=?
+      `,
+      [
+        done ? 1 : 0,
+        subtaskId,
+        date,
+      ]
+    );
+  } catch (e) {
+    console.error(
+      "setSubtaskOccurrenceDone error:",
+      e
+    );
+
+    throw e;
+  }
 }
 
 export async function updateSubtaskText(

@@ -1,6 +1,6 @@
 {
   "name": "geska",
-  "version": "1.0.0",
+  "version": "0.8.2",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
