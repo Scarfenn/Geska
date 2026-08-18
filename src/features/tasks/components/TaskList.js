@@ -9,7 +9,6 @@ export default function TaskList({
   toggleTaskDone,
   toggleSubtaskDone,
   removeTask,
-  removeSubtask,
   themeName,
   mode,
   activeTaskId,
@@ -237,43 +236,59 @@ export default function TaskList({
               </View>             
 
                 {/* Subtareas */}
-                {item.subtasks && item.subtasks.length > 0 &&!collapsedTasks[item.id] && (
-                  <View style={{ marginLeft: 32, marginTop: 7, marginRight: 3 }}>
-                    {item.subtasks.map(sub => (
-                      <View
-                        key={sub.id}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          marginBottom: 3
-                        }}
-                      >
+                {item.subtasks &&
+                  item.subtasks.length > 0 &&
+                  !collapsedTasks[item.id] && (
+                    <View
+                      style={{
+                        marginLeft: 32,
+                        marginTop: 7,
+                        marginRight: 3,
+                      }}
+                    >
+                      {item.subtasks.map((sub) => (
                         <TouchableOpacity
-                          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 3 }}
-                          onPress={() => toggleSubtaskDone(item.id, sub.id)}
+                          key={sub.id}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginBottom: 6,
+                          }}
+                          onPress={() =>
+                            toggleSubtaskDone(
+                              item.id,
+                              sub.id
+                            )
+                          }
                         >
                           <Ionicons
-                            name={sub.done ? "checkmark-circle" : "ellipse-outline"}
+                            name={
+                              sub.done
+                                ? "checkmark-circle"
+                                : "ellipse-outline"
+                            }
                             size={20}
-                            color={sub.done ? styles.doneCheck.color : styles.pendingCheck.color}
+                            color={
+                              sub.done
+                                ? styles.doneCheck.color
+                                : styles.pendingCheck.color
+                            }
                           />
+
                           <Text
                             style={{
                               marginLeft: 6,
-                              color: sub.done ? styles.doneText.color : styles.pendingText.color,
+                              color: sub.done
+                                ? styles.doneText.color
+                                : styles.pendingText.color,
                             }}
                           >
                             {sub.text}
                           </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => removeSubtask(item.id, sub.id)}>
-                          <Ionicons name='trash-outline' size={18} color='red' />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                )}
+                      ))}
+                    </View>
+                  )}
 
                 {/* Menú de opciones */}
                 {activeTaskId === item.id && (
@@ -300,8 +315,8 @@ export default function TaskList({
                       }}
                       style={{ paddingVertical: 5, flexDirection: 'row' }}
                     >
-                      <Ionicons name='add-circle-outline' size={18} color={mode === 'light' ? '#000' : '#fff'} style={{ marginRight: 5 }} />
-                      <Text style={{ color: mode === 'light' ? '#000' : '#fff', fontWeight: 'bold' }}>Agregar subtarea</Text>
+                      <Ionicons name='list-outline' size={18} color={mode === 'light' ? '#000' : '#fff'} style={{ marginRight: 5 }} />
+                      <Text style={{ color: mode === 'light' ? '#000' : '#fff', fontWeight: 'bold' }}>Administrar subtareas</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity

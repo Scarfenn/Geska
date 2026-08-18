@@ -214,7 +214,7 @@ export default function TimeModal({
     const hadTime = selectedTime !== null;
     const hasTime = nextTime !== null;
 
-    if (hadtime !== hasTime) {
+    if (hadTime !== hasTime) {
       setReminder(null);
     }
 

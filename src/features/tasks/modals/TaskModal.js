@@ -8,9 +8,9 @@ import {
   TouchableWithoutFeedback,
   Animated,
   Easing,
-  StyleSheet,
 } from "react-native";
 import TaskCategoryModal from "./SubModals/TaskCategoryModal";
+import AddSubtaskModal from "./AddSubtaskModal";
 
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
@@ -26,6 +26,11 @@ export default function TaskModal({
   categories = [],
   selectedCategoryForTask,
   clearSelectedCategoryForTask,
+
+  selectedTime,
+  repeatMode,
+  reminder,
+  endDate,
 
   saveTask,
   closeModal,
@@ -47,6 +52,10 @@ export default function TaskModal({
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [subtaskModalVisible, setSubtaskModalVisible] = useState(false);
+  const [draftSubtasks, setDraftSubtasks] = useState([]);
+
+  const hasCustomTimeConfig = selectedTime !== null || repeatMode !== "none" || reminder !== null || endDate !== null;
 
   // ======================================================
   // MODAL PRINCIPAL
@@ -131,6 +140,16 @@ export default function TaskModal({
         taskToEdit.categoryId || null
       );
 
+      setDraftSubtasks(
+        (taskToEdit.subtasks || []).map(
+          (subtask) => ({
+            ...subtask,
+            id: String(subtask.id),
+            isNew: false,
+          })
+        )
+      );
+
       return;
     }
 
@@ -139,6 +158,8 @@ export default function TaskModal({
     setSelectedCategory(
       selectedCategoryForTask || null
     );
+
+    setDraftSubtasks([]);
   }, [
     visible,
     taskToEdit,
@@ -159,6 +180,7 @@ export default function TaskModal({
       text: finalText,
       categoryId:
         selectedCategory,
+      subtasks: draftSubtasks,
     });
 
     animateClose();
@@ -192,6 +214,24 @@ export default function TaskModal({
 
         closeModal={() =>
           setCategoryModalVisible(false)
+        }
+      />
+      {/* ============================================= */}
+      {/* MODAL SUBTAREAS                              */}
+      {/* ============================================= */}
+      <AddSubtaskModal
+        visible={subtaskModalVisible}
+        themeName={themeName}
+        mode={mode}
+
+        subtasks={draftSubtasks}
+
+        onSave={(subtasks) => {
+          setDraftSubtasks(subtasks);
+        }}
+
+        closeModal={() =>
+          setSubtaskModalVisible(false)
         }
       />
       {/* ============================================= */}
@@ -336,19 +376,20 @@ export default function TaskModal({
                 >
                   {/* Tiempo */}
                   <TouchableOpacity
-                    onPress={
-                      openTimeModal
-                    }
-                    style={
-                      styles.iconButton
-                    }
+                    onPress={openTimeModal}
+                    style={styles.iconButton}
                   >
                     <Ionicons
-                      name="calendar-outline"
+                      name={
+                        hasCustomTimeConfig
+                          ? "calendar"
+                          : "calendar-outline"
+                      }
                       size={24}
                       color={
-                        styles.iconColor
-                          .color
+                        hasCustomTimeConfig
+                          ? theme.primary
+                          : styles.iconColor.color
                       }
                     />
                   </TouchableOpacity>
@@ -379,21 +420,25 @@ export default function TaskModal({
                     />
                   </TouchableOpacity>
 
-                  {/* Subtareas - futuro */}
+                  {/* Subtareas */}
                   <TouchableOpacity
-                    disabled
-                    style={
-                      styles.iconButton
+                    onPress={() =>
+                      setSubtaskModalVisible(true)
                     }
+                    style={styles.iconButton}
                   >
                     <Ionicons
-                      name="list-outline"
+                      name={
+                        draftSubtasks.length > 0
+                          ? "list"
+                          : "list-outline"
+                      }
                       size={24}
                       color={
-                        styles.iconColor
-                          .color
+                        draftSubtasks.length > 0
+                          ? theme.primary
+                          : styles.iconColor.color
                       }
-                      opacity={0.4}
                     />
                   </TouchableOpacity>
 

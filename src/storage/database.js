@@ -499,7 +499,10 @@ export async function clearOccurrence(taskId, date) {
 
 export async function addSubtask(taskId, text) {
   try {
-    const id = Date.now().toString();
+    const id =
+    `${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
     await db.runAsync(
       "INSERT INTO subtasks (id, task_id, text, done) VALUES (?, ?, ?, ?)",
       [id, taskId, text, 0]
@@ -522,5 +525,31 @@ export async function updateSubtaskDone(id, done) {
     "UPDATE subtasks SET done=? WHERE id=?",
     [done ? 1 : 0, id]
   );
+}
+
+export async function updateSubtaskText(
+  id,
+  text
+) {
+  try {
+    await db.runAsync(
+      `
+      UPDATE subtasks
+      SET text=?
+      WHERE id=?
+      `,
+      [
+        text,
+        id,
+      ]
+    );
+  } catch (e) {
+    console.error(
+      "updateSubtaskText error:",
+      e
+    );
+
+    throw e;
+  }
 }
 

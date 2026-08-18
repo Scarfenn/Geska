@@ -22,6 +22,7 @@ import {
   getOccurrence,
   deleteTask,
   addSubtask,
+  updateSubtaskText,
   deleteSubtask,
   updateSubtaskDone
 } from "@/storage/database";
@@ -59,7 +60,6 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
   const [taskModalMode, setTaskModalMode] = useState(null);
   const [taskToEdit, setTaskToEdit] = useState(null);
   const [modalTaskId, setModalTaskId] = useState(null);
-  const [subtaskText, setSubtaskText] = useState("");
   const [activeTaskId, setActiveTaskId] = useState(null);
 
   const [categoryModalState, setCategoryModalState] = useState({
@@ -155,7 +155,7 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
   // ======================================================
 
   const addTaskHandler = async (taskData) => {
-    const { text, categoryId } = taskData;
+    const { text, categoryId, subtasks = [] } = taskData;
     if (!text?.trim()) return;
 
     const newTask =
@@ -201,6 +201,17 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
       );
 
     await saveTask(newTask);
+    
+    for (const subtask of subtasks) {
+      if (!subtask.text?.trim()) {
+        continue;
+      }
+
+      await addSubtask(
+        newTask.id,
+        subtask.text.trim()
+      );
+    };
 
     const notificationIds =
       await scheduleTaskReminders(
@@ -221,15 +232,16 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
 
     await loadTasks();
   };
-
+  
+  {/* Creación de tareas mediante otro módulo - Sin utilizar - Uso futuro */}
   const handleExternalTaskCreated = async () => {
-  await loadTasks();
-};
+    await loadTasks();
+  };
 
   const saveEditTaskHandler = async (taskData) => {
     if (!taskToEdit) return;
 
-    const { text, categoryId } = taskData;
+    const { text, categoryId, subtasks = [] } = taskData;
     if (!text?.trim()) return;
 
     const updatedTask =
@@ -289,6 +301,11 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
     );
 
     await updateTask(updatedTask);
+    await saveSubtasksHandler(
+      updatedTask.id,
+      subtasks,
+      false
+    );
 
     const notificationIds =
       await scheduleTaskReminders(
@@ -333,14 +350,6 @@ const toggleTaskDone = async (
       selectedDay
     );
 
-  /*
-   * Las repeticiones mantienen sus triggers
-   * recurrentes. El estado done pertenece a
-   * la ocurrencia, no a la tarea completa.
-   *
-   * ReminderModal no ofrece persistent para
-   * tareas repetitivas por ahora.
-   */
   if (
     task.repeat_mode !== "none"
   ) {
@@ -385,11 +394,6 @@ const toggleTaskDone = async (
     return;
   }
 
-  /*
-   * Si una tarea completada vuelve a pendiente,
-   * reprogramamos solo los avisos que todavía
-   * tengan sentido temporalmente.
-   */
   const reopenedTask = {
     ...task,
     done: false,
@@ -488,15 +492,100 @@ const tasksForRender = filteredTasks
   // SUBTAREAS
   // ======================================================
 
-  const addSubtaskToDB = async (taskId, text) => {
-    if (!text?.trim()) return;
-    await addSubtask(taskId, text);
-    await loadTasks();
-  };
+  const saveSubtasksHandler = async (
+    taskId,
+    draftSubtasks,
+    reload = true
+  ) => {
+    const task =
+      tasks.find(
+        (task) =>
+          task.id === taskId
+      );
 
-  const removeSubtaskHandler = async (taskId, subtaskId) => {
-    await deleteSubtask(subtaskId);
-    await loadTasks();
+    if (!task) return;
+
+    const originalSubtasks =
+      task.subtasks || [];
+
+    const originalMap =
+      new Map(
+        originalSubtasks.map(
+          (subtask) => [
+            String(subtask.id),
+            subtask,
+          ]
+        )
+      );
+
+    const existingDraftIds =
+      new Set(
+        draftSubtasks
+          .filter(
+            (subtask) =>
+              !subtask.isNew
+          )
+          .map(
+            (subtask) =>
+              String(subtask.id)
+          )
+      );
+
+    // ELIMINADAS
+    for (
+      const original
+      of originalSubtasks
+    ) {
+      if (
+        !existingDraftIds.has(
+          String(original.id)
+        )
+      ) {
+        await deleteSubtask(
+          original.id
+        );
+      }
+    }
+
+    // NUEVAS / EDITADAS
+    for (
+      const subtask
+      of draftSubtasks
+    ) {
+      const text =
+        subtask.text.trim();
+
+      if (!text) continue;
+
+      const original =
+        originalMap.get(
+          String(subtask.id)
+        );
+
+      if (
+        subtask.isNew ||
+        !original
+      ) {
+        await addSubtask(
+          taskId,
+          text
+        );
+
+        continue;
+      }
+
+      if (
+        original.text !== text
+      ) {
+        await updateSubtaskText(
+          subtask.id,
+          text
+        );
+      }
+    }
+    if (reload) {
+      await loadTasks();
+    }
   };
 
 const toggleSubtaskDone = async (taskId, subtaskId) => {
@@ -778,7 +867,6 @@ const toggleSubtaskDone = async (taskId, subtaskId) => {
           }}
           toggleSubtaskDone={toggleSubtaskDone}
           removeTask={removeTask}
-          removeSubtask={removeSubtaskHandler}
           themeName={themeName}
           mode={mode}
           openOptions={(id) => setActiveTaskId(id)}
@@ -799,6 +887,10 @@ const toggleSubtaskDone = async (taskId, subtaskId) => {
           visible={taskModalVisible}
           themeName={themeName}
           mode={mode}
+          selectedTime={selectedTime}
+          repeatMode={repeatMode}
+          reminder={reminder}
+          endDate={endDate}
           taskToEdit={taskModalMode === "edit" ? taskToEdit : null}
           categories={categories.filter((c) => c.id !== "all")}
           selectedCategoryForTask={selectedCategoryForTask}
@@ -842,9 +934,18 @@ const toggleSubtaskDone = async (taskId, subtaskId) => {
           themeName={themeName}
           mode={mode}
           modalTaskId={modalTaskId}
-          subtaskText={subtaskText}
-          setSubtaskText={setSubtaskText}
-          addSubtask={addSubtaskToDB}
+          subtasks={tasks.find(
+              (task) =>
+                task.id ===
+                modalTaskId
+            )?.subtasks || []
+          }
+          onSave={(draftSubtasks) =>
+            saveSubtasksHandler(
+              modalTaskId,
+              draftSubtasks
+            )
+          }
           closeModal={closeModal}
         />
 
