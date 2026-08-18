@@ -14,6 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import RepeatModal from "./SubModals/RepeatModal";
 import CustomRepeatModal from "./SubModals/CustomRepeatModal";
 import HourModal from "./SubModals/HourModal";
+import ReminderModal from "./SubModals/ReminderModal";
+import formatReminder from "@/features/tasks/services/reminderModel";
 
 export default function TimeModal({
   visible,
@@ -48,6 +50,7 @@ export default function TimeModal({
   const [hourVisible, setHourVisible] = useState(false);
   const [repeatVisible, setRepeatVisible] = useState(false);
   const [customRepeatVisible, setCustomRepeatVisible] = useState(false);
+  const [reminderVisible, setReminderVisible] = useState(false);
 
 
   // -------------------------------------------------
@@ -121,10 +124,11 @@ export default function TimeModal({
     }
 
     setSelectedDate(newDate);
+    setReminder(null);
   };
 
   // -------------------------------------------------
-  // Formato de Fecha
+  // Formatos
   // -------------------------------------------------
   function formatHumanDate(date) {
     if (!date) return "Nunca";
@@ -158,7 +162,65 @@ export default function TimeModal({
   return `${h}:${m}`;
   }
 
-  
+  function formatReminder(reminder) {
+    if (!reminder) {
+      return "Sin recordatorio";
+    }
+
+    if (reminder.type === "persistent") {
+      return "Durante el día";
+    }
+
+    if (reminder.type === "after") {
+      if (reminder.value === 1) {
+        return "En 1 hora";
+      }
+
+      return `En ${reminder.value} horas`;
+    }
+
+    if (reminder.type === "relative") {
+      if (reminder.value === 0) {
+        return "A la hora exacta";
+      }
+
+      if (reminder.value === 60) {
+        return "1 hora antes";
+      }
+
+      return `${reminder.value} min antes`;
+    }
+
+    if (reminder.type === "all_day") {
+      if (reminder.value === 0) {
+        return "El mismo día";
+      }
+
+      if (reminder.value === 1) {
+        return "1 día antes";
+      }
+
+      if (reminder.value === 7) {
+        return "1 semana antes";
+      }
+
+      return `${reminder.value} días antes`;
+    }
+
+    return "Sin recordatorio";
+  }
+
+  const handleSelectedTimeChange = (nextTime) => {
+    const hadTime = selectedTime !== null;
+    const hasTime = nextTime !== null;
+
+    if (hadtime !== hasTime) {
+      setReminder(null);
+    }
+
+    setSelectedTime(nextTime);
+  }
+    
   // -------------------------------------------------
   // Repetición
   // -------------------------------------------------
@@ -213,8 +275,21 @@ export default function TimeModal({
         themeName={themeName}
         mode={mode}
         selectedTime={selectedTime}
-        setSelectedTime={setSelectedTime}
+        setSelectedTime={handleSelectedTimeChange}
         closeModal={() => setHourVisible(false)}
+      />
+
+      {/* Modal de Recordatorio */}
+      <ReminderModal 
+        visible={reminderVisible}
+        themeName={themeName}
+        mode={mode}
+        selectedDate={selectedDate}
+        selectedTime={selectedTime}
+        repeatMode={repeatMode}
+        reminder={reminder}
+        setReminder={setReminder}
+        closeModal={() => setReminderVisible(false)}
       />
 
       {/* ============================================ */}
@@ -353,21 +428,51 @@ export default function TimeModal({
                 </TouchableOpacity>
 
                 {/* RECORDATORIO */}
-                <View style={styles.optionRow}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Ionicons name="notifications-outline" size={20} color={styles.text.color} />
-                    <Text style={[styles.optionLabel, { marginLeft: 8 }]}>
+                <TouchableOpacity
+                  style={styles.optionRow}
+                  activeOpacity={0.7}
+                  onPress={() => setReminderVisible(true)}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="notifications-outline"
+                      size={20}
+                      color={styles.text.color}
+                    />
+
+                    <Text
+                      style={[
+                        styles.optionLabel,
+                        { marginLeft: 8 },
+                      ]}
+                    >
                       Recordatorio
                     </Text>
                   </View>
-                    <Text style={{ ...styles.optionValue, fontStyle: "italic", opacity: 0.5}}>
-                      {reminder === 0
-                        ? "A la hora exacta"
-                        : reminder
-                        ? `${reminder} min antes`
-                        : "Sin recordatorio"}
+
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={styles.optionValue}>
+                      {formatReminder(reminder, selectedTime)}
                     </Text>
-                </View>
+
+                    <Ionicons
+                      name="chevron-forward"
+                      size={17}
+                      color={theme.inactiveCategoryText}
+                      style={{ marginLeft: 5 }}
+                    />
+                  </View>
+                </TouchableOpacity>
 
                 {/* BOTÓN APLICAR */}
                 <TouchableOpacity

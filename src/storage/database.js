@@ -13,6 +13,86 @@ async function safeExec(sql) {
   }
 }
 
+function parseNotificationIds(
+  value,
+  legacyId = null
+) {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+
+      if (Array.isArray(parsed)) {
+        return parsed.filter(Boolean);
+      }
+    } catch {
+      // notification_ids legacy/no válido:
+      // seguimos con notification_id.
+    }
+  }
+
+  return legacyId
+    ? [legacyId]
+    : [];
+}
+
+function serializeNotificationIds(ids) {
+  const normalized =
+    Array.isArray(ids)
+      ? ids.filter(Boolean)
+      : ids
+      ? [ids]
+      : [];
+
+  return JSON.stringify(normalized);
+}
+
+function getLegacyReminderMinutes(task) {
+  if (
+    task.reminder_type === "relative" &&
+    task.reminder_unit === "minutes"
+  ) {
+    return task.reminder_value ?? null;
+  }
+
+  return task.reminder_minutes ?? null;
+}
+
+async function ensureTaskColumns() {
+  const columns =
+    await db.getAllAsync(
+      "PRAGMA table_info(tasks)"
+    );
+
+  const existing =
+    new Set(
+      columns.map(
+        (column) => column.name
+      )
+    );
+
+  const required = [
+    ["reminder_type", "TEXT"],
+    ["reminder_value", "INT"],
+    ["reminder_unit", "TEXT"],
+    ["reminder_at", "INT"],
+    ["notification_ids", "TEXT"],
+  ];
+
+  for (const [name, type] of required) {
+    if (existing.has(name)) {
+      continue;
+    }
+
+    await db.execAsync(
+      `ALTER TABLE tasks ADD COLUMN ${name} ${type}`
+    );
+  }
+}
+
 /* ------------------------------------------------------
    INICIALIZAR BASE DE DATOS
 ------------------------------------------------------ */
@@ -35,9 +115,16 @@ export async function initDB() {
         repeat_mode TEXT,
         repeat_days TEXT,
         repeat_end TEXT,
+
         reminder_minutes INT,
+        reminder_type TEXT,
+        reminder_value INT,
+        reminder_unit TEXT,
+        reminder_at INT,
 
         notification_id TEXT,
+        notification_ids TEXT,
+
         category_id TEXT,
         FOREIGN KEY (category_id) REFERENCES categories(id)
       );
@@ -58,6 +145,11 @@ export async function initDB() {
         FOREIGN KEY (task_id) REFERENCES tasks(id)
       );
     `);
+
+    // CREATE TABLE IF NOT EXISTS no agrega columnas
+    // a instalaciones existentes. Esta migración
+    // mantiene las BD de Geska 0.8.x.
+    await ensureTaskColumns();
 
     console.log("Base de datos lista");
   } catch (e) {
@@ -140,8 +232,52 @@ export async function getAllTasks() {
       repeat_mode: task.repeat_mode || "none",
       repeat_days: task.repeat_days || null,
       repeat_end: task.repeat_end || null,
-      reminder_minutes: task.reminder_minutes ?? null,
-      notification_id: task.notification_id || null,
+
+      // Modelo nuevo de recordatorios.
+      // Si la fila viene de una versión antigua,
+      // reminder_minutes se interpreta como relative/minutes.
+      reminder_type:
+        task.reminder_type ||
+        (
+          task.time &&
+          task.reminder_minutes != null
+            ? "relative"
+            : null
+        ),
+
+      reminder_value:
+        task.reminder_value ??
+        (
+          task.time &&
+          task.reminder_minutes != null
+            ? task.reminder_minutes
+            : null
+        ),
+
+      reminder_unit:
+        task.reminder_unit ||
+        (
+          task.time &&
+          task.reminder_minutes != null
+            ? "minutes"
+            : null
+        ),
+
+      reminder_at:
+        task.reminder_at ?? null,
+
+      // Se mantiene durante la transición.
+      reminder_minutes:
+        task.reminder_minutes ?? null,
+
+      notification_ids:
+        parseNotificationIds(
+          task.notification_ids,
+          task.notification_id
+        ),
+
+      notification_id:
+        task.notification_id || null,
 
       subtasks: subtasks
         .filter((s) => s.task_id === task.id)
@@ -159,12 +295,33 @@ export async function getAllTasks() {
 
 export async function saveTask(task) {
   try {
+    const notificationIds =
+      Array.isArray(task.notification_ids)
+        ? task.notification_ids
+        : [];
+
+    const legacyNotificationId =
+      task.notification_id ||
+      notificationIds[0] ||
+      null;
+
     await db.runAsync(
       `INSERT INTO tasks (
         id, title, description, done, date, time,
         repeat_mode, repeat_days, repeat_end,
-        reminder_minutes, category_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+
+        reminder_minutes,
+        reminder_type, reminder_value,
+        reminder_unit, reminder_at,
+
+        notification_id, notification_ids,
+        category_id
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?
+      )`,
       [
         task.id,
         task.title,
@@ -172,10 +329,22 @@ export async function saveTask(task) {
         task.done ? 1 : 0,
         task.date || null,
         task.time || null,
+
         task.repeat_mode || null,
         task.repeat_days || null,
         task.repeat_end || null,
-        task.reminder_minutes ?? null,
+
+        getLegacyReminderMinutes(task),
+        task.reminder_type || null,
+        task.reminder_value ?? null,
+        task.reminder_unit || null,
+        task.reminder_at ?? null,
+
+        legacyNotificationId,
+        serializeNotificationIds(
+          notificationIds
+        ),
+
         task.categoryId || null,
       ]
     );
@@ -187,11 +356,38 @@ export async function saveTask(task) {
 
 export async function updateTask(task) {
   try {
+    const notificationIds =
+      Array.isArray(task.notification_ids)
+        ? task.notification_ids
+        : [];
+
+    const legacyNotificationId =
+      task.notification_id ||
+      notificationIds[0] ||
+      null;
+
     await db.runAsync(
       `UPDATE tasks SET
-        title=?, description=?, done=?, date=?, time=?,
-        repeat_mode=?, repeat_days=?, repeat_end=?,
-        reminder_minutes=?, notification_id=?,category_id=?
+        title=?,
+        description=?,
+        done=?,
+        date=?,
+        time=?,
+
+        repeat_mode=?,
+        repeat_days=?,
+        repeat_end=?,
+
+        reminder_minutes=?,
+        reminder_type=?,
+        reminder_value=?,
+        reminder_unit=?,
+        reminder_at=?,
+
+        notification_id=?,
+        notification_ids=?,
+
+        category_id=?
       WHERE id=?`,
       [
         task.title,
@@ -199,11 +395,22 @@ export async function updateTask(task) {
         task.done ? 1 : 0,
         task.date || null,
         task.time || null,
+
         task.repeat_mode || null,
         task.repeat_days || null,
         task.repeat_end || null,
-        task.reminder_minutes ?? null,
-        task.notification_id ?? null,
+
+        getLegacyReminderMinutes(task),
+        task.reminder_type || null,
+        task.reminder_value ?? null,
+        task.reminder_unit || null,
+        task.reminder_at ?? null,
+
+        legacyNotificationId,
+        serializeNotificationIds(
+          notificationIds
+        ),
+
         task.categoryId || null,
         task.id,
       ]

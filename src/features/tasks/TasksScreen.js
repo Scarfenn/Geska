@@ -26,7 +26,16 @@ import {
   updateSubtaskDone
 } from "@/storage/database";
 
-import { scheduleTaskReminder, cancelTaskReminder, syncTaskReminders } from "@/features/tasks/services/notifications";
+import {
+  scheduleTaskReminders,
+  cancelTaskReminders,
+  syncTaskReminders,
+} from "@/features/tasks/services/notifications";
+
+import {
+  applyReminderToTask,
+  reminderFromTask,
+} from "@/features/tasks/services/reminderModel";
 
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
@@ -67,7 +76,7 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
   const [selectedTime, setSelectedTime] = useState(null);
   const [repeatMode, setRepeatMode] = useState("none");
   const [repeatDays, setRepeatDays] = useState([]);
-  const [reminder, setReminder] = useState(0);
+  const [reminder, setReminder] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
   const styles = createStyles(themeName, mode);
@@ -149,35 +158,65 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
     const { text, categoryId } = taskData;
     if (!text?.trim()) return;
 
-    const newTask = {
-      id: Date.now().toString(),
-      title: text.trim(),
-      description: null,
-      done: false,
-      categoryId: categoryId || "all",
+    const newTask =
+      applyReminderToTask(
+        {
+          id: Date.now().toString(),
+          title: text.trim(),
+          description: null,
+          done: false,
+          categoryId:
+            categoryId || "all",
 
-      // --- TIEMPO ---
-      date: formatDateLocal(selectedDate),
-      time: formatTime(selectedTime),
-      repeat_mode: repeatMode,
-      repeat_days: Array.isArray(repeatDays) ? repeatDays.join(",") : null,
-      reminder_minutes: reminder ?? null,
-      repeat_end: formatDateLocal(endDate),
+          // --- TIEMPO ---
+          date:
+            formatDateLocal(
+              selectedDate
+            ),
 
-      subtasks: [],
-    };
+          time:
+            formatTime(
+              selectedTime
+            ),
+
+          repeat_mode:
+            repeatMode,
+
+          repeat_days:
+            Array.isArray(repeatDays)
+              ? repeatDays.join(",")
+              : null,
+
+          repeat_end:
+            formatDateLocal(
+              endDate
+            ),
+
+          notification_ids: [],
+          notification_id: null,
+
+          subtasks: [],
+        },
+        reminder
+      );
 
     await saveTask(newTask);
 
-    if (newTask.time && newTask.reminder_minutes !== null) {
-      const notificationId = await scheduleTaskReminder(newTask);
+    const notificationIds =
+      await scheduleTaskReminders(
+        newTask
+      );
 
-      if (notificationId) {
-        await updateTask({
-          ...newTask,
-          notification_id: notificationId,
-        });
-      }
+    if (notificationIds.length) {
+      await updateTask({
+        ...newTask,
+
+        notification_ids:
+          notificationIds,
+
+        notification_id:
+          notificationIds[0],
+      });
     }
 
     await loadTasks();
@@ -193,69 +232,189 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
     const { text, categoryId } = taskData;
     if (!text?.trim()) return;
 
-    const updatedTask = {
-      id: taskToEdit.id,
-      title: text.trim(),
-      description: taskToEdit.description || null,
-      done: taskToEdit.done ? 1 : 0,
-      categoryId: categoryId || taskToEdit.categoryId,
+    const updatedTask =
+      applyReminderToTask(
+        {
+          ...taskToEdit,
 
-      // --- TIEMPO ---
-      date: formatDateLocal(selectedDate),
-      time: formatTime(selectedTime),
-      repeat_mode: repeatMode,
-      repeat_days: Array.isArray(repeatDays) ? repeatDays.join(",") : null,
-      reminder_minutes: reminder ?? null,
-      repeat_end: formatDateLocal(endDate),
-    };
+          id: taskToEdit.id,
+          title: text.trim(),
 
-    if (taskToEdit.notification_id) {
-      await cancelTaskReminder(taskToEdit.notification_id);
-    }
+          description:
+            taskToEdit.description ||
+            null,
+
+          done:
+            taskToEdit.done
+              ? 1
+              : 0,
+
+          categoryId:
+            categoryId ||
+            taskToEdit.categoryId,
+
+          // --- TIEMPO ---
+          date:
+            formatDateLocal(
+              selectedDate
+            ),
+
+          time:
+            formatTime(
+              selectedTime
+            ),
+
+          repeat_mode:
+            repeatMode,
+
+          repeat_days:
+            Array.isArray(repeatDays)
+              ? repeatDays.join(",")
+              : null,
+
+          repeat_end:
+            formatDateLocal(
+              endDate
+            ),
+
+          notification_ids: [],
+          notification_id: null,
+        },
+        reminder
+      );
+
+    await cancelTaskReminders(
+      taskToEdit.notification_ids ||
+        taskToEdit.notification_id
+    );
 
     await updateTask(updatedTask);
 
-    if (updatedTask.time && updatedTask.reminder_minutes !== null) {
-      const notificationId = await scheduleTaskReminder(updatedTask);
+    const notificationIds =
+      await scheduleTaskReminders(
+        updatedTask
+      );
 
-      if (notificationId) {
-        await updateTask({
-          ...updatedTask,
-          notification_id: notificationId,
-        });
-      }
-    }
-    
+    await updateTask({
+      ...updatedTask,
+
+      notification_ids:
+        notificationIds,
+
+      notification_id:
+        notificationIds[0] ??
+        null,
+    });
+
     await loadTasks();
   };
 
 const removeTask = async (id) => {
-  const taskToRemove = tasks.find(t => t.id === id);
+  const taskToRemove =
+    tasks.find(
+      (task) => task.id === id
+    );
 
-  if (taskToRemove?.notification_id) {
-    await cancelTaskReminder(taskToRemove.notification_id);
-  }
+  await cancelTaskReminders(
+    taskToRemove?.notification_ids ||
+      taskToRemove?.notification_id
+  );
 
   await deleteTask(id);
   await loadTasks();
 };
 
-const toggleTaskDone = async (task, selectedDay) => {
-  const dateStr = formatDateLocal(selectedDay);
+const toggleTaskDone = async (
+  task,
+  selectedDay
+) => {
+  const dateStr =
+    formatDateLocal(
+      selectedDay
+    );
 
-  if (task.repeat_mode !== "none") {
-    const occ = await getOccurrence(task.id, dateStr);
+  /*
+   * Las repeticiones mantienen sus triggers
+   * recurrentes. El estado done pertenece a
+   * la ocurrencia, no a la tarea completa.
+   *
+   * ReminderModal no ofrece persistent para
+   * tareas repetitivas por ahora.
+   */
+  if (
+    task.repeat_mode !== "none"
+  ) {
+    const occ =
+      await getOccurrence(
+        task.id,
+        dateStr
+      );
 
-    const newDone = occ ? !occ.done : true;
+    const newDone =
+      occ
+        ? !occ.done
+        : true;
 
-    await setOccurrenceDone(task.id, dateStr, newDone);
+    await setOccurrenceDone(
+      task.id,
+      dateStr,
+      newDone
+    );
+
     await loadTasks();
     return;
   }
 
-  await updateTask({
+  const newDone =
+    !task.done;
+
+  if (newDone) {
+    await cancelTaskReminders(
+      task.notification_ids ||
+        task.notification_id
+    );
+
+    await updateTask({
+      ...task,
+      done: true,
+      notification_ids: [],
+      notification_id: null,
+    });
+
+    await loadTasks();
+    return;
+  }
+
+  /*
+   * Si una tarea completada vuelve a pendiente,
+   * reprogramamos solo los avisos que todavía
+   * tengan sentido temporalmente.
+   */
+  const reopenedTask = {
     ...task,
-    done: !task.done,
+    done: false,
+    notification_ids: [],
+    notification_id: null,
+  };
+
+  await updateTask(
+    reopenedTask
+  );
+
+  const notificationIds =
+    await scheduleTaskReminders(
+      reopenedTask
+    );
+
+  await updateTask({
+    ...reopenedTask,
+
+    notification_ids:
+      notificationIds,
+
+    notification_id:
+      notificationIds[0] ??
+      null,
   });
 
   await loadTasks();
@@ -408,7 +567,9 @@ const toggleSubtaskDone = async (taskId, subtaskId) => {
     setRepeatDays(
       task.repeat_days ? task.repeat_days.split(",") : []
     );
-    setReminder(task.reminder_minutes ?? null);
+    setReminder(
+      reminderFromTask(task)
+    );
     setEndDate(task.repeat_end ? new Date(task.repeat_end) : null);
 
     setTaskModalVisible(true);

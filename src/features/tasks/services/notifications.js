@@ -1,11 +1,40 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
+import {
+  ALL_DAY_REMINDER_HOUR,
+  PERSISTENT_REMINDER_HOURS,
+  MINUTE_MS,
+  HOUR_MS,
+  startOfDay,
+  reminderFromTask,
+} from "@/features/tasks/services/reminderModel";
+
 const CHANNEL_ID = "task-reminders";
 const NOTIFICATION_TYPE = "task-reminder";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const WEEK_MS = 7 * DAY_MS;
+const MAX_OCCURRENCE_SEARCH_DAYS =
+  366 * 10;
+
+const WEEKDAY_LETTERS = [
+  "D",
+  "L",
+  "M",
+  "X",
+  "J",
+  "V",
+  "S",
+];
+
+const LETTER_TO_WEEKDAY = {
+  D: 0,
+  L: 1,
+  M: 2,
+  X: 3,
+  J: 4,
+  V: 5,
+  S: 6,
+};
 
 /* ======================================================
    HANDLER
@@ -21,48 +50,88 @@ Notifications.setNotificationHandler({
 });
 
 /* ======================================================
-   PERMISOS / INICIALIZACIÓN
+   PERMISOS / CANAL
 ====================================================== */
 
-function hasNotificationPermission(settings) {
+function hasNotificationPermission(
+  settings
+) {
   if (Platform.OS !== "ios") {
     return (
       settings.granted ||
-      settings.status === Notifications.PermissionStatus.GRANTED
+      settings.status ===
+        Notifications.PermissionStatus
+          .GRANTED
     );
   }
 
-  const iosStatus = settings.ios?.status;
+  const iosStatus =
+    settings.ios?.status;
 
   return (
     settings.granted ||
-    iosStatus === Notifications.IosAuthorizationStatus.AUTHORIZED ||
-    iosStatus === Notifications.IosAuthorizationStatus.PROVISIONAL ||
-    iosStatus === Notifications.IosAuthorizationStatus.EPHEMERAL
+    iosStatus ===
+      Notifications
+        .IosAuthorizationStatus
+        .AUTHORIZED ||
+    iosStatus ===
+      Notifications
+        .IosAuthorizationStatus
+        .PROVISIONAL ||
+    iosStatus ===
+      Notifications
+        .IosAuthorizationStatus
+        .EPHEMERAL
   );
 }
 
 export async function initNotifications() {
   try {
     /*
-     * Android 13 necesita al menos un canal creado
-     * antes de mostrar correctamente el permiso.
+     * Android 13 requiere un canal antes de que
+     * el sistema pueda mostrar correctamente
+     * el prompt de notificaciones.
      */
     if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-        name: "Recordatorios",
-        description: "Recordatorios de tareas de Geska",
-        importance: Notifications.AndroidImportance.HIGH,
-        sound: "default",
-        vibrationPattern: [0, 250, 250, 250],
-      });
+      await Notifications
+        .setNotificationChannelAsync(
+          CHANNEL_ID,
+          {
+            name: "Recordatorios",
+
+            description:
+              "Recordatorios de tareas de Geska",
+
+            importance:
+              Notifications
+                .AndroidImportance
+                .HIGH,
+
+            sound: "default",
+
+            vibrationPattern: [
+              0,
+              250,
+              250,
+              250,
+            ],
+          }
+        );
     }
 
     let permissions =
-      await Notifications.getPermissionsAsync();
+      await Notifications
+        .getPermissionsAsync();
 
-    if (!hasNotificationPermission(permissions)) {
-      if (permissions.canAskAgain === false) {
+    if (
+      !hasNotificationPermission(
+        permissions
+      )
+    ) {
+      if (
+        permissions.canAskAgain ===
+        false
+      ) {
         console.warn(
           "Las notificaciones están bloqueadas desde la configuración del sistema."
         );
@@ -71,10 +140,15 @@ export async function initNotifications() {
       }
 
       permissions =
-        await Notifications.requestPermissionsAsync();
+        await Notifications
+          .requestPermissionsAsync();
     }
 
-    if (!hasNotificationPermission(permissions)) {
+    if (
+      !hasNotificationPermission(
+        permissions
+      )
+    ) {
       console.warn(
         "Permiso de notificaciones denegado."
       );
@@ -94,56 +168,46 @@ export async function initNotifications() {
 }
 
 /* ======================================================
-   FECHAS
+   FECHAS / REPETICIÓN
 ====================================================== */
 
-function parseTaskDateTime(dateStr, timeStr) {
-  if (!dateStr || !timeStr) return null;
+function parseTaskDate(dateStr) {
+  if (!dateStr) return null;
 
-  const dateParts =
-    dateStr.split("-").map(Number);
-
-  const timeParts =
-    timeStr.split(":").map(Number);
-
-  if (
-    dateParts.length !== 3 ||
-    timeParts.length !== 2
-  ) {
-    return null;
-  }
-
-  const [year, month, day] = dateParts;
-  const [hour, minute] = timeParts;
+  const parts =
+    dateStr
+      .split("-")
+      .map(Number);
 
   if (
-    [year, month, day, hour, minute].some(
-      (value) => !Number.isFinite(value)
+    parts.length !== 3 ||
+    parts.some(
+      (value) =>
+        !Number.isFinite(value)
     )
   ) {
     return null;
   }
 
-  const date = new Date(
-    year,
-    month - 1,
-    day,
-    hour,
-    minute,
-    0,
-    0
-  );
+  const [year, month, day] =
+    parts;
 
-  /*
-   * Evita que JS convierta silenciosamente
-   * fechas inválidas como 31/02.
-   */
+  const date =
+    new Date(
+      year,
+      month - 1,
+      day,
+      0,
+      0,
+      0,
+      0
+    );
+
   if (
     date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day ||
-    date.getHours() !== hour ||
-    date.getMinutes() !== minute
+    date.getMonth() !==
+      month - 1 ||
+    date.getDate() !== day
   ) {
     return null;
   }
@@ -151,322 +215,148 @@ function parseTaskDateTime(dateStr, timeStr) {
   return date;
 }
 
-function parseRepeatEnd(dateStr) {
-  if (!dateStr) return null;
+function parseTaskTime(timeStr) {
+  if (!timeStr) return null;
 
   const parts =
-    dateStr.split("-").map(Number);
+    timeStr
+      .split(":")
+      .map(Number);
 
   if (
-    parts.length !== 3 ||
+    parts.length !== 2 ||
     parts.some(
-      (value) => !Number.isFinite(value)
+      (value) =>
+        !Number.isFinite(value)
     )
   ) {
     return null;
   }
 
-  const [year, month, day] = parts;
+  const [hour, minute] =
+    parts;
 
-  return new Date(
-    year,
-    month - 1,
-    day,
+  if (
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null;
+  }
+
+  return {
+    hour,
+    minute,
+  };
+}
+
+function parseRepeatEnd(dateStr) {
+  const date =
+    parseTaskDate(dateStr);
+
+  if (!date) return null;
+
+  date.setHours(
     23,
     59,
     59,
     999
   );
+
+  return date;
 }
 
-function getReminderMinutes(task) {
-  if (task.reminder_minutes == null) {
-    return null;
-  }
-
-  const minutes =
-    Number(task.reminder_minutes);
+function combineOccurrenceAndTime(
+  occurrenceDate,
+  taskTime
+) {
+  const parsedTime =
+    typeof taskTime === "string"
+      ? parseTaskTime(taskTime)
+      : taskTime;
 
   if (
-    !Number.isFinite(minutes) ||
-    minutes < 0
+    !occurrenceDate ||
+    !parsedTime
   ) {
     return null;
   }
 
-  return minutes;
-}
-
-function getReminderForOccurrence(
-  occurrence,
-  reminderMinutes
-) {
-  const reminder =
-    new Date(occurrence);
-
-  reminder.setMinutes(
-    reminder.getMinutes() -
-      reminderMinutes
-  );
-
-  return reminder;
-}
-
-function occursBeforeRepeatEnd(
-  occurrence,
-  repeatEnd
-) {
-  return (
-    !repeatEnd ||
-    occurrence <= repeatEnd
-  );
-}
-
-/* ======================================================
-   PRÓXIMA OCURRENCIA
-====================================================== */
-
-function getNextDailyReminder(
-  anchor,
-  reminderMinutes,
-  from,
-  repeatEnd
-) {
-  const occurrence =
-    new Date(anchor);
-
-  let reminder =
-    getReminderForOccurrence(
-      occurrence,
-      reminderMinutes
+  const date =
+    new Date(
+      occurrenceDate
     );
 
-  if (reminder <= from) {
-    const jump = Math.max(
-      0,
-      Math.floor(
-        (from - reminder) / DAY_MS
-      )
-    );
-
-    occurrence.setDate(
-      occurrence.getDate() + jump
-    );
-
-    reminder =
-      getReminderForOccurrence(
-        occurrence,
-        reminderMinutes
-      );
-
-    while (reminder <= from) {
-      occurrence.setDate(
-        occurrence.getDate() + 1
-      );
-
-      reminder =
-        getReminderForOccurrence(
-          occurrence,
-          reminderMinutes
-        );
-    }
-  }
-
-  if (
-    !occursBeforeRepeatEnd(
-      occurrence,
-      repeatEnd
-    )
-  ) {
-    return null;
-  }
-
-  return reminder;
-}
-
-function getNextWeeklyReminder(
-  anchor,
-  reminderMinutes,
-  from,
-  repeatEnd
-) {
-  const occurrence =
-    new Date(anchor);
-
-  let reminder =
-    getReminderForOccurrence(
-      occurrence,
-      reminderMinutes
-    );
-
-  if (reminder <= from) {
-    const jump = Math.max(
-      0,
-      Math.floor(
-        (from - reminder) / WEEK_MS
-      )
-    );
-
-    occurrence.setDate(
-      occurrence.getDate() +
-        jump * 7
-    );
-
-    reminder =
-      getReminderForOccurrence(
-        occurrence,
-        reminderMinutes
-      );
-
-    while (reminder <= from) {
-      occurrence.setDate(
-        occurrence.getDate() + 7
-      );
-
-      reminder =
-        getReminderForOccurrence(
-          occurrence,
-          reminderMinutes
-        );
-    }
-  }
-
-  if (
-    !occursBeforeRepeatEnd(
-      occurrence,
-      repeatEnd
-    )
-  ) {
-    return null;
-  }
-
-  return reminder;
-}
-
-function createMonthlyOccurrence(
-  anchor,
-  monthOffset
-) {
-  /*
-   * Primero nos posicionamos el día 1
-   * para evitar overflow accidental.
-   */
-  const target = new Date(
-    anchor.getFullYear(),
-    anchor.getMonth() + monthOffset,
-    1,
-    anchor.getHours(),
-    anchor.getMinutes(),
+  date.setHours(
+    parsedTime.hour,
+    parsedTime.minute,
     0,
     0
   );
 
-  const targetMonth =
-    target.getMonth();
-
-  const targetYear =
-    target.getFullYear();
-
-  target.setDate(
-    anchor.getDate()
-  );
-
-  /*
-   * Ej:
-   * una tarea del día 31 simplemente no
-   * existe en febrero.
-   */
-  if (
-    target.getMonth() !== targetMonth ||
-    target.getFullYear() !== targetYear
-  ) {
-    return null;
-  }
-
-  return target;
+  return date;
 }
 
-function getNextMonthlyReminder(
-  anchor,
-  reminderMinutes,
-  from,
-  repeatEnd
-) {
-  const monthDifference =
-    (from.getFullYear() -
-      anchor.getFullYear()) *
-      12 +
-    (from.getMonth() -
-      anchor.getMonth());
+function getTaskWeekdays(task) {
+  const anchor =
+    parseTaskDate(task.date);
 
-  let offset = Math.max(
-    0,
-    monthDifference - 1
-  );
+  if (!anchor) return [];
 
-  /*
-   * Partimos cerca del mes actual.
-   * 120 vueltas son más que suficientes
-   * incluso para fechas como el día 31.
-   */
-  for (
-    let attempts = 0;
-    attempts < 120;
-    attempts++, offset++
-  ) {
-    const occurrence =
-      createMonthlyOccurrence(
-        anchor,
-        offset
-      );
+  const selected =
+    task.repeat_days
+      ? task.repeat_days
+          .split(",")
+          .map(
+            (value) =>
+              value.trim()
+          )
+          .filter(Boolean)
+      : [];
 
-    if (!occurrence) continue;
-
-    if (
-      !occursBeforeRepeatEnd(
-        occurrence,
-        repeatEnd
-      )
-    ) {
-      return null;
-    }
-
-    const reminder =
-      getReminderForOccurrence(
-        occurrence,
-        reminderMinutes
-      );
-
-    if (reminder > from) {
-      return reminder;
-    }
+  if (selected.length) {
+    return [
+      ...new Set(
+        selected
+          .map(
+            (letter) =>
+              LETTER_TO_WEEKDAY[
+                letter
+              ]
+          )
+          .filter(
+            (value) =>
+              value != null
+          )
+      ),
+    ];
   }
 
-  return null;
+  return [
+    anchor.getDay(),
+  ];
 }
 
-/* ======================================================
-   NEXT REMINDER
-====================================================== */
-
-export function getNextReminderDate(
+function occursOnDate(
   task,
-  from = new Date()
+  date
 ) {
   const anchor =
-    parseTaskDateTime(
-      task?.date,
-      task?.time
-    );
+    parseTaskDate(task.date);
 
-  const reminderMinutes =
-    getReminderMinutes(task);
+  if (!anchor || !date) {
+    return false;
+  }
 
-  if (
-    !anchor ||
-    reminderMinutes == null
-  ) {
-    return null;
+  const target =
+    startOfDay(date);
+
+  const start =
+    startOfDay(anchor);
+
+  if (target < start) {
+    return false;
   }
 
   const repeatEnd =
@@ -474,324 +364,956 @@ export function getNextReminderDate(
       task.repeat_end
     );
 
-  const mode =
-    task.repeat_mode || "none";
-
-  if (mode === "none") {
-    const reminder =
-      getReminderForOccurrence(
-        anchor,
-        reminderMinutes
-      );
-
-    return reminder > from
-      ? reminder
-      : null;
+  if (
+    repeatEnd &&
+    target > repeatEnd
+  ) {
+    return false;
   }
 
-  if (mode === "daily") {
-    return getNextDailyReminder(
-      anchor,
-      reminderMinutes,
-      from,
-      repeatEnd
+  const mode =
+    task.repeat_mode ||
+    "none";
+
+  if (mode === "none") {
+    return (
+      target.getTime() ===
+      start.getTime()
     );
   }
 
+  if (mode === "daily") {
+    return true;
+  }
+
   if (mode === "weekly") {
-    return getNextWeeklyReminder(
-      anchor,
-      reminderMinutes,
-      from,
-      repeatEnd
+    return getTaskWeekdays(
+      task
+    ).includes(
+      target.getDay()
     );
   }
 
   if (mode === "monthly") {
-    return getNextMonthlyReminder(
-      anchor,
-      reminderMinutes,
-      from,
-      repeatEnd
+    return (
+      target.getDate() ===
+      start.getDate()
     );
   }
 
-  /*
-   * Custom todavía no está implementado
-   * completamente en Geska.
-   */
+  // Custom todavía no está terminado.
+  return false;
+}
+
+function findNextOccurrenceDate(
+  task,
+  from = new Date()
+) {
+  const anchor =
+    parseTaskDate(task.date);
+
+  if (!anchor) return null;
+
+  let cursor =
+    startOfDay(from);
+
+  if (
+    cursor <
+    startOfDay(anchor)
+  ) {
+    cursor =
+      startOfDay(anchor);
+  }
+
+  for (
+    let offset = 0;
+    offset <
+      MAX_OCCURRENCE_SEARCH_DAYS;
+    offset++
+  ) {
+    const candidate =
+      new Date(cursor);
+
+    candidate.setDate(
+      cursor.getDate() +
+        offset
+    );
+
+    if (
+      occursOnDate(
+        task,
+        candidate
+      )
+    ) {
+      return candidate;
+    }
+
+    const repeatEnd =
+      parseRepeatEnd(
+        task.repeat_end
+      );
+
+    if (
+      repeatEnd &&
+      candidate > repeatEnd
+    ) {
+      return null;
+    }
+
+    if (
+      task.repeat_mode ===
+        "none" &&
+      candidate >
+        startOfDay(anchor)
+    ) {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function getNextSingleReminderDate(
+  task,
+  reminder,
+  from = new Date()
+) {
+  if (!reminder) {
+    return null;
+  }
+
+  if (
+    reminder.type === "after"
+  ) {
+    const date =
+      new Date(
+        Number(reminder.at)
+      );
+
+    return (
+      Number.isFinite(
+        date.getTime()
+      ) &&
+      date > from
+    )
+      ? date
+      : null;
+  }
+
+  const taskTime =
+    parseTaskTime(
+      task.time
+    );
+
+  let occurrence =
+    findNextOccurrenceDate(
+      task,
+      from
+    );
+
+  for (
+    let attempts = 0;
+    attempts < 3660 &&
+    occurrence;
+    attempts++
+  ) {
+    let reminderDate = null;
+
+    if (
+      reminder.type ===
+        "relative"
+    ) {
+      if (!taskTime) {
+        return null;
+      }
+
+      const taskDateTime =
+        combineOccurrenceAndTime(
+          occurrence,
+          taskTime
+        );
+
+      const multiplier =
+        reminder.unit ===
+          "hours"
+          ? HOUR_MS
+          : MINUTE_MS;
+
+      reminderDate =
+        new Date(
+          taskDateTime.getTime() -
+            Number(
+              reminder.value || 0
+            ) *
+              multiplier
+        );
+    }
+
+    if (
+      reminder.type ===
+        "all_day"
+    ) {
+      reminderDate =
+        new Date(
+          occurrence
+        );
+
+      reminderDate.setHours(
+        ALL_DAY_REMINDER_HOUR,
+        0,
+        0,
+        0
+      );
+
+      reminderDate.setDate(
+        reminderDate.getDate() -
+          Number(
+            reminder.value || 0
+          )
+      );
+    }
+
+    if (
+      reminderDate &&
+      reminderDate > from
+    ) {
+      return reminderDate;
+    }
+
+    const nextSearch =
+      new Date(occurrence);
+
+    nextSearch.setDate(
+      nextSearch.getDate() + 1
+    );
+
+    occurrence =
+      findNextOccurrenceDate(
+        task,
+        nextSearch
+      );
+
+    if (
+      task.repeat_mode ===
+      "none"
+    ) {
+      break;
+    }
+  }
+
   return null;
 }
 
 /* ======================================================
-   TRIGGERS
+   TRIGGERS RECURRENTES NATIVOS
 ====================================================== */
 
-function addAndroidChannel(trigger) {
-  if (Platform.OS !== "android") {
+function addAndroidChannel(
+  trigger
+) {
+  if (
+    Platform.OS !==
+    "android"
+  ) {
     return trigger;
   }
 
   return {
     ...trigger,
-    channelId: CHANNEL_ID,
+    channelId:
+      CHANNEL_ID,
+  };
+}
+
+function positiveModulo(
+  value,
+  modulo
+) {
+  return (
+    ((value % modulo) +
+      modulo) %
+    modulo
+  );
+}
+
+function getShiftedClock(
+  hour,
+  minute,
+  minutesOffset
+) {
+  const total =
+    hour * 60 +
+    minute -
+    minutesOffset;
+
+  const dayShift =
+    Math.floor(
+      total / (24 * 60)
+    );
+
+  const normalized =
+    positiveModulo(
+      total,
+      24 * 60
+    );
+
+  return {
+    dayShift,
+
+    hour:
+      Math.floor(
+        normalized / 60
+      ),
+
+    minute:
+      normalized % 60,
   };
 }
 
 function recurrenceHasStarted(
-  anchor
+  task
 ) {
-  const start =
-    new Date(anchor);
+  const anchor =
+    parseTaskDate(task.date);
 
-  const today =
-    new Date();
+  if (!anchor) return false;
 
-  start.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-
-  return start <= today;
+  return (
+    startOfDay(anchor) <=
+    startOfDay(new Date())
+  );
 }
 
-/*
- * Usa triggers recurrentes nativos cuando
- * podemos representarlos fielmente.
- *
- * Si no, scheduleTaskReminder cae automáticamente
- * al próximo recordatorio de fecha exacta.
- */
-function buildRecurringTrigger(task) {
-  const mode =
-    task.repeat_mode || "none";
-
+function buildRelativeRecurringTriggers(
+  task,
+  reminder
+) {
   if (
-    !["daily", "weekly", "monthly"].includes(
-      mode
+    reminder.type !==
+      "relative" ||
+    task.repeat_end ||
+    !recurrenceHasStarted(
+      task
     )
   ) {
     return null;
   }
 
-  /*
-   * Un trigger recurrente nativo no sabe
-   * cuándo debe detenerse.
-   */
-  if (task.repeat_end) {
-    return null;
-  }
-
-  const anchor =
-    parseTaskDateTime(
-      task.date,
-      task.time
-    );
-
-  const reminderMinutes =
-    getReminderMinutes(task);
+  const mode =
+    task.repeat_mode ||
+    "none";
 
   if (
-    !anchor ||
-    reminderMinutes == null ||
-    !recurrenceHasStarted(anchor)
+    ![
+      "daily",
+      "weekly",
+      "monthly",
+    ].includes(mode)
   ) {
     return null;
   }
 
-  const reminder =
-    getReminderForOccurrence(
-      anchor,
-      reminderMinutes
+  const time =
+    parseTaskTime(
+      task.time
+    );
+
+  if (!time) {
+    return null;
+  }
+
+  const minutesOffset =
+    reminder.unit === "hours"
+      ? Number(
+          reminder.value || 0
+        ) * 60
+      : Number(
+          reminder.value || 0
+        );
+
+  const shifted =
+    getShiftedClock(
+      time.hour,
+      time.minute,
+      minutesOffset
     );
 
   if (mode === "daily") {
-    return addAndroidChannel({
-      type:
-        Notifications
-          .SchedulableTriggerInputTypes
-          .DAILY,
+    return [
+      addAndroidChannel({
+        type:
+          Notifications
+            .SchedulableTriggerInputTypes
+            .DAILY,
 
-      hour:
-        reminder.getHours(),
+        hour:
+          shifted.hour,
 
-      minute:
-        reminder.getMinutes(),
-    });
+        minute:
+          shifted.minute,
+      }),
+    ];
   }
 
   if (mode === "weekly") {
-    return addAndroidChannel({
-      type:
-        Notifications
-          .SchedulableTriggerInputTypes
-          .WEEKLY,
+    return getTaskWeekdays(
+      task
+    ).map((weekday) =>
+      addAndroidChannel({
+        type:
+          Notifications
+            .SchedulableTriggerInputTypes
+            .WEEKLY,
 
-      /*
-       * Expo:
-       * 1 = Domingo
-       * 7 = Sábado
-       *
-       * Date.getDay():
-       * 0 = Domingo
-       */
-      weekday:
-        reminder.getDay() + 1,
+        weekday:
+          positiveModulo(
+            weekday +
+              shifted.dayShift,
+            7
+          ) + 1,
 
-      hour:
-        reminder.getHours(),
+        hour:
+          shifted.hour,
 
-      minute:
-        reminder.getMinutes(),
-    });
+        minute:
+          shifted.minute,
+      })
+    );
   }
 
   if (mode === "monthly") {
+    const anchor =
+      parseTaskDate(
+        task.date
+      );
+
+    const occurrence =
+      combineOccurrenceAndTime(
+        anchor,
+        time
+      );
+
+    const reminderDate =
+      new Date(
+        occurrence.getTime() -
+          minutesOffset *
+            MINUTE_MS
+      );
+
     /*
-     * Si restar el recordatorio nos hace
-     * cruzar al mes anterior, el número de
-     * día podría variar (28/29/30/31).
-     *
-     * En ese caso no usamos MONTHLY y
-     * programamos la siguiente fecha exacta.
+     * Si el aviso cruza al mes anterior,
+     * un único MONTHLY no representa
+     * correctamente todos los meses.
      */
     if (
-      reminder.getMonth() !==
-        anchor.getMonth() ||
-      reminder.getFullYear() !==
-        anchor.getFullYear()
+      reminderDate.getMonth() !==
+        occurrence.getMonth() ||
+      reminderDate.getFullYear() !==
+        occurrence.getFullYear()
     ) {
       return null;
     }
 
-    return addAndroidChannel({
-      type:
-        Notifications
-          .SchedulableTriggerInputTypes
-          .MONTHLY,
+    return [
+      addAndroidChannel({
+        type:
+          Notifications
+            .SchedulableTriggerInputTypes
+            .MONTHLY,
 
-      day:
-        reminder.getDate(),
+        day:
+          reminderDate.getDate(),
 
-      hour:
-        reminder.getHours(),
+        hour:
+          reminderDate.getHours(),
 
-      minute:
-        reminder.getMinutes(),
-    });
+        minute:
+          reminderDate.getMinutes(),
+      }),
+    ];
   }
 
   return null;
 }
 
-/* ======================================================
-   SCHEDULE
-====================================================== */
-
-export async function scheduleTaskReminder(
-  task
+function buildAllDayRecurringTriggers(
+  task,
+  reminder
 ) {
   if (
-    !task?.id ||
-    !task?.title?.trim() ||
-    !task?.time ||
-    task?.reminder_minutes == null
+    reminder.type !==
+      "all_day" ||
+    task.repeat_end ||
+    !recurrenceHasStarted(
+      task
+    )
   ) {
     return null;
   }
 
-  /*
-   * Una tarea simple terminada
-   * no necesita recordar nada.
-   */
+  const mode =
+    task.repeat_mode ||
+    "none";
+
+  const daysBefore =
+    Number(
+      reminder.value || 0
+    );
+
+  if (mode === "daily") {
+    return [
+      addAndroidChannel({
+        type:
+          Notifications
+            .SchedulableTriggerInputTypes
+            .DAILY,
+
+        hour:
+          ALL_DAY_REMINDER_HOUR,
+
+        minute: 0,
+      }),
+    ];
+  }
+
+  if (mode === "weekly") {
+    return getTaskWeekdays(
+      task
+    ).map((weekday) =>
+      addAndroidChannel({
+        type:
+          Notifications
+            .SchedulableTriggerInputTypes
+            .WEEKLY,
+
+        weekday:
+          positiveModulo(
+            weekday -
+              daysBefore,
+            7
+          ) + 1,
+
+        hour:
+          ALL_DAY_REMINDER_HOUR,
+
+        minute: 0,
+      })
+    );
+  }
+
   if (
-    task.repeat_mode === "none" &&
-    task.done
+    mode === "monthly" &&
+    daysBefore === 0
+  ) {
+    const anchor =
+      parseTaskDate(
+        task.date
+      );
+
+    if (!anchor) {
+      return null;
+    }
+
+    return [
+      addAndroidChannel({
+        type:
+          Notifications
+            .SchedulableTriggerInputTypes
+            .MONTHLY,
+
+        day:
+          anchor.getDate(),
+
+        hour:
+          ALL_DAY_REMINDER_HOUR,
+
+        minute: 0,
+      }),
+    ];
+  }
+
+  return null;
+}
+
+function buildRecurringTriggers(
+  task,
+  reminder
+) {
+  return (
+    buildRelativeRecurringTriggers(
+      task,
+      reminder
+    ) ||
+    buildAllDayRecurringTriggers(
+      task,
+      reminder
+    )
+  );
+}
+
+/* ======================================================
+   PROGRAMACIÓN
+====================================================== */
+
+function buildContent(
+  task,
+  reminder,
+  extraData = {}
+) {
+  const persistent =
+    reminder?.type ===
+    "persistent";
+
+  return {
+    title: persistent
+      ? "🔔 Tarea pendiente"
+      : "⏰ Recordatorio",
+
+    body: task.title,
+
+    sound: "default",
+
+    data: {
+      type:
+        NOTIFICATION_TYPE,
+
+      taskId:
+        task.id,
+
+      reminderType:
+        reminder?.type ||
+        "legacy",
+
+      ...extraData,
+    },
+  };
+}
+
+async function scheduleTrigger(
+  task,
+  reminder,
+  trigger,
+  extraData = {}
+) {
+  return Notifications
+    .scheduleNotificationAsync({
+      content:
+        buildContent(
+          task,
+          reminder,
+          extraData
+        ),
+
+      trigger,
+    });
+}
+
+async function scheduleDate(
+  task,
+  reminder,
+  date,
+  extraData = {}
+) {
+  if (
+    !date ||
+    date <= new Date()
   ) {
     return null;
   }
 
-  const nextReminder =
-    getNextReminderDate(task);
+  return scheduleTrigger(
+    task,
+    reminder,
 
-  if (!nextReminder) {
-    return null;
-  }
-
-  const ready =
-    await initNotifications();
-
-  if (!ready) {
-    return null;
-  }
-
-  const recurringTrigger =
-    buildRecurringTrigger(task);
-
-  const trigger =
-    recurringTrigger ||
     addAndroidChannel({
       type:
         Notifications
           .SchedulableTriggerInputTypes
           .DATE,
 
-      date: nextReminder,
-    });
+      date,
+    }),
+
+    extraData
+  );
+}
+
+async function schedulePersistent(
+  task,
+  reminder
+) {
+  let occurrence =
+    findNextOccurrenceDate(
+      task,
+      new Date()
+    );
+
+  for (
+    let attempts = 0;
+    attempts < 30 &&
+    occurrence;
+    attempts++
+  ) {
+    const now =
+      new Date();
+
+    const dates =
+      PERSISTENT_REMINDER_HOURS
+        .map((hour) => {
+          const date =
+            new Date(
+              occurrence
+            );
+
+          date.setHours(
+            hour,
+            0,
+            0,
+            0
+          );
+
+          return {
+            date,
+            hour,
+          };
+        })
+        .filter(
+          ({ date }) =>
+            date > now
+        );
+
+    if (dates.length) {
+      const ids = [];
+
+      for (
+        const {
+          date,
+          hour,
+        } of dates
+      ) {
+        const id =
+          await scheduleDate(
+            task,
+            reminder,
+            date,
+            {
+              persistentHour:
+                hour,
+            }
+          );
+
+        if (id) {
+          ids.push(id);
+        }
+      }
+
+      return ids;
+    }
+
+    if (
+      task.repeat_mode ===
+      "none"
+    ) {
+      return [];
+    }
+
+    const nextSearch =
+      new Date(occurrence);
+
+    nextSearch.setDate(
+      nextSearch.getDate() + 1
+    );
+
+    occurrence =
+      findNextOccurrenceDate(
+        task,
+        nextSearch
+      );
+  }
+
+  return [];
+}
+
+export async function scheduleTaskReminders(
+  task
+) {
+  const reminder =
+    reminderFromTask(task);
+
+  if (
+    !task?.id ||
+    !task?.title?.trim() ||
+    !task?.date ||
+    !reminder
+  ) {
+    return [];
+  }
+
+  /*
+   * Una tarea simple terminada no necesita
+   * ningún aviso nuevo.
+   */
+  if (
+    task.repeat_mode ===
+      "none" &&
+    task.done
+  ) {
+    return [];
+  }
+
+  const ready =
+    await initNotifications();
+
+  if (!ready) {
+    return [];
+  }
 
   try {
-    return await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "⏰ Recordatorio",
-        body: task.title,
-        sound: "default",
+    if (
+      reminder.type ===
+      "persistent"
+    ) {
+      return await schedulePersistent(
+        task,
+        reminder
+      );
+    }
 
-        data: {
-          type: NOTIFICATION_TYPE,
-          taskId: task.id,
-        },
-      },
+    if (
+      reminder.type ===
+      "after"
+    ) {
+      const date =
+        new Date(
+          Number(
+            reminder.at
+          )
+        );
 
-      trigger,
-    });
+      const id =
+        await scheduleDate(
+          task,
+          reminder,
+          date
+        );
+
+      return id
+        ? [id]
+        : [];
+    }
+
+    const recurringTriggers =
+      buildRecurringTriggers(
+        task,
+        reminder
+      );
+
+    if (
+      recurringTriggers?.length
+    ) {
+      const ids = [];
+
+      for (
+        const trigger of
+        recurringTriggers
+      ) {
+        const id =
+          await scheduleTrigger(
+            task,
+            reminder,
+            trigger
+          );
+
+        ids.push(id);
+      }
+
+      return ids;
+    }
+
+    /*
+     * Casos que un trigger recurrente nativo no
+     * puede expresar fielmente (repeat_end,
+     * monthly que cruza de mes, inicio futuro...)
+     * se programan como próxima fecha exacta.
+     *
+     * syncTaskReminders los vuelve a calcular
+     * cuando Geska inicia.
+     */
+    const nextReminder =
+      getNextSingleReminderDate(
+        task,
+        reminder
+      );
+
+    const id =
+      await scheduleDate(
+        task,
+        reminder,
+        nextReminder
+      );
+
+    return id
+      ? [id]
+      : [];
   } catch (error) {
     console.error(
-      `No se pudo programar el recordatorio de "${task.title}":`,
+      `No se pudieron programar los recordatorios de "${task.title}":`,
       error
     );
 
-    return null;
+    return [];
   }
 }
 
 /* ======================================================
-   CANCEL
+   CANCELACIÓN
 ====================================================== */
 
-export async function cancelTaskReminder(
-  notificationId
-) {
-  if (!notificationId) return;
+function normalizeIds(ids) {
+  if (!ids) return [];
 
-  try {
-    await Notifications.cancelScheduledNotificationAsync(
-      notificationId
-    );
-  } catch (error) {
-    console.warn(
-      "No se pudo cancelar la notificación:",
-      notificationId,
-      error
-    );
+  if (Array.isArray(ids)) {
+    return ids.filter(Boolean);
   }
+
+  return [ids].filter(Boolean);
 }
 
-/*
- * También reconoce las notificaciones legacy,
- * que todavía no tenían content.data.type.
- */
+export async function cancelTaskReminders(
+  ids
+) {
+  const notificationIds =
+    normalizeIds(ids);
+
+  if (!notificationIds.length) {
+    return;
+  }
+
+  await Promise.all(
+    notificationIds.map(
+      async (id) => {
+        try {
+          await Notifications
+            .cancelScheduledNotificationAsync(
+              id
+            );
+        } catch (error) {
+          console.warn(
+            "No se pudo cancelar la notificación:",
+            id,
+            error
+          );
+        }
+      }
+    )
+  );
+}
+
 export async function cancelAllTaskReminders() {
   try {
     const scheduled =
-      await Notifications.getAllScheduledNotificationsAsync();
+      await Notifications
+        .getAllScheduledNotificationsAsync();
 
     const taskNotifications =
       scheduled.filter(
@@ -801,15 +1323,19 @@ export async function cancelAllTaskReminders() {
             NOTIFICATION_TYPE ||
           notification.content
             ?.title ===
-            "⏰ Recordatorio"
+            "⏰ Recordatorio" ||
+          notification.content
+            ?.title ===
+            "🔔 Tarea pendiente"
       );
 
     await Promise.all(
       taskNotifications.map(
         (notification) =>
-          Notifications.cancelScheduledNotificationAsync(
-            notification.identifier
-          )
+          Notifications
+            .cancelScheduledNotificationAsync(
+              notification.identifier
+            )
       )
     );
   } catch (error) {
@@ -824,14 +1350,33 @@ export async function cancelAllTaskReminders() {
    SYNC DB ↔ SISTEMA
 ====================================================== */
 
-/*
- * Pensado para ejecutarse una vez al iniciar TasksScreen.
- *
- * Repara:
- * - IDs legacy perdidos
- * - notificaciones huérfanas
- * - tareas modificadas fuera del scheduler
- */
+function sameIds(a, b) {
+  const left =
+    normalizeIds(a);
+
+  const right =
+    normalizeIds(b);
+
+  if (
+    left.length !==
+    right.length
+  ) {
+    return false;
+  }
+
+  const leftSorted =
+    [...left].sort();
+
+  const rightSorted =
+    [...right].sort();
+
+  return leftSorted.every(
+    (value, index) =>
+      value ===
+      rightSorted[index]
+  );
+}
+
 export async function syncTaskReminders(
   tasks,
   persistTask
@@ -840,52 +1385,72 @@ export async function syncTaskReminders(
     return;
   }
 
+  /*
+   * El sistema operativo es efímero y SQLite
+   * es la fuente de verdad. Al entrar a Tasks
+   * reconstruimos todos los schedules vigentes.
+   */
   await cancelAllTaskReminders();
 
   for (const task of tasks) {
-    let notificationId = null;
-
-    const shouldSchedule =
-      task.time &&
-      task.reminder_minutes != null &&
-      !(
-        task.repeat_mode ===
-          "none" &&
-        task.done
+    const ids =
+      await scheduleTaskReminders(
+        task
       );
-
-    if (shouldSchedule) {
-      notificationId =
-        await scheduleTaskReminder(
-          task
-        );
-    }
-
-    const previousId =
-      task.notification_id ?? null;
 
     if (
       typeof persistTask ===
         "function" &&
-      previousId !==
-        notificationId
+      !sameIds(
+        task.notification_ids ||
+          task.notification_id,
+        ids
+      )
     ) {
       await persistTask({
         ...task,
+
+        notification_ids:
+          ids,
+
         notification_id:
-          notificationId,
+          ids[0] ??
+          null,
       });
     }
   }
 }
 
 /* ======================================================
-   DEBUG
+   COMPATIBILIDAD / DEBUG
 ====================================================== */
+
+// Alias temporales para cualquier componente viejo
+// que todavía use la API singular.
+export async function scheduleTaskReminder(
+  task
+) {
+  const ids =
+    await scheduleTaskReminders(
+      task
+    );
+
+  return ids[0] ??
+    null;
+}
+
+export async function cancelTaskReminder(
+  id
+) {
+  await cancelTaskReminders(
+    id
+  );
+}
 
 export async function getScheduledTaskReminders() {
   const scheduled =
-    await Notifications.getAllScheduledNotificationsAsync();
+    await Notifications
+      .getAllScheduledNotificationsAsync();
 
   return scheduled.filter(
     (notification) =>
@@ -894,6 +1459,9 @@ export async function getScheduledTaskReminders() {
         NOTIFICATION_TYPE ||
       notification.content
         ?.title ===
-        "⏰ Recordatorio"
+        "⏰ Recordatorio" ||
+      notification.content
+        ?.title ===
+        "🔔 Tarea pendiente"
   );
 }
