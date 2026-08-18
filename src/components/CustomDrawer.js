@@ -9,6 +9,21 @@ export default function CustomDrawer(props) {
 
   const theme = themes[props.themeName][props.mode];
 
+    const upcomingModules = [
+      {
+        label: "Calendario",
+        icon: "calendar-outline",
+      },
+      {
+        label: "Cocina",
+        icon: "restaurant-outline",
+      },
+      {
+        label: "Entrenamiento",
+        icon: "barbell-outline",
+      }
+    ];
+
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1 }}>
       
@@ -42,6 +57,43 @@ export default function CustomDrawer(props) {
       {/* ITEMS */}
       <View style={{ flex: 1, backgroundColor: theme.card, marginTop: 5 }}>
         <DrawerItemList {...props} />
+          {/* SECCIÓN PRÓXIMAMENTE */}
+          <View style={styles.upcomingSection}>
+            <Text
+              style={[
+                styles.upcomingTitle,
+                {
+                  color: theme.inactiveCategoryText,
+                },
+              ]}
+            >
+              PRÓXIMAMENTE
+            </Text>
+
+            {upcomingModules.map((item) => (
+              <View
+                key={item.label}
+                style={styles.upcomingItem}
+              >
+                <Ionicons
+                  name={item.icon}
+                  size={21}
+                  color={theme.inactiveCategoryText}
+                />
+
+                <Text
+                  style={[
+                    styles.upcomingLabel,
+                    {
+                      color: theme.inactiveCategoryText,
+                    },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </View>
+            ))}
+          </View>
       </View>
     </DrawerContentScrollView>
   );

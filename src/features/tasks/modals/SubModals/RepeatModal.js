@@ -23,8 +23,7 @@ export default function RepeatModal({
   const slideAnim = useRef(new Animated.Value(40)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (visible) {
+  const animateOpen = () => {
       opacityAnim.setValue(0);
       slideAnim.setValue(40);
 
@@ -43,7 +42,25 @@ export default function RepeatModal({
         }),
       ]).start();
     }
-  }, [visible]);
+  
+  const animateClose = () => {
+    Animated.parallel([
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 200,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 40,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      closeModal();
+    });
+  };
 
   const modes = [
     { key: "none", label: "Ninguno" },
@@ -53,8 +70,8 @@ export default function RepeatModal({
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="none">
-      <TouchableWithoutFeedback onPress={closeModal}>
+    <Modal visible={visible} transparent animationType="none" onShow={animateOpen}>
+      <TouchableWithoutFeedback onPress={animateClose}>
         <Animated.View
           style={[
             styles.modalOverlay,
@@ -109,19 +126,19 @@ export default function RepeatModal({
                 );
               })}
 
-              {/* OPCIÓN PERSONALIZADO */}
-              <TouchableOpacity
+              {/* OPCIÓN PERSONALIZADO - Futuro */}
+              {/*<TouchableOpacity
                 style={[styles.optionRow, { justifyContent: "space-between", opacity:0.5
                  }]}
                 onPress={() => {
                   {/*closeModal();
-                  openCustomRepeat();*/}
+                  openCustomRepeat();
                   
                 }}
               >
                 <Text style={styles.optionLabel}>Personalizado</Text>
                 <Ionicons name="chevron-forward" size={20} color={styles.text.color} />
-              </TouchableOpacity>
+              </TouchableOpacity>*/}
             </Animated.View>
           </TouchableWithoutFeedback>
         </Animated.View>

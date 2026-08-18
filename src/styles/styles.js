@@ -361,6 +361,34 @@ export default function createStyles(themeName = "basic", mode = "light") {
       marginTop: 4,
     },
 
+    /* ─────────────────────────
+       ✦ SECCIÓN DE PRÓXIMAS TAREAS
+    ───────────────────────── */
+    upcomingSection: {
+      marginTop: 28,
+      marginLeft: 10,
+      gap: 14,
+    },
+
+    upcomingTitle: {
+      fontSize: 12,
+      fontWeight: "600",
+      letterSpacing: 1,
+      opacity: 0.65,
+    },
+
+    upcomingItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      opacity: 0.5,
+    },
+
+    upcomingLabel: {
+      fontSize: 14,
+      fontWeight: "500",
+    },
+
 
   });
 }

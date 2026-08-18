@@ -466,7 +466,7 @@ export default function TaskModal({
                   </TouchableOpacity>
 
                   {/* Más - futuro */}
-                  <TouchableOpacity
+                  {/*<TouchableOpacity
                     disabled
                     style={
                       styles.iconButton
@@ -481,7 +481,7 @@ export default function TaskModal({
                       }
                       opacity={0.4}
                     />
-                  </TouchableOpacity>
+                  </TouchableOpacity>*/}
                 </View>
 
                 {/* Guardar */}
