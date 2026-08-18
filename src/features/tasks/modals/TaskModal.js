@@ -52,7 +52,6 @@ export default function TaskModal({
     ]).start();
   };
 
-
   // Cargar datos previos
   useEffect(() => {
     if (!visible) return;

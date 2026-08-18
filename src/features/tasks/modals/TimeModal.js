@@ -57,8 +57,7 @@ export default function TimeModal({
   const slideAnim = useRef(new Animated.Value(20)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
-  useEffect(() => {
-    if (visible) {
+  const animateOpen = () => {
       opacityAnim.setValue(0);
       slideAnim.setValue(20);
       scaleAnim.setValue(0.95);
@@ -83,8 +82,7 @@ export default function TimeModal({
           useNativeDriver: true,
         }),
       ]).start();
-    }
-  }, [visible]);
+  };
 
   const animateClose = () => {
     Animated.parallel([
@@ -223,7 +221,7 @@ export default function TimeModal({
       {/* =============== MODAL BASE ================= */}
       {/* ============================================ */}
 
-      <Modal visible={visible} transparent animationType="none">
+      <Modal visible={visible} transparent animationType="none" onShow={animateOpen}>
         <TouchableWithoutFeedback onPress={animateClose}>
           <Animated.View style={[styles.modalOverlay, { opacity: opacityAnim }]}>
             <TouchableWithoutFeedback>

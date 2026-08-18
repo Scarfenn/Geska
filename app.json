@@ -2,7 +2,7 @@
   "expo": {
     "name": "Geska",
     "slug": "geska",
-    "version": "0.8.0",
+    "version": "0.8.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -33,7 +33,12 @@
     },
     "plugins": [
       "expo-sqlite",
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png"
+        }
+      ]
     ],
     "extra": {
       "eas": {
