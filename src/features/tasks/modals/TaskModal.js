@@ -42,12 +42,6 @@ export default function TaskModal({
   const slideAnim =
     useRef(new Animated.Value(30)).current;
 
-  const categoryOpacity =
-    useRef(new Animated.Value(0)).current;
-
-  const categorySlide =
-    useRef(new Animated.Value(15)).current;
-
   const [taskText, setTaskText] =
     useState("");
 
@@ -103,55 +97,6 @@ export default function TaskModal({
 
   const openCategorySelector = () => {
     setCategoryModalVisible(true);
-  };
-
-  const animateCategoryOpen = () => {
-    categoryOpacity.setValue(0);
-    categorySlide.setValue(15);
-
-    Animated.parallel([
-      Animated.timing(categoryOpacity, {
-        toValue: 1,
-        duration: 180,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(categorySlide, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const closeCategorySelector = () => {
-    Animated.parallel([
-      Animated.timing(categoryOpacity, {
-        toValue: 0,
-        duration: 130,
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(categorySlide, {
-        toValue: 15,
-        duration: 130,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setCategoryModalVisible(false);
-    });
-  };
-
-  const selectCategory = (categoryId) => {
-    setSelectedCategory(categoryId);
-
-    if (categoryId === null) {
-      clearSelectedCategoryForTask?.();
-    }
-
-    closeCategorySelector();
   };
 
   const selectedCategoryObject =
