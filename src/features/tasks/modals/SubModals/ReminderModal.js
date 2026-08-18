@@ -153,6 +153,11 @@ const PERSISTENT_OPTION = {
   },
 };
 
+const NO_REMINDER_OPTION = {
+  label: "Sin recordatorio",
+  reminder: null,
+};
+
 function optionReminder(option) {
   if (option.afterHours) {
     return {
@@ -251,16 +256,13 @@ function getAvailableOptions({
     repeatMode &&
     repeatMode !== "none";
 
-  /*
-   * TAREA DE HOY SIN HORA
-   *
-   * Para una tarea simple usamos "En X horas".
-   * También permitimos el modo persistente si
-   * todavía queda al menos una ventana hoy.
-   *
-   * Para tareas repetitivas no usamos "En X horas":
-   * esa semántica no describe las próximas ocurrencias.
-   */
+  if (isRepeating) {
+    return [
+      NO_REMINDER_OPTION,
+      PERSISTENT_OPTION,
+    ];
+  }
+
   if (isSameDay(selectedDate, now)) {
     if (isRepeating) {
       return ALL_DAY_OPTIONS.filter(

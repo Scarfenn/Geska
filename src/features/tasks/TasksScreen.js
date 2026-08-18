@@ -32,6 +32,7 @@ import {
   scheduleTaskReminders,
   cancelTaskReminders,
   syncTaskReminders,
+  rescheduleTaskReminders,
 } from "@/features/tasks/services/notifications";
 
 import {
@@ -368,6 +369,29 @@ const toggleTaskDone = async (
       dateStr,
       newDone
     );
+
+    const freshTasks =
+      await getAllTasks();
+
+    const freshTask =
+      freshTasks.find(
+        (currentTask) =>
+          currentTask.id ===
+          task.id
+      );
+
+    if (freshTask) {
+      const rescheduledTask =
+        await rescheduleTaskReminders(
+          freshTask
+        );
+
+      if (rescheduledTask) {
+        await updateTask(
+          rescheduledTask
+        );
+      }
+    }
 
     await loadTasks();
     return;
