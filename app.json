@@ -2,7 +2,7 @@
   "expo": {
     "name": "Geska",
     "slug": "geska",
-    "version": "0.7",
+    "version": "0.8.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,6 +17,9 @@
       "bundleIdentifier": "com.scarfenn.geska"
     },
     "android": {
+      "permissions": [
+        "SCHEDULE_EXACT_ALARM"
+      ],
       "adaptiveIcon": {
         "package": "com.scarfenn.geska",
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -29,7 +32,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {

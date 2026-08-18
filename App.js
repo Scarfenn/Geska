@@ -6,7 +6,6 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import TasksScreen from "@/features/tasks/TasksScreen";
 import CalendarScreen from "@/features/calendar/CalendarScreen";
 import CustomDrawer from "@/components/CustomDrawer";
-import { initNotifications } from "@/components/notifications";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { themes } from "@/styles/themes";
@@ -18,10 +17,6 @@ export default function App() {
   const [themeName, setThemeName] = useState("basic");
   const [mode, setMode] = useState("light");
   const [isThemeLoaded, setIsThemeLoaded] = useState(false);
-
-    useEffect(() => {
-    initNotifications();
-  }, []);
 
   // Cargar tema desde AsyncStorage
   useEffect(() => {

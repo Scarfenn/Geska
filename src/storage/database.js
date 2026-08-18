@@ -191,7 +191,7 @@ export async function updateTask(task) {
       `UPDATE tasks SET
         title=?, description=?, done=?, date=?, time=?,
         repeat_mode=?, repeat_days=?, repeat_end=?,
-        reminder_minutes=?, category_id=?
+        reminder_minutes=?, notification_id=?,category_id=?
       WHERE id=?`,
       [
         task.title,
@@ -203,6 +203,7 @@ export async function updateTask(task) {
         task.repeat_days || null,
         task.repeat_end || null,
         task.reminder_minutes ?? null,
+        task.notification_id ?? null,
         task.categoryId || null,
         task.id,
       ]

@@ -26,7 +26,7 @@ import {
   updateSubtaskDone
 } from "@/storage/database";
 
-import { scheduleTaskReminder, cancelTaskReminder } from "@/components/notifications";
+import { scheduleTaskReminder, cancelTaskReminder, syncTaskReminders } from "@/features/tasks/services/notifications";
 
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
@@ -97,9 +97,19 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
   useEffect(() => {
     const setup = async () => {
       await initDB();
+
+      const loadedTasks =
+        await getAllTasks();
+
+      await syncTaskReminders(
+        loadedTasks,
+        updateTask
+      );
+
       await loadTasks();
       await loadCategories();
     };
+
     setup();
   }, []);
 
