@@ -22,8 +22,6 @@ const CENTER_PADDING = (WHEEL_HEIGHT - ITEM_HEIGHT) / 2;
 const HOUR_WIDTH = 68;
 const MINUTE_WIDTH = 68;
 
-// No necesitamos 100 repeticiones.
-// Si nos acercamos a un extremo, reciclamos la posición.
 const LOOP_COUNT = 21;
 const MIDDLE_BLOCK = Math.floor(LOOP_COUNT / 2);
 
@@ -73,12 +71,6 @@ function to24Hour(hour12, period) {
   return hour === 12 ? 12 : hour + 12;
 }
 
-/*
- * Cada item se anima según su distancia física
- * respecto al centro de la rueda.
- *
- * Esto NO usa setState durante el scroll.
- */
 const WheelItem = memo(function WheelItem({
   value,
   index,
@@ -163,14 +155,24 @@ export default function HourModal({
       : "AM"
     : "PM";
 
-  /*
-   * Hora y minuto viven en refs.
-   *
-   * No necesitamos provocar un render cada vez
-   * que el usuario pasa de 32 → 33 → 34...
-   */
   const hourRef = useRef(initialHour);
   const minuteRef = useRef(initialMinute);
+
+  const initialHourIndex = getMiddleIndex(
+    BASE_HOURS,
+    initialHour
+  );
+
+  const initialMinuteIndex = getMiddleIndex(
+    BASE_MINUTES,
+    initialMinute
+  );
+
+  const initialHourOffset =
+    initialHourIndex * ITEM_HEIGHT;
+
+  const initialMinuteOffset =
+    initialMinuteIndex * ITEM_HEIGHT;
 
   // AM / PM sí es UI interactiva normal.
   const [period, setPeriod] = useState(initialPeriod);
@@ -178,16 +180,12 @@ export default function HourModal({
   const hourListRef = useRef(null);
   const minuteListRef = useRef(null);
 
-  /*
-   * Estos Animated.Value reciben directamente
-   * la posición del scroll.
-   */
   const hourScrollY = useRef(
-    new Animated.Value(0)
+    new Animated.Value(initialHourOffset)
   ).current;
 
   const minuteScrollY = useRef(
-    new Animated.Value(0)
+    new Animated.Value(initialMinuteOffset)
   ).current;
 
   // Animación del modal
@@ -227,24 +225,27 @@ export default function HourModal({
       initialMinute
     );
 
+    const hourOffset =
+      hourIndex * ITEM_HEIGHT;
+
+    const minuteOffset =
+      minuteIndex * ITEM_HEIGHT;
+
+    hourScrollY.setValue(hourOffset);
+    minuteScrollY.setValue(minuteOffset);
+
     hourListRef.current?.scrollToOffset({
-      offset: hourIndex * ITEM_HEIGHT,
+      offset: hourOffset,
       animated: false,
     });
 
     minuteListRef.current?.scrollToOffset({
-      offset: minuteIndex * ITEM_HEIGHT,
+      offset: minuteOffset,
       animated: false,
     });
   };
 
-  const handleShow = () => {
-    positionWheels();
-
-    opacityAnim.setValue(0);
-    slideAnim.setValue(20);
-    scaleAnim.setValue(0.95);
-
+  const animateOpen = () => {
     Animated.parallel([
       Animated.timing(opacityAnim, {
         toValue: 1,
@@ -267,6 +268,20 @@ export default function HourModal({
         useNativeDriver: true,
       }),
     ]).start();
+  };
+
+  const handleShow = () => {
+    opacityAnim.setValue(0);
+    slideAnim.setValue(20);
+    scaleAnim.setValue(0.95);
+
+    positionWheels();
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        animateOpen();
+      });
+    });
   };
 
   const animateClose = () => {
@@ -336,12 +351,6 @@ export default function HourModal({
     );
   };
 
-  /*
-   * Actualizamos únicamente la ref del valor.
-   *
-   * Esto puede ejecutarse durante el scroll
-   * sin provocar renders.
-   */
   const updateValueFromOffset = (
     offsetY,
     baseData,
@@ -362,67 +371,60 @@ export default function HourModal({
     return index;
   };
 
-  /*
-   * Cuando termina el movimiento:
-   *
-   * 1. determinamos el elemento más cercano;
-   * 2. hacemos snap exacto;
-   * 3. reciclamos al centro si estamos
-   *    cerca de un extremo.
-   */
-  const settleWheel = (
-    event,
+const settleWheel = (
+  event,
+  baseData,
+  loopData,
+  valueRef,
+  listRef,
+  scrollY
+) => {
+  const offsetY =
+    event.nativeEvent.contentOffset.y;
+
+  const index = updateValueFromOffset(
+    offsetY,
     baseData,
     loopData,
-    valueRef,
-    listRef
-  ) => {
-    const offsetY =
-      event.nativeEvent.contentOffset.y;
+    valueRef
+  );
 
-    const index = updateValueFromOffset(
-      offsetY,
-      baseData,
-      loopData,
-      valueRef
-    );
+  const baseIndex =
+    index % baseData.length;
 
-    const baseIndex =
-      index % baseData.length;
+  const edgeThreshold =
+    baseData.length * 3;
 
-    const edgeThreshold =
-      baseData.length * 3;
+  const nearStart =
+    index < edgeThreshold;
 
-    const nearStart =
-      index < edgeThreshold;
+  const nearEnd =
+    index >
+    loopData.length - edgeThreshold;
 
-    const nearEnd =
-      index >
-      loopData.length - edgeThreshold;
+  if (nearStart || nearEnd) {
+    const middleIndex =
+      MIDDLE_BLOCK * baseData.length +
+      baseIndex;
 
-    if (nearStart || nearEnd) {
-      const middleIndex =
-        MIDDLE_BLOCK * baseData.length +
-        baseIndex;
+    const middleOffset =
+      middleIndex * ITEM_HEIGHT;
 
-      listRef.current?.scrollToOffset({
-        offset:
-          middleIndex * ITEM_HEIGHT,
-        animated: false,
-      });
+    scrollY.setValue(middleOffset);
 
-      return;
-    }
-
-    /*
-     * Corrige cualquier pequeño desfase
-     * producido por un fling fuerte.
-     */
     listRef.current?.scrollToOffset({
-      offset: index * ITEM_HEIGHT,
-      animated: true,
+      offset: middleOffset,
+      animated: false,
     });
-  };
+
+    return;
+  }
+
+  listRef.current?.scrollToOffset({
+    offset: index * ITEM_HEIGHT,
+    animated: true,
+  });
+};
 
   const createWheelScrollHandler = (
     scrollY,
@@ -443,12 +445,6 @@ export default function HourModal({
       {
         useNativeDriver: true,
 
-        /*
-         * La animación ocurre nativamente.
-         *
-         * El listener JS solo cambia una ref,
-         * NO hace setState.
-         */
         listener: (event) => {
           updateValueFromOffset(
             event.nativeEvent.contentOffset.y,
@@ -468,6 +464,7 @@ export default function HourModal({
     listRef,
     width,
     keyPrefix,
+    initialIndex,
   }) => ({
     data: loopData,
 
@@ -477,7 +474,7 @@ export default function HourModal({
     showsVerticalScrollIndicator: false,
 
     snapToInterval: ITEM_HEIGHT,
-    decelerationRate: "fast",
+    decelerationRate: 0.96,
 
     bounces: false,
 
@@ -485,9 +482,13 @@ export default function HourModal({
 
     scrollEventThrottle: 16,
 
-    initialNumToRender: 7,
-    maxToRenderPerBatch: 7,
-    windowSize: 5,
+    initialScrollIndex: initialIndex,
+
+    initialNumToRender: 9,
+    maxToRenderPerBatch: 15,
+    windowSize: 7,
+
+    removeClippedSubviews: false,
 
     getItemLayout: (_, index) => ({
       length: ITEM_HEIGHT,
@@ -529,27 +530,9 @@ export default function HourModal({
         baseData,
         loopData,
         valueRef,
-        listRef
+        listRef,
+        scrollY
       );
-    },
-
-    onScrollEndDrag: (event) => {
-      const velocity =
-        event.nativeEvent.velocity?.y ?? 0;
-
-      /*
-       * Un movimiento pequeño puede no generar
-       * momentum; en ese caso hacemos el snap acá.
-       */
-      if (Math.abs(velocity) < 0.1) {
-        settleWheel(
-          event,
-          baseData,
-          loopData,
-          valueRef,
-          listRef
-        );
-      }
     },
   });
 
@@ -671,26 +654,14 @@ export default function HourModal({
                 <AnimatedFlatList
                   ref={hourListRef}
                   {...makeWheelProps({
-                    baseData:
-                      BASE_HOURS,
-
-                    loopData:
-                      hours,
-
-                    scrollY:
-                      hourScrollY,
-
-                    valueRef:
-                      hourRef,
-
-                    listRef:
-                      hourListRef,
-
-                    width:
-                      HOUR_WIDTH,
-
-                    keyPrefix:
-                      "hour",
+                    baseData: BASE_HOURS,
+                    loopData: hours,
+                    scrollY: hourScrollY,
+                    valueRef: hourRef,
+                    listRef: hourListRef,
+                    width: HOUR_WIDTH,
+                    keyPrefix: "hour",
+                    initialIndex: initialHourIndex,
                   })}
                 />
 
@@ -710,26 +681,14 @@ export default function HourModal({
                 <AnimatedFlatList
                   ref={minuteListRef}
                   {...makeWheelProps({
-                    baseData:
-                      BASE_MINUTES,
-
-                    loopData:
-                      minutes,
-
-                    scrollY:
-                      minuteScrollY,
-
-                    valueRef:
-                      minuteRef,
-
-                    listRef:
-                      minuteListRef,
-
-                    width:
-                      MINUTE_WIDTH,
-
-                    keyPrefix:
-                      "minute",
+                    baseData: BASE_MINUTES,
+                    loopData: minutes,
+                    scrollY: minuteScrollY,
+                    valueRef: minuteRef,
+                    listRef: minuteListRef,
+                    width: MINUTE_WIDTH,
+                    keyPrefix: "minute",
+                    initialIndex: initialMinuteIndex,
                   })}
                 />
               </View>
