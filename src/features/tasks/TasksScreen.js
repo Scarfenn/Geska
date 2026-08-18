@@ -166,7 +166,7 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
           description: null,
           done: false,
           categoryId:
-            categoryId || "all",
+            categoryId ?? null,
 
           // --- TIEMPO ---
           date:
@@ -233,7 +233,7 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
     await loadTasks();
   };
   
-  {/* Creación de tareas mediante otro módulo - Sin utilizar - Uso futuro */}
+  /* Creación de tareas mediante otro módulo - Sin utilizar - Uso futuro */
   const handleExternalTaskCreated = async () => {
     await loadTasks();
   };
@@ -261,9 +261,7 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
               ? 1
               : 0,
 
-          categoryId:
-            categoryId ||
-            taskToEdit.categoryId,
+          categoryId: categoryId ?? null,
 
           // --- TIEMPO ---
           date:
