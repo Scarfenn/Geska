@@ -94,6 +94,65 @@ async function ensureTaskColumns() {
   }
 }
 
+async function ensureSubtaskColumns() {
+  const columns =
+    await db.getAllAsync(
+      "PRAGMA table_info(subtasks)"
+    );
+
+  const existing =
+    new Set(
+      columns.map(
+        (column) => column.name
+      )
+    );
+
+  if (!existing.has("sort_order")) {
+    await db.execAsync(
+      `
+      ALTER TABLE subtasks
+      ADD COLUMN sort_order INT NOT NULL DEFAULT 0
+      `
+    );
+
+    const subtasks =
+      await db.getAllAsync(
+        `
+        SELECT id, task_id
+        FROM subtasks
+        ORDER BY task_id, rowid
+        `
+      );
+
+    const orderByTask =
+      new Map();
+
+    for (const subtask of subtasks) {
+      const currentOrder =
+        orderByTask.get(
+          subtask.task_id
+        ) ?? 0;
+
+      await db.runAsync(
+        `
+        UPDATE subtasks
+        SET sort_order=?
+        WHERE id=?
+        `,
+        [
+          currentOrder,
+          subtask.id,
+        ]
+      );
+
+      orderByTask.set(
+        subtask.task_id,
+        currentOrder + 1
+      );
+    }
+  }
+}
+
 /* ------------------------------------------------------
    INICIALIZAR BASE DE DATOS
 ------------------------------------------------------ */
@@ -144,6 +203,7 @@ export async function initDB() {
         task_id TEXT NOT NULL,
         text TEXT NOT NULL,
         done INT NOT NULL DEFAULT 0,
+        sort_order INT NOT NULL DEFAULT 0,
         FOREIGN KEY (task_id) REFERENCES tasks(id)
       );
 
@@ -157,6 +217,7 @@ export async function initDB() {
     `);
 
     await ensureTaskColumns();
+    await ensureSubtaskColumns();
 
     console.log("Base de datos lista");
   } catch (e) {
@@ -222,7 +283,7 @@ export async function deleteCategory(id) {
 export async function getAllTasks() {
   try {
     const tasks = await db.getAllAsync("SELECT * FROM tasks");
-    const subtasks = await db.getAllAsync("SELECT * FROM subtasks");
+    const subtasks = await db.getAllAsync(`SELECT * FROM subtasks ORDER BY task_id, sort_order ASC`);
     const occurrences = await db.getAllAsync("SELECT * FROM task_occurrences");
     const subtaskOccurrences = await db.getAllAsync("SELECT * FROM subtask_occurrences");
 
@@ -553,18 +614,55 @@ export async function clearOccurrence(taskId, date) {
    SUBTASKS
 ------------------------------------------------------ */
 
-export async function addSubtask(taskId, text) {
+export async function addSubtask(
+  taskId,
+  text
+) {
   try {
     const id =
-    `${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 8)}`;
+      `${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`;
+
+    const result =
+      await db.getFirstAsync(
+        `
+        SELECT
+          COALESCE(MAX(sort_order), -1) + 1
+            AS next_order
+        FROM subtasks
+        WHERE task_id=?
+        `,
+        [taskId]
+      );
+
+    const sortOrder =
+      result?.next_order ?? 0;
+
     await db.runAsync(
-      "INSERT INTO subtasks (id, task_id, text, done) VALUES (?, ?, ?, ?)",
-      [id, taskId, text, 0]
+      `
+      INSERT INTO subtasks (
+        id,
+        task_id,
+        text,
+        done,
+        sort_order
+      )
+      VALUES (?, ?, ?, ?, ?)
+      `,
+      [
+        id,
+        taskId,
+        text,
+        0,
+        sortOrder,
+      ]
     );
   } catch (e) {
-    console.error("addSubtask error:", e);
+    console.error(
+      "addSubtask error:",
+      e
+    );
   }
 }
 
@@ -587,6 +685,28 @@ export async function deleteSubtask(id) {
       "deleteSubtask error:",
       e
     );
+  }
+}
+
+export async function updateSubtaskOrder(
+  id,
+  sortOrder
+) {
+  try {
+    await db.runAsync(
+      `
+      UPDATE subtasks
+      SET sort_order=?
+      WHERE id=?
+      `,
+      [sortOrder, id]
+    );
+  } catch (e) {
+    console.error(
+      "updateSubtaskOrder error:",
+      e
+    );
+    throw e;
   }
 }
 

@@ -75,6 +75,7 @@ export default function AddSubtaskModal({
     id: `new-${Date.now()}-${tempId.current++}`,
     text: "",
     done: false,
+    sort_order: null,
     isNew: true,
   });
 
@@ -86,10 +87,11 @@ export default function AddSubtaskModal({
 
     if (subtasks.length) {
       setDraftSubtasks(
-        subtasks.map((subtask) => ({
+        subtasks.map((subtask, index) => ({
           id: String(subtask.id),
           text: subtask.text || "",
           done: !!subtask.done,
+          sort_order: subtask.sort_order || index,
           isNew: false,
         }))
       );
@@ -218,6 +220,39 @@ export default function AddSubtaskModal({
     );
   };
 
+  const moveSubtask = (
+    fromIndex,
+    toIndex
+  ) => {
+    setDraftSubtasks(
+      (current) => {
+        if (
+          toIndex < 0 ||
+          toIndex >= current.length
+        ) {
+          return current;
+        }
+
+        const next =
+          [...current];
+
+        const [moved] =
+          next.splice(
+            fromIndex,
+            1
+          );
+
+        next.splice(
+          toIndex,
+          0,
+          moved
+        );
+
+        return next;
+      }
+    );
+  };
+
   const insertAfter = (
     index,
     focus = true
@@ -304,13 +339,16 @@ export default function AddSubtaskModal({
       draftSubtasks
         .map((subtask) => ({
           ...subtask,
-          text:
-            subtask.text.trim(),
+          text: subtask.text.trim(),
         }))
         .filter(
           (subtask) =>
             subtask.text.length > 0
-        );
+        )
+        .map((subtask, index) => ({
+          ...subtask,
+          sort_order: index,
+        }));
 
     await onSave(cleaned);
 
@@ -495,6 +533,50 @@ export default function AddSubtaskModal({
 
                       <TouchableOpacity
                         onPress={() =>
+                          moveSubtask(
+                            index,
+                            index - 1
+                          )
+                        }
+                        disabled={index === 0}
+                      >
+                        <Ionicons
+                          name="chevron-up"
+                          size={18}
+                          color={
+                            index === 0
+                              ? theme.inactiveCategoryText
+                              : theme.primary
+                          }
+                        />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() =>
+                          moveSubtask(
+                            index,
+                            index + 1
+                          )
+                        }
+                        disabled={
+                          index ===
+                          draftSubtasks.length - 1
+                        }
+                      >
+                        <Ionicons
+                          name="chevron-down"
+                          size={18}
+                          color={
+                            index ===
+                            draftSubtasks.length - 1
+                              ? theme.inactiveCategoryText
+                              : theme.primary
+                          }
+                        />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() =>
                           removeDraft(
                             subtask.id
                           )
@@ -527,7 +609,7 @@ export default function AddSubtaskModal({
                         alignItems:
                           "center",
 
-                        marginVertical: 8,
+                        marginVertical: 5,
                       }}
                     >
                       <View

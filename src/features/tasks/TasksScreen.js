@@ -23,6 +23,7 @@ import {
   deleteTask,
   addSubtask,
   updateSubtaskText,
+  updateSubtaskOrder,
   deleteSubtask,
   updateSubtaskDone,
   setSubtaskOccurrenceDone,
@@ -594,10 +595,7 @@ const tasksForRender =
       );
 
     // ELIMINADAS
-    for (
-      const original
-      of originalSubtasks
-    ) {
+    for (const original of originalSubtasks) {
       if (
         !existingDraftIds.has(
           String(original.id)
@@ -609,11 +607,8 @@ const tasksForRender =
       }
     }
 
-    // NUEVAS / EDITADAS
-    for (
-      const subtask
-      of draftSubtasks
-    ) {
+    // NUEVAS / EDITADAS / REORDENADAS
+    for (const subtask of draftSubtasks) {
       const text =
         subtask.text.trim();
 
@@ -630,7 +625,8 @@ const tasksForRender =
       ) {
         await addSubtask(
           taskId,
-          text
+          text,
+          subtask.sort_order
         );
 
         continue;
@@ -644,7 +640,18 @@ const tasksForRender =
           text
         );
       }
+
+      if (
+        original.sort_order !==
+        subtask.sort_order
+      ) {
+        await updateSubtaskOrder(
+          subtask.id,
+          subtask.sort_order
+        );
+      }
     }
+
     if (reload) {
       await loadTasks();
     }
