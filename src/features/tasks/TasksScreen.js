@@ -78,6 +78,7 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
   const [selectedTime, setSelectedTime] = useState(null);
   const [repeatMode, setRepeatMode] = useState("none");
   const [repeatDays, setRepeatDays] = useState([]);
+  const [repeatInterval, setRepeatInterval] = useState(1);
   const [reminder, setReminder] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
@@ -148,6 +149,7 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
     setSelectedTime(data.time);
     setRepeatMode(data.repeatMode);
     setRepeatDays(data.repeatDays);
+    setRepeatInterval(data.repeatInterval || 1);
     setReminder(data.reminder);
     setEndDate(data.endDate);
   };
@@ -188,6 +190,9 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
             Array.isArray(repeatDays)
               ? repeatDays.join(",")
               : null,
+
+          repeat_interval:
+            repeatInterval || 1,
 
           repeat_end:
             formatDateLocal(
@@ -288,6 +293,9 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
             formatDateLocal(
               endDate
             ),
+
+          repeat_interval:
+            repeatInterval || 1,
 
           notification_ids: [],
           notification_id: null,
@@ -737,6 +745,7 @@ const toggleSubtaskDone =
   setSelectedTime(null);
   setRepeatMode("none");
   setRepeatDays([]);
+  setRepeatInterval(1);
   setReminder(null);
   setEndDate(null);
 
@@ -764,6 +773,7 @@ const toggleSubtaskDone =
     setRepeatDays(
       task.repeat_days ? task.repeat_days.split(",") : []
     );
+    setRepeatInterval(task.repeat_interval || 1);
     setReminder(
       reminderFromTask(task)
     );
@@ -1031,6 +1041,8 @@ const toggleSubtaskDone =
           setRepeatMode={setRepeatMode}
           repeatDays={repeatDays}
           setRepeatDays={setRepeatDays}
+          repeatInterval={repeatInterval}
+          setRepeatInterval={setRepeatInterval}
           reminder={reminder}
           setReminder={setReminder}
           endDate={endDate}

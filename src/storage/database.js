@@ -80,6 +80,7 @@ async function ensureTaskColumns() {
     ["reminder_unit", "TEXT"],
     ["reminder_at", "INT"],
     ["notification_ids", "TEXT"],
+    ["repeat_interval", "INT"],
   ];
 
   for (const [name, type] of required) {
@@ -115,6 +116,7 @@ export async function initDB() {
         repeat_mode TEXT,
         repeat_days TEXT,
         repeat_end TEXT,
+        repeat_interval INT NOT NULL DEFAULT 1,
 
         reminder_minutes INT,
         reminder_type TEXT,
@@ -237,6 +239,7 @@ export async function getAllTasks() {
       repeat_mode: task.repeat_mode || "none",
       repeat_days: task.repeat_days || null,
       repeat_end: task.repeat_end || null,
+      repeat_interval: task.repeat_interval || 1,
 
       reminder_type:
         task.reminder_type ||
@@ -332,7 +335,7 @@ export async function saveTask(task) {
     await db.runAsync(
       `INSERT INTO tasks (
         id, title, description, done, date, time,
-        repeat_mode, repeat_days, repeat_end,
+        repeat_mode, repeat_days, repeat_end, repeat_interval,
 
         reminder_minutes,
         reminder_type, reminder_value,
@@ -342,7 +345,7 @@ export async function saveTask(task) {
         category_id
       ) VALUES (
         ?, ?, ?, ?, ?, ?,
-        ?, ?, ?,
+        ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
         ?, ?, ?
       )`,
@@ -357,6 +360,7 @@ export async function saveTask(task) {
         task.repeat_mode || null,
         task.repeat_days || null,
         task.repeat_end || null,
+        task.repeat_interval || 1,
 
         getLegacyReminderMinutes(task),
         task.reminder_type || null,
@@ -401,6 +405,7 @@ export async function updateTask(task) {
         repeat_mode=?,
         repeat_days=?,
         repeat_end=?,
+        repeat_interval=?,
 
         reminder_minutes=?,
         reminder_type=?,
@@ -423,6 +428,7 @@ export async function updateTask(task) {
         task.repeat_mode || null,
         task.repeat_days || null,
         task.repeat_end || null,
+        task.repeat_interval || 1,
 
         getLegacyReminderMinutes(task),
         task.reminder_type || null,

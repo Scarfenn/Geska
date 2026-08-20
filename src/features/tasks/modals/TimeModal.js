@@ -47,7 +47,6 @@ export default function TimeModal({
   const styles = createStyles(themeName, mode);
   const theme = themes[themeName][mode];
 
-  const [quickSelected, setQuickSelected] = useState(null);
   const [dateVisible, setDateVisible] = useState(false);
   const [hourVisible, setHourVisible] = useState(false);
   const [repeatVisible, setRepeatVisible] = useState(false);
@@ -114,24 +113,9 @@ export default function TimeModal({
   // -------------------------------------------------
   // Fecha
   // -------------------------------------------------
-  const quickSelect = (option) => {
-    const today = new Date();
-    const newDate = new Date(today);
-
-    if (option === "tomorrow") {
-      newDate.setDate(today.getDate() + 1);
-    } else if (option === "next_monday") {
-      const diff = (8 - today.getDay()) % 7 || 7;
-      newDate.setDate(today.getDate() + diff);
-    }
-
-    setSelectedDate(newDate);
-    setReminder(null);
-  };
 
   const handleDateSelected = (date) => {
     setSelectedDate(date);
-    setQuickSelected(null);
     setReminder(null);
   };
 
@@ -310,57 +294,6 @@ export default function TimeModal({
                 <Text style={[styles.modalTitle, { marginBottom: 20 }]}>
                   Gestionar tiempo
                 </Text>
-
-                {/* QUICK BUTTONS */}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    marginBottom: 18,
-                  }}
-                >
-                  {[
-                    { label: "Hoy", key: "today" },
-                    { label: "Mañana", key: "tomorrow" },
-                    { label: "Próx. Lun", key: "next_monday" },
-                  ].map((btn) => {
-                    const isActive = quickSelected === btn.key;
-
-                    return (
-                      <TouchableOpacity
-                        key={btn.key}
-                        onPress={() => {
-                          setQuickSelected(btn.key);
-                          quickSelect(btn.key);
-                        }}
-                        style={{
-                          paddingVertical: 6,
-                          paddingHorizontal: 14,
-                          borderRadius: 10,
-                          backgroundColor: theme.card,
-                          borderWidth: 1.5,
-                          borderColor: isActive
-                            ? theme.primary
-                            : theme.border,
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.text,
-                            {
-                              color: isActive
-                                ? theme.primary
-                                : theme.inactiveCategoryText,
-                              fontWeight: isActive ? "600" : "400",
-                            },
-                          ]}
-                        >
-                          {btn.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
 
                 <Text
                   style={{

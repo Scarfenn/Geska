@@ -270,6 +270,8 @@ export default function createStyles(themeName = "basic", mode = "light") {
     },
 
     optionMenu: {
+      borderWidth: 1,
+      borderColor: theme.border + "40",
       borderRadius: 8,
       paddingVertical: 5,
       paddingHorizontal: 10,
