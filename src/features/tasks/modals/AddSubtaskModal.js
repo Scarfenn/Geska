@@ -13,11 +13,13 @@ import {
   TouchableWithoutFeedback,
   Animated,
   Easing,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
 } from "react-native";
+
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import DraggableFlatList from "react-native-draggable-flatlist";
 
 import { Ionicons } from "@expo/vector-icons";
 
@@ -91,7 +93,7 @@ export default function AddSubtaskModal({
           id: String(subtask.id),
           text: subtask.text || "",
           done: !!subtask.done,
-          sort_order: subtask.sort_order || index,
+          sort_order: subtask.sort_order ?? index,
           isNew: false,
         }))
       );
@@ -220,39 +222,6 @@ export default function AddSubtaskModal({
     );
   };
 
-  const moveSubtask = (
-    fromIndex,
-    toIndex
-  ) => {
-    setDraftSubtasks(
-      (current) => {
-        if (
-          toIndex < 0 ||
-          toIndex >= current.length
-        ) {
-          return current;
-        }
-
-        const next =
-          [...current];
-
-        const [moved] =
-          next.splice(
-            fromIndex,
-            1
-          );
-
-        next.splice(
-          toIndex,
-          0,
-          moved
-        );
-
-        return next;
-      }
-    );
-  };
-
   const insertAfter = (
     index,
     focus = true
@@ -366,6 +335,7 @@ export default function AddSubtaskModal({
       animationType="none"
       onShow={animateOpen}
     >
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={
@@ -443,30 +413,86 @@ export default function AddSubtaskModal({
               Divide la tarea en pasos más pequeños
             </Text>
 
-            <ScrollView
+            <DraggableFlatList
+              data={draftSubtasks}
+              activationDistance={0}
+              keyExtractor={(item) =>
+                item.id
+              }
+              onDragEnd={({ data }) =>
+                setDraftSubtasks(data)
+              }
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
-            >
-              {draftSubtasks.map(
-                (
-                  subtask,
-                  index
-                ) => (
-                  <View
-                    key={
-                      subtask.id
-                    }
+
+              ListEmptyComponent={
+                <TouchableOpacity
+                  onPress={addFirstSubtask}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    paddingVertical: 14,
+                  }}
+                >
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={20}
+                    color={theme.primary}
+                  />
+
+                  <Text
+                    style={{
+                      color: theme.primary,
+                      marginLeft: 6,
+                      fontWeight: "600",
+                    }}
                   >
-                    {/* INPUT */}
+                    Agregar subtarea
+                  </Text>
+                </TouchableOpacity>
+              }
+
+              renderItem={({
+                item: subtask,
+                drag,
+                isActive,
+                getIndex,
+              }) => {
+                const index =
+                  getIndex();
+
+                return (
+                  <View
+                    style={{
+                      opacity:
+                        isActive ? 0.85 : 1,
+                    }}
+                  >
                     <View
                       style={{
-                        flexDirection:
-                          "row",
-
-                        alignItems:
-                          "center",
+                        flexDirection: "row",
+                        alignItems: "center",
                       }}
                     >
+                      {/* HANDLE DRAG */}
+                      <TouchableOpacity
+                        onLongPress={() => {
+                          console.log("DRAG START");
+                          drag();
+                        }}
+                        delayLongPress={100}
+                        disabled={isActive}
+                        hitSlop={12}
+                      >
+                        <Ionicons
+                          name="reorder-three-outline"
+                          size={26}
+                          color={theme.primary}
+                        />
+                      </TouchableOpacity>
+
                       <Ionicons
                         name={
                           subtask.done
@@ -476,12 +502,8 @@ export default function AddSubtaskModal({
                         size={20}
                         color={
                           subtask.done
-                            ? styles
-                                .doneCheck
-                                .color
-                            : styles
-                                .pendingCheck
-                                .color
+                            ? styles.doneCheck.color
+                            : styles.pendingCheck.color
                         }
                         style={{
                           marginRight: 8,
@@ -505,75 +527,23 @@ export default function AddSubtaskModal({
                         ]}
                         placeholder="Escribe una subtarea..."
                         placeholderTextColor={
-                          styles
-                            .placeholder
-                            .color
+                          styles.placeholder.color
                         }
-                        value={
-                          subtask.text
-                        }
-                        onChangeText={(
-                          text
-                        ) =>
+                        value={subtask.text}
+                        onChangeText={(text) =>
                           updateText(
                             subtask.id,
                             text
                           )
                         }
                         returnKeyType="next"
-                        blurOnSubmit={
-                          false
-                        }
+                        blurOnSubmit={false}
                         onSubmitEditing={() =>
                           handleSubmitEditing(
                             index
                           )
                         }
                       />
-
-                      <TouchableOpacity
-                        onPress={() =>
-                          moveSubtask(
-                            index,
-                            index - 1
-                          )
-                        }
-                        disabled={index === 0}
-                      >
-                        <Ionicons
-                          name="chevron-up"
-                          size={18}
-                          color={
-                            index === 0
-                              ? theme.inactiveCategoryText
-                              : theme.primary
-                          }
-                        />
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        onPress={() =>
-                          moveSubtask(
-                            index,
-                            index + 1
-                          )
-                        }
-                        disabled={
-                          index ===
-                          draftSubtasks.length - 1
-                        }
-                      >
-                        <Ionicons
-                          name="chevron-down"
-                          size={18}
-                          color={
-                            index ===
-                            draftSubtasks.length - 1
-                              ? theme.inactiveCategoryText
-                              : theme.primary
-                          }
-                        />
-                      </TouchableOpacity>
 
                       <TouchableOpacity
                         onPress={() =>
@@ -598,17 +568,11 @@ export default function AddSubtaskModal({
                     <TouchableOpacity
                       activeOpacity={0.65}
                       onPress={() =>
-                        insertAfter(
-                          index
-                        )
+                        insertAfter(index)
                       }
                       style={{
-                        flexDirection:
-                          "row",
-
-                        alignItems:
-                          "center",
-
+                        flexDirection: "row",
+                        alignItems: "center",
                         marginVertical: 5,
                       }}
                     >
@@ -624,9 +588,7 @@ export default function AddSubtaskModal({
                       <Ionicons
                         name="add-circle-outline"
                         size={18}
-                        color={
-                          theme.primary
-                        }
+                        color={theme.primary}
                         style={{
                           marginHorizontal: 8,
                         }}
@@ -642,52 +604,9 @@ export default function AddSubtaskModal({
                       />
                     </TouchableOpacity>
                   </View>
-                )
-              )}
-
-              {/* CASO CERO SUBTAREAS */}
-              {draftSubtasks.length ===
-                0 && (
-                <TouchableOpacity
-                  onPress={
-                    addFirstSubtask
-                  }
-                  activeOpacity={0.7}
-                  style={{
-                    flexDirection:
-                      "row",
-
-                    justifyContent:
-                      "center",
-
-                    alignItems:
-                      "center",
-
-                    paddingVertical: 14,
-                  }}
-                >
-                  <Ionicons
-                    name="add-circle-outline"
-                    size={20}
-                    color={
-                      theme.primary
-                    }
-                  />
-
-                  <Text
-                    style={{
-                      color:
-                        theme.primary,
-
-                      marginLeft: 6,
-                      fontWeight: "600",
-                    }}
-                  >
-                    Agregar subtarea
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </ScrollView>
+                );
+              }}
+            />
 
             {/* GUARDAR */}
             <TouchableOpacity
@@ -729,6 +648,7 @@ export default function AddSubtaskModal({
           </Animated.View>
         </Animated.View>
       </KeyboardAvoidingView>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

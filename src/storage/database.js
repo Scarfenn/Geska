@@ -616,7 +616,8 @@ export async function clearOccurrence(taskId, date) {
 
 export async function addSubtask(
   taskId,
-  text
+  text,
+  sortOrder = null
 ) {
   try {
     const id =
@@ -624,20 +625,25 @@ export async function addSubtask(
         .toString(36)
         .slice(2, 8)}`;
 
-    const result =
-      await db.getFirstAsync(
-        `
-        SELECT
-          COALESCE(MAX(sort_order), -1) + 1
-            AS next_order
-        FROM subtasks
-        WHERE task_id=?
-        `,
-        [taskId]
-      );
+    let finalSortOrder =
+      sortOrder;
 
-    const sortOrder =
-      result?.next_order ?? 0;
+    if (finalSortOrder == null) {
+      const result =
+        await db.getFirstAsync(
+          `
+          SELECT
+            COALESCE(MAX(sort_order), -1) + 1
+              AS next_order
+          FROM subtasks
+          WHERE task_id=?
+          `,
+          [taskId]
+        );
+
+      finalSortOrder =
+        result?.next_order ?? 0;
+    }
 
     await db.runAsync(
       `
@@ -655,9 +661,11 @@ export async function addSubtask(
         taskId,
         text,
         0,
-        sortOrder,
+        finalSortOrder,
       ]
     );
+
+    return id;
   } catch (e) {
     console.error(
       "addSubtask error:",
