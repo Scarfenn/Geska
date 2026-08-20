@@ -197,24 +197,23 @@ function getAvailableOptions({
   selectedTime,
   repeatMode,
 }) {
+
   const now = new Date();
 
+  const isRepeating =
+    repeatMode &&
+    repeatMode !== "none";
+    
+
   if (!selectedDate) {
-    return [
-      {
-        label: "Sin recordatorio",
-        reminder: null,
-      },
-    ];
+    return [NO_REMINDER_OPTION];
   }
 
-  /*
-   * TAREA CON HORA
-   *
-   * Solo mostramos recordatorios cuyo instante
-   * todavía está en el futuro.
-   */
   if (selectedTime) {
+    if (isRepeating) {
+      return TIMED_OPTIONS;
+    }
+
     const taskDateTime =
       combineDateAndTime(
         selectedDate,
@@ -243,18 +242,12 @@ function getAvailableOptions({
   const today =
     startOfDay(now);
 
-  if (taskDay < today) {
-    return [
-      {
-        label: "Sin recordatorio",
-        reminder: null,
-      },
-    ];
+  if (
+    !isRepeating &&
+    taskDay < today
+  ) {
+    return [NO_REMINDER_OPTION];
   }
-
-  const isRepeating =
-    repeatMode &&
-    repeatMode !== "none";
 
   if (isRepeating) {
     return [
@@ -313,13 +306,6 @@ function getAvailableOptions({
     return options;
   }
 
-  /*
-   * TAREA FUTURA SIN HORA
-   *
-   * Los avisos únicos se filtran según la fecha real
-   * en la que sonarían. Por ejemplo, mañana no puede
-   * ofrecer "1 semana antes".
-   */
   const options =
     ALL_DAY_OPTIONS.filter((option) => {
       if (!option.reminder) {
@@ -335,12 +321,6 @@ function getAvailableOptions({
       return reminderDate > now;
     });
 
-  /*
-   * El modo insistente se limita, por ahora, a tareas
-   * simples. Así podemos cancelar todos sus avisos al
-   * completar la tarea sin interferir con ocurrencias
-   * futuras de una repetición.
-   */
   if (!isRepeating) {
     options.push(PERSISTENT_OPTION);
   }
