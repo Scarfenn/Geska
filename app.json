@@ -21,7 +21,6 @@
         "SCHEDULE_EXACT_ALARM"
       ],
       "adaptiveIcon": {
-        "package": "com.scarfenn.geska",
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
