@@ -478,10 +478,7 @@ export default function AddSubtaskModal({
                     >
                       {/* HANDLE DRAG */}
                       <TouchableOpacity
-                        onLongPress={() => {
-                          console.log("DRAG START");
-                          drag();
-                        }}
+                        onLongPress={() => {drag();}}
                         delayLongPress={100}
                         disabled={isActive}
                         hitSlop={12}
