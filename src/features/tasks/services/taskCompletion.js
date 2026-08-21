@@ -1,0 +1,92 @@
+import {
+  initDB,
+  getAllTasks,
+  updateTask,
+  setOccurrenceDone,
+} from "@/storage/database";
+
+import {
+  cancelTaskReminders,
+  rescheduleTaskReminders,
+} from "@/features/tasks/services/notifications";
+
+export async function completeTask(taskId, occurrenceDate = null) {
+  await initDB();
+
+  const tasks = await getAllTasks();
+
+  const task = tasks.find(
+    (task) => String(task.id) === String(taskId)
+  );
+
+  if (!task) {
+    console.warn("No se encontró la tarea:", taskId);
+    return false;
+  }
+
+  const repeating =
+    (task.repeat_mode || "none") !== "none";
+
+  // TAREA REPETITIVA
+  if (repeating) {
+    if (!occurrenceDate) {
+      console.warn(
+        "Falta occurrenceDate para completar una tarea repetitiva"
+      );
+      return false;
+    }
+
+    const alreadyDone = task.occurrences?.some(
+      (occurrence) =>
+        occurrence.date === occurrenceDate &&
+        occurrence.done
+    );
+
+    if (alreadyDone) {
+      return true;
+    }
+
+    await setOccurrenceDone(
+      task.id,
+      occurrenceDate,
+      true
+    );
+
+    const freshTasks = await getAllTasks();
+
+    const freshTask = freshTasks.find(
+      (currentTask) =>
+        currentTask.id === task.id
+    );
+
+    if (freshTask) {
+      const rescheduled =
+        await rescheduleTaskReminders(freshTask);
+
+      if (rescheduled) {
+        await updateTask(rescheduled);
+      }
+    }
+
+    return true;
+  }
+
+  // TAREA NORMAL
+  if (task.done) {
+    return true;
+  }
+
+  await cancelTaskReminders(
+    task.notification_ids ||
+      task.notification_id
+  );
+
+  await updateTask({
+    ...task,
+    done: true,
+    notification_ids: [],
+    notification_id: null,
+  });
+
+  return true;
+}

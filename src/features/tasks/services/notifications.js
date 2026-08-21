@@ -10,10 +10,25 @@ import {
   reminderFromTask,
 } from "@/features/tasks/services/reminderModel";
 
-const CHANNEL_ID = "task-reminders";
+import * as Application
+  from "expo-application";
+
+import * as IntentLauncher
+  from "expo-intent-launcher";
+
 const NOTIFICATION_TYPE = "task-reminder";
 const MAX_OCCURRENCE_SEARCH_DAYS = 366 * 10;
 const MAX_QUEUED_REMINDERS = 16;
+
+
+export const TASK_REMINDER_CHANNEL_ID =
+  "task-reminders";
+
+export const TASK_REMINDER_CATEGORY_ID =
+  "task-reminder-actions";
+
+export const COMPLETE_TASK_ACTION_ID =
+  "complete-task";
 
 const LETTER_TO_WEEKDAY = {
   D: 0,
@@ -63,6 +78,20 @@ export async function initNotifications() {
         vibrationPattern: [0, 250, 250, 250],
       });
     }
+
+    await Notifications.setNotificationCategoryAsync(
+      TASK_REMINDER_CATEGORY_ID,
+      [
+        {
+          identifier: COMPLETE_TASK_ACTION_ID,
+          buttonTitle: "Completar",
+          options: {
+            opensAppToForeground: false,
+          },
+        },
+      ]
+    );
+
 
     let permissions = await Notifications.getPermissionsAsync();
 
@@ -330,13 +359,21 @@ function buildContent(task, reminder, extraData = {}) {
   const persistent = reminder?.type === "persistent";
 
   return {
-    title: persistent ? "🔔 Tarea pendiente" : "⏰ Recordatorio",
+    title: persistent
+      ? "🔔 Tarea pendiente"
+      : "⏰ Recordatorio",
+
     body: task.title,
     sound: "default",
+
+    categoryIdentifier:
+      TASK_REMINDER_CATEGORY_ID,
+
     data: {
       type: NOTIFICATION_TYPE,
       taskId: task.id,
-      reminderType: reminder?.type || "legacy",
+      reminderType:
+        reminder?.type || "legacy",
       ...extraData,
     },
   };
@@ -595,4 +632,28 @@ export async function getScheduledTaskReminders() {
       notification.content?.title === "⏰ Recordatorio" ||
       notification.content?.title === "🔔 Tarea pendiente"
   );
+}
+
+export async function openReminderSoundSettings() {
+  if (Platform.OS !== "android") {
+    return false;
+  }
+
+  await initNotifications();
+
+  await IntentLauncher.startActivityAsync(
+    IntentLauncher.ActivityAction
+      .CHANNEL_NOTIFICATION_SETTINGS,
+    {
+      extra: {
+        "android.provider.extra.APP_PACKAGE":
+          Application.applicationId,
+
+        "android.provider.extra.CHANNEL_ID":
+          TASK_REMINDER_CHANNEL_ID,
+      },
+    }
+  );
+
+  return true;
 }
