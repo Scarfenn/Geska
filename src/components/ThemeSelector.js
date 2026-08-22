@@ -182,7 +182,7 @@ export default function ThemeSelector({
                     width: 28,
                     height: 28,
                     borderRadius: 14,
-                    borderWidth: themeName === t ? 1 : 0,
+                    borderWidth: themeName === t ? 1.5 : 0,
                     borderColor: theme.primary + "80",
                     marginBottom: 5,
                   }}
