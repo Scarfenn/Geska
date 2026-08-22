@@ -24,5 +24,12 @@ export default ({ config }) => ({
     package: IS_DEV
       ? "com.scarfenn.geska.dev"
       : "com.scarfenn.geska",
-  },
+
+    adaptiveIcon: {
+      foregroundImage: IS_DEV
+        ? "./assets/adaptive-icondev.png"
+        : "./assets/adaptive-icon.png",
+      backgroundColor: "#FFFFFF",
+    },
+  }
 });
