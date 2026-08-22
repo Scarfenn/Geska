@@ -8,31 +8,31 @@ export const themes = {
       text: "#1E293B",
       card: "#FFFFFF",
       border: "#D1D5DB",
-      primary: "#3B82F6",
+      primary: "#4A78D0",
 
       doneText: "#9CA3AF",
-      doneCheck: "#10B981",
+      doneCheck: "#3FAE7A",
       pendingText: "#1F2937",
-      pendingCheck: "#6B7280",
+      pendingCheck: "#737373",
 
       inactiveCategory: "#E5E7EB",
-      inactiveCategoryText: "#6B7280",   
+      inactiveCategoryText: "#6B7280",
     },
 
     dark: {
-      background: "#0D0D0D",
+      background: "#111111",
       text: "#E5E7EB",
-      card: "#1E1E1E",
-      border: "#2C2C2C",
-      primary: "#2563EB",
+      card: "#1C1C1C",
+      border: "#303030",
+      primary: "#3B6FD8",
 
       doneText: "#6B7280",
-      doneCheck: "#10B981",
+      doneCheck: "#3FAE7A",
       pendingText: "#F3F4F6",
-      pendingCheck: "#A1A1A1",
+      pendingCheck: "#A3A3A3",
 
       inactiveCategory: "#333333",
-      inactiveCategoryText: "#A1A1A1",  
+      inactiveCategoryText: "#A1A1A1",
     },
   },
 
@@ -41,34 +41,35 @@ export const themes = {
   ========================================================== */
   pastel: {
     light: {
-      background: "#FFF8F0",
-      text: "#5B4636",
+      background: "#FFF9F4",          // Crema rosado muy suave
+      text: "#5A4741",                // Marrón rosado
       card: "#FFFFFF",
-      border: "#FFD6A5",
-      primary: "#FFB6B9",
+      border: "#F0D2C8",              // Rosa durazno pastel
+      primary: "#EFA9B8",             // Rosa pastel
 
-      doneText: "#BFAFAD",
-      doneCheck: "#6EE7B7",
-      pendingText: "#5C524A",
-      pendingCheck: "#AD9F94",
+      doneText: "#B9AAA8",
+      doneCheck: "#8FD8BE",           // Menta pastel
+      pendingText: "#6A5650",
+      pendingCheck: "#C7B3AE",
 
-      inactiveCategory: "#F2D1D2",
-      inactiveCategoryText: "#7A6A66",    },
+      inactiveCategory: "#F5DEDF",
+      inactiveCategoryText: "#8C7470",
+    },
 
     dark: {
-      background: "#3E3542",
-      text: "#F3EDE6",
-      card: "#56475A",
-      border: "#D0A5C0",
-      primary: "#FFB6B9",
+      background: "#2B232D",          // Ciruela gris muy oscuro
+      text: "#F4E9EC",                // Rosa crema
+      card: "#3A303D",                // Ciruela suave
+      border: "#8F7387",
+      primary: "#E7A8B9",             // Rosa pastel apagado
 
-      doneText: "#CFC1CC",
-      doneCheck: "#9AF7D7",
-      pendingText: "#F7EDE6",
-      pendingCheck: "#D7C5CE",
+      doneText: "#A895A1",
+      doneCheck: "#8FD8BE",           // Menta pastel
+      pendingText: "#E8D8DF",
+      pendingCheck: "#C7AEBB",
 
-      inactiveCategory: "#8F7893",
-      inactiveCategoryText: "#E7DCE4",
+      inactiveCategory: "#524451",
+      inactiveCategoryText: "#D7C4CD",
     },
   },
 
@@ -84,7 +85,7 @@ export const themes = {
     primary: "#1C5EC9",        // se mantiene (es perfecto)
     
     doneText: "#6E8CA3",
-    doneCheck: "#22C55E",
+    doneCheck: "#2AAFA3",
     pendingText: "#0F3A5F",
     pendingCheck: "#6F96B8",
 
@@ -100,7 +101,7 @@ export const themes = {
       primary: "#63B3FF",
 
       doneText: "#9DB1C9",
-      doneCheck: "#4ADE80",
+      doneCheck: "#4FD1C5",
       pendingText: "#E2EEFF",
       pendingCheck: "#ADC5DD",
 
@@ -121,7 +122,7 @@ export const themes = {
       primary: "#3AA17E",
 
       doneText: "#7DAA96",
-      doneCheck: "#4ADE80",
+      doneCheck: "#5FBF87",
       pendingText: "#2F4B3A",
       pendingCheck: "#8CAFA0",
 
@@ -137,7 +138,7 @@ export const themes = {
       primary: "#50C69A",
 
       doneText: "#A6CFC0",
-      doneCheck: "#4ADE80",
+      doneCheck: "#6ED69A",
       pendingText: "#E8FDF1",
       pendingCheck: "#C2E4D8",
 
@@ -155,15 +156,15 @@ export const themes = {
       text: "#3A2E25",
       card: "#FFFFFF",
       border: "#D8C8B8",
-      primary: "#C08457",
+      primary: "#B97A4F",
 
       doneText: "#AFA092",
-      doneCheck: "#84CC16",
+      doneCheck: "#B98A5F",
       pendingText: "#5A4637",
-      pendingCheck: "#9D8E7F",
+      pendingCheck: "#92735B",
 
       inactiveCategory: "#DFCCB7",
-      inactiveCategoryText: "#6F5A4A", 
+      inactiveCategoryText: "#6F5A4A",
     },
 
     dark: {
@@ -171,85 +172,163 @@ export const themes = {
       text: "#EFE4D8",
       card: "#2A231F",
       border: "#6B5545",
-      primary: "#D69F7E",
+      primary: "#D39A73",
 
-      doneText: "#CDB6A4",
-      doneCheck: "#A3E635",
-      pendingText: "#F5EBD9",
-      pendingCheck: "#D0C0B2",
+      doneText: "#A9907E",
+      doneCheck: "#C28A5E",
+      pendingText: "#F0DFCF",
+      pendingCheck: "#D1B39B",
 
       inactiveCategory: "#473A32",
-      inactiveCategoryText: "#E7D7C8", 
+      inactiveCategoryText: "#DCC8B6",
     },
   },
 
+  /* =========================================================
+     SUNRISE
+  ========================================================== */
   sunrise: {
-  light: {
-    background: "#FFF4E6",
-    text: "#5E3E2E",
-    card: "#FFFFFF",
-    border: "#E8C9A9",
-    primary: "#FFA24C",
+    light: {
+      background: "#FFF8E8",
+      text: "#5A4328",
+      card: "#FFFFFF",
+      border: "#EAD3A2",
+      primary: "#E9A23B",
 
-    doneText: "#A17B5A",
-    doneCheck: "#F2A83B",
-    pendingText: "#7A5A44",
-    pendingCheck: "#C8873A",
+      doneText: "#A28D70",
+      doneCheck: "#E3B35C",
+      pendingText: "#765B32",
+      pendingCheck: "#D6A756",
 
-    inactiveCategory: "#F7D7B7",
-    inactiveCategoryText: "#9C7A62",
-  },
-
-  dark: {
-    background: "#2C1B12",
-    text: "#F5E0D1",
-    card: "#3A261A",
-    border: "#8B6145",
-    primary: "#FFAD5C",
-
-    doneText: "#D4B598",
-    doneCheck: "#FFC36B",
-    pendingText: "#F1D6C2",
-    pendingCheck: "#E0A96E",
-
-    inactiveCategory: "#6E4A33",
-    inactiveCategoryText: "#EEC7A3",
-  }
-},
-
-sunset: {
-  light: {
-    background: "#FDE7DB",        // Durazno rojizo muy suave
-    text: "#6C2E25",              // Rojo-marrón elegante
-    card: "#FFFFFF",
-    border: "#F3B29C",            // Coral pastel suave
-    primary: "#FF5E4D",           // Rojo coral (alma del tema)
-
-    doneText: "#AA8A82",
-    doneCheck: "#FF6F61",         // Coral vivo (pero no saturado)
-    pendingText: "#8B3E33",
-    pendingCheck: "#FF927E",      // Coral pastel claro
-
-    inactiveCategory: "#FBC3B6",  // Rosa coral claro
-    inactiveCategoryText: "#A26054",
-  },
+      inactiveCategory: "#F6E3B9",
+      inactiveCategoryText: "#90744C",
+    },
 
     dark: {
-    background: "#2B1614",        // Rojo oscuro apagado (suave)
-    text: "#FFD8CE",              // Crema rosado
-    card: "#3A1E1A",              // Rojo-marrón elegante
-    border: "#B56F63",
-    primary: "#FF6A57",           // Coral rojizo brillante
+      background: "#241A10",
+      text: "#F5E7CE",
+      card: "#332416",
+      border: "#80613D",
+      primary: "#F0AD45",
 
-    doneText: "#B59088",
-    doneCheck: "#FF7F6B",
-    pendingText: "#F0BDB5",
-    pendingCheck: "#FF9A8B",
+      doneText: "#8F795F",
+      doneCheck: "#C89245",
+      pendingText: "#E8C98D",
+      pendingCheck: "#F3BE62",
 
-    inactiveCategory: "#6C3A35",
-    inactiveCategoryText: "#F7C4BA",
-  }
-}
+      inactiveCategory: "#574025",
+      inactiveCategoryText: "#D7B77E",
+    },
+  },
 
+  /* =========================================================
+     SUNSET
+  ========================================================== */
+  sunset: {
+    light: {
+      background: "#FFF0EC",
+      text: "#5D302C",
+      card: "#FFFFFF",
+      border: "#EAB0A5",
+      primary: "#E85F52",
 
+      doneText: "#A1837E",
+      doneCheck: "#D7776D",
+      pendingText: "#82453E",
+      pendingCheck: "#E7695D",
+
+      inactiveCategory: "#F5D0C8",
+      inactiveCategoryText: "#9B655D",
+    },
+
+    dark: {
+      background: "#261514",
+      text: "#F4D8D2",
+      card: "#351C1A",
+      border: "#85534C",
+      primary: "#EA6659",
+
+      doneText: "#8E6A65",
+      doneCheck: "#C5675D",
+      pendingText: "#E8AEA5",
+      pendingCheck: "#F08073",
+
+      inactiveCategory: "#55312D",
+      inactiveCategoryText: "#D9AAA2",
+    },
+  },
+
+  /* =========================================================
+     ORCHID
+  ========================================================== */
+  orchid: {
+    light: {
+      background: "#FFF1F8",
+      text: "#5A3046",
+      card: "#FFFFFF",
+      border: "#E8B7CF",
+      primary: "#D9439A",
+
+      doneText: "#A88797",
+      doneCheck: "#E07AB4",
+      pendingText: "#7A405F",
+      pendingCheck: "#C96A9D",
+
+      inactiveCategory: "#F4D4E3",
+      inactiveCategoryText: "#96617B",
+    },
+
+    dark: {
+      background: "#24151F",
+      text: "#F3DDE8",
+      card: "#351E2C",
+      border: "#87546E",
+      primary: "#D96BA5",
+
+      doneText: "#8E667A",
+      doneCheck: "#C45F91",
+      pendingText: "#E6A8C7",
+      pendingCheck: "#E487B5",
+
+      inactiveCategory: "#543044",
+      inactiveCategoryText: "#D7A4BD",
+    },
+  },
+
+  /* =========================================================
+     AMETHYST
+  ========================================================== */
+  amethyst: {
+    light: {
+      background: "#F8ECFF",
+      text: "#493B52",
+      card: "#FFFFFF",
+      border: "#CDB9D8",
+      primary: "#B071DA",
+
+      doneText: "#A696AF",
+      doneCheck: "#C285E6",
+      pendingText: "#725487",
+      pendingCheck: "#9D7BB3",
+
+      inactiveCategory: "#E5D0F5",
+      inactiveCategoryText: "#866899",
+    },
+
+    dark: {
+      background: "#1F152A",
+      text: "#E6D0FF",
+      card: "#2C1B3A",
+      border: "#9B65C4",
+      primary: "#AB65E4",
+
+      doneText: "#7F609C",
+      doneCheck: "#A555F0",
+      pendingText: "#C18AF0",
+      pendingCheck: "#C69BEC",
+
+      inactiveCategory: "#513761",
+      inactiveCategoryText: "#DBC1f7",
+    },
+  },
 };

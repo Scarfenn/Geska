@@ -24,6 +24,18 @@ export default function ThemeSelector({
   const contentAnim = useRef(new Animated.Value(0)).current;
   const pressAnim = useRef(new Animated.Value(1)).current;
 
+  const themeKeys = [
+    "basic",
+    "pastel",
+    "ocean",
+    "forest",
+    "coffee",
+    "sunrise",
+    "sunset",
+    "orchid",
+    "amethyst",
+  ];
+
   // Cuando isOpen cambia → animar
   useEffect(() => {
     if (isOpen) {
@@ -117,9 +129,9 @@ export default function ThemeSelector({
             position: "absolute",
             right: 0,
             top: 50,
-            padding: 12,
+            padding: 14,
             borderRadius: 14,
-            width: 200,
+            width: 270,
             backgroundColor: theme.card,
 
             shadowColor: "#000",
@@ -133,52 +145,61 @@ export default function ThemeSelector({
             zIndex: 99,
           }}
         >
-          {[
-            "basic",
-            "pastel",
-            "ocean",
-            "forest",
-            "coffee",
-            "sunrise",
-            "sunset",
-          ].map((t) => (
-            <TouchableOpacity
-              key={t}
-              onPress={() => {
-                setThemeName(t);
-                setIsOpen(false);
-              }}
-              style={{
-                paddingVertical: 8,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
-              <LinearGradient
-                colors={[
-                  themes[t][mode].primary,
-                  mode === "light"
-                    ? themes[t][mode].primary + "65"
-                    : themes[t][mode].inactiveCategory,
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 9,
-                  borderWidth: themeName === t ? 2 : 0,
-                  borderColor: themes[t][mode].text,
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 10,
+            }}
+          >
+            {themeKeys.map((t) => (
+              <TouchableOpacity
+                key={t}
+                onPress={() => {
+                  setThemeName(t);
+                  setIsOpen(false);
                 }}
-              />
-              <Text style={{ color: themes[t][mode].text }}>
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                style={{
+                  width: "30%",
+                  alignItems: "center",
+                  paddingVertical: 8,
+                  borderRadius: 10,
 
-          {/* Línea divisoria */}
+                  backgroundColor:
+                    themeName === t
+                      ? theme.inactiveCategory
+                      : "transparent",
+                }}
+              >
+                <LinearGradient
+                  colors={[
+                    themes[t][mode].primary,
+                    themes[t][mode].inactiveCategory,
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    borderWidth: themeName === t ? 1 : 0,
+                    borderColor: theme.primary + "80",
+                    marginBottom: 5,
+                  }}
+                />
+
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontSize: 11,
+                  }}
+                >
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           <View
             style={{
               height: 1,
@@ -188,18 +209,36 @@ export default function ThemeSelector({
           />
 
           <TouchableOpacity
-            onPress={() => setMode(mode === "light" ? "dark" : "light")}
+            onPress={() =>
+              setMode(mode === "light" ? "dark" : "light")
+            }
             style={{
               flexDirection: "row",
               justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <Text style={{ color: theme.text, fontSize: 16 }}>Modo</Text>
+            <Text
+              style={{
+                color: theme.text,
+                fontSize: 16,
+              }}
+            >
+              Modo
+            </Text>
+
             {mode === "light" ? (
-              <Ionicons name="sunny" size={22} color="#FDB813" />
+              <Ionicons
+                name="sunny"
+                size={22}
+                color="#FDB813"
+              />
             ) : (
-              <Ionicons name="moon" size={22} color="#F5F5F5" />
+              <Ionicons
+                name="moon"
+                size={22}
+                color="#F5F5F5"
+              />
             )}
           </TouchableOpacity>
         </Animated.View>
