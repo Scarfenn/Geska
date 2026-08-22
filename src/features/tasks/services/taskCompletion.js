@@ -10,6 +10,8 @@ import {
   rescheduleTaskReminders,
 } from "@/features/tasks/services/notifications";
 
+import { DeviceEventEmitter } from "react-native";
+
 export async function completeTask(taskId, occurrenceDate = null) {
   await initDB();
 
@@ -67,6 +69,7 @@ export async function completeTask(taskId, occurrenceDate = null) {
         await updateTask(rescheduled);
       }
     }
+    DeviceEventEmitter.emit("tasks-updated")
 
     return true;
   }
@@ -87,6 +90,8 @@ export async function completeTask(taskId, occurrenceDate = null) {
     notification_ids: [],
     notification_id: null,
   });
+
+  DeviceEventEmitter.emit("tasks-updated")
 
   return true;
 }

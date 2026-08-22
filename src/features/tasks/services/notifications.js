@@ -25,7 +25,7 @@ export const TASK_REMINDER_CHANNEL_ID =
   "task-reminders";
 
 export const TASK_REMINDER_CATEGORY_ID =
-  "task-reminder-actions";
+  "task_reminder_actions";
 
 export const COMPLETE_TASK_ACTION_ID =
   "complete-task";
@@ -70,7 +70,7 @@ function hasNotificationPermission(settings) {
 export async function initNotifications() {
   try {
     if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+      await Notifications.setNotificationChannelAsync(TASK_REMINDER_CHANNEL_ID, {
         name: "Recordatorios",
         description: "Recordatorios de tareas de Geska",
         importance: Notifications.AndroidImportance.HIGH,
@@ -84,7 +84,7 @@ export async function initNotifications() {
       [
         {
           identifier: COMPLETE_TASK_ACTION_ID,
-          buttonTitle: "Completar",
+          buttonTitle: "COMPLETAR",
           options: {
             opensAppToForeground: false,
           },
@@ -352,7 +352,7 @@ function getNextSingleReminderDate(task, reminder, from = new Date()) {
 
 function addAndroidChannel(trigger) {
   if (Platform.OS !== "android") return trigger;
-  return { ...trigger, channelId: CHANNEL_ID };
+  return { ...trigger, channelId: TASK_REMINDER_CHANNEL_ID };
 }
 
 function buildContent(task, reminder, extraData = {}) {

@@ -11,9 +11,7 @@ import {
 export const NOTIFICATION_ACTION_TASK =
   "geska-notification-actions";
 
-export async function handleNotificationResponse(
-  response
-) {
+export async function handleNotificationResponse(response) {
   if (
     response?.actionIdentifier !==
     COMPLETE_TASK_ACTION_ID
@@ -21,19 +19,38 @@ export async function handleNotificationResponse(
     return false;
   }
 
+  const notification =
+    response.notification;
+
   const data =
-    response.notification?.request?.content?.data;
+    notification?.request?.content?.data;
 
   if (!data?.taskId) {
     return false;
   }
 
-  return completeTask(
+  const completed = await completeTask(
     data.taskId,
     data.occurrenceDate ?? null
   );
+
+  if (completed) {
+    await Notifications.dismissNotificationAsync(
+      notification.request.identifier
+    );
+  }
+
+  return completed;
 }
 
+// App activa / proceso vivo
+Notifications.addNotificationResponseReceivedListener(
+  async (response) => {
+    await handleNotificationResponse(response);
+  }
+);
+
+// Background / terminated
 TaskManager.defineTask(
   NOTIFICATION_ACTION_TASK,
   async ({ data, error }) => {

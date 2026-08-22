@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
+  DeviceEventEmitter,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -140,6 +141,18 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
     setCategories([{ id: "all", name: "Todas" }, ...cats]);
     setSelectedCategory((prev) => prev || "all");
   };
+
+  useEffect(() => {
+    const subscription =
+      DeviceEventEmitter.addListener(
+        "tasks-updated",
+        () => {
+          loadTasks();
+        }
+      );
+
+    return () => subscription.remove();
+  }, []);
 
   // ======================================================
   // SELECCIÓN TEMPORAL
