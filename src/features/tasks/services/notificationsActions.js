@@ -11,6 +11,38 @@ import {
 export const NOTIFICATION_ACTION_TASK =
   "geska-notification-actions";
 
+async function dismissResponseNotification(response) {
+  const responseId =
+    response?.notification?.request?.identifier;
+
+  const taskId =
+    response?.notification?.request?.content?.data?.taskId;
+
+  const presented =
+    await Notifications.getPresentedNotificationsAsync();
+
+  const notification = presented.find((item) => {
+    if (
+      responseId &&
+      item.request.identifier === responseId
+    ) {
+      return true;
+    }
+
+    return (
+      taskId &&
+      String(item.request.content.data?.taskId) ===
+        String(taskId)
+    );
+  });
+
+  if (!notification) return;
+
+  await Notifications.dismissNotificationAsync(
+    notification.request.identifier
+  );
+}
+
 export async function handleNotificationResponse(response) {
   if (
     response?.actionIdentifier !==
@@ -35,9 +67,7 @@ export async function handleNotificationResponse(response) {
   );
 
   if (completed) {
-    await Notifications.dismissNotificationAsync(
-      notification.request.identifier
-    );
+    await dismissResponseNotification(response);
   }
 
   return completed;
