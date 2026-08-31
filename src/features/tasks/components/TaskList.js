@@ -9,6 +9,32 @@ import { Ionicons } from "@expo/vector-icons";
 import createStyles from "@/styles/styles";
 import TaskCard from "./TaskCard";
 
+function timeToMinutes(time) {
+  if (!time) return null;
+
+  const [hours, minutes] = time
+    .split(":")
+    .map(Number);
+
+  return hours * 60 + minutes;
+}
+
+function sortTasksChronologically(tasks) {
+  return [...tasks].sort((a, b) => {
+    const aMinutes = timeToMinutes(a.time);
+    const bMinutes = timeToMinutes(b.time);
+
+    if (aMinutes === null && bMinutes === null) {
+      return 0;
+    }
+
+    if (aMinutes === null) return 1;
+    if (bMinutes === null) return -1;
+
+    return aMinutes - bMinutes;
+  });
+}
+
 export default function TaskList({
   tasks,
   toggleTaskDone,
@@ -27,6 +53,9 @@ export default function TaskList({
     themeName,
     mode
   );
+
+  const sortedTasks =
+    sortTasksChronologically(tasks);
 
   const emptyState = (
     <View
@@ -91,11 +120,11 @@ export default function TaskList({
       onPress={closeOptions}
     >
       <View style={{ flex: 1 }}>
-        {tasks.length === 0 ? (
+        {sortedTasks.length === 0 ? (
           emptyState
         ) : (
           <FlatList
-            data={tasks}
+            data={sortedTasks}
             keyExtractor={(item) =>
               String(item.id)
             }
