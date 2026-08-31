@@ -1073,19 +1073,13 @@ const toggleSubtaskDone =
           mode={mode}
           onTimeSelected={handleTimeSelected}
           selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
           selectedTime={selectedTime}
-          setSelectedTime={setSelectedTime}
+
           repeatMode={repeatMode}
-          setRepeatMode={setRepeatMode}
           repeatDays={repeatDays}
-          setRepeatDays={setRepeatDays}
           repeatInterval={repeatInterval}
-          setRepeatInterval={setRepeatInterval}
           reminder={reminder}
-          setReminder={setReminder}
           endDate={endDate}
-          setEndDate={setEndDate}
           closeModal={() => setTimeModalVisible(false)}
         />
 

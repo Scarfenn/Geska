@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import {
   Modal,
   View,
@@ -23,31 +23,43 @@ export default function TimeModal({
   mode,
 
   selectedDate,
-  setSelectedDate,
-
   selectedTime,
-  setSelectedTime,
 
   repeatMode,
-  setRepeatMode,
-
   repeatDays,
-  setRepeatDays,
-
   repeatInterval,
-  setRepeatInterval,
 
   reminder,
-  setReminder,
-
   endDate,
-  setEndDate,
 
   onTimeSelected,
   closeModal,
 }) {
   const styles = createStyles(themeName, mode);
   const theme = themes[themeName][mode];
+
+  const [draftDate, setDraftDate] =
+    useState(selectedDate);
+
+  const [draftTime, setDraftTime] =
+    useState(selectedTime);
+
+  const [draftRepeatMode, setDraftRepeatMode] =
+    useState(repeatMode);
+
+  const [draftRepeatDays, setDraftRepeatDays] =
+    useState(repeatDays);
+
+  const [
+    draftRepeatInterval,
+    setDraftRepeatInterval,
+  ] = useState(repeatInterval);
+
+  const [draftReminder, setDraftReminder] =
+    useState(reminder);
+
+  const [draftEndDate, setDraftEndDate] =
+    useState(endDate);
 
   const [dateVisible, setDateVisible] = useState(false);
   const [hourVisible, setHourVisible] = useState(false);
@@ -116,8 +128,8 @@ export default function TimeModal({
   // -------------------------------------------------
 
   const handleDateSelected = (date) => {
-    setSelectedDate(date);
-    setReminder(null);
+    setDraftDate(date);
+    setDraftReminder(null);
   };
 
   // -------------------------------------------------
@@ -171,14 +183,17 @@ export default function TimeModal({
   }
 
   const handleSelectedTimeChange = (nextTime) => {
-    const hadTime = selectedTime !== null;
-    const hasTime = nextTime !== null;
+    const hadTime =
+      draftTime !== null;
+
+    const hasTime =
+      nextTime !== null;
 
     if (hadTime !== hasTime) {
-      setReminder(null);
+      setDraftReminder(null);
     }
 
-    setSelectedTime(nextTime);
+    setDraftTime(nextTime);
   };
 
   function formatRepeatLabel({
@@ -264,6 +279,46 @@ export default function TimeModal({
     return "Sin repetir";
   }
 
+  useEffect(() => {
+    if (!visible) return;
+
+    setDraftDate(
+      selectedDate
+        ? new Date(selectedDate)
+        : null
+    );
+
+    setDraftTime(
+      selectedTime
+        ? new Date(selectedTime)
+        : null
+    );
+
+    setDraftRepeatMode(
+      repeatMode || "none"
+    );
+
+    setDraftRepeatDays(
+      [...(repeatDays || [])]
+    );
+
+    setDraftRepeatInterval(
+      repeatInterval || 1
+    );
+
+    setDraftReminder(
+      reminder
+        ? { ...reminder }
+        : null
+    );
+
+    setDraftEndDate(
+      endDate
+        ? new Date(endDate)
+        : null
+    );
+  }, [visible]);
+
   return (
     <>
       {/* Modal de Fecha */}
@@ -271,7 +326,7 @@ export default function TimeModal({
         visible={dateVisible}
         themeName={themeName}
         mode={mode}
-        selectedDate={selectedDate}
+        selectedDate={draftDate}
         onSelectDate={handleDateSelected}
         closeModal={() => setDateVisible(false)}
       />
@@ -282,15 +337,20 @@ export default function TimeModal({
         closeModal={() => setRepeatVisible(false)}
         themeName={themeName}
         mode={mode}
-        selectedDate={selectedDate}
-        repeatMode={repeatMode}
-        setRepeatMode={setRepeatMode}
-        repeatDays={repeatDays}
-        setRepeatDays={setRepeatDays}
-        repeatInterval={repeatInterval}
-        setRepeatInterval={setRepeatInterval}
-        endDate={endDate}
-        setEndDate={setEndDate}
+
+        selectedDate={draftDate}
+
+        repeatMode={draftRepeatMode}
+        setRepeatMode={setDraftRepeatMode}
+
+        repeatDays={draftRepeatDays}
+        setRepeatDays={setDraftRepeatDays}
+
+        repeatInterval={draftRepeatInterval}
+        setRepeatInterval={setDraftRepeatInterval}
+
+        endDate={draftEndDate}
+        setEndDate={setDraftEndDate}
       />
 
       {/* Modal de Hora */}
@@ -298,9 +358,16 @@ export default function TimeModal({
         visible={hourVisible}
         themeName={themeName}
         mode={mode}
-        selectedTime={selectedTime}
-        setSelectedTime={handleSelectedTimeChange}
-        closeModal={() => setHourVisible(false)}
+
+        selectedTime={draftTime}
+
+        setSelectedTime={
+          handleSelectedTimeChange
+        }
+
+        closeModal={() =>
+          setHourVisible(false)
+        }
       />
 
       {/* Modal de Recordatorio */}
@@ -308,12 +375,18 @@ export default function TimeModal({
         visible={reminderVisible}
         themeName={themeName}
         mode={mode}
-        selectedDate={selectedDate}
-        selectedTime={selectedTime}
-        repeatMode={repeatMode}
-        reminder={reminder}
-        setReminder={setReminder}
-        closeModal={() => setReminderVisible(false)}
+
+        selectedDate={draftDate}
+        selectedTime={draftTime}
+
+        repeatMode={draftRepeatMode}
+
+        reminder={draftReminder}
+        setReminder={setDraftReminder}
+
+        closeModal={() =>
+          setReminderVisible(false)
+        }
       />
 
       {/* ============================================ */}
@@ -396,7 +469,7 @@ export default function TimeModal({
                     }}
                   >
                     <Text style={styles.optionValue}>
-                      {formatHumanDate(selectedDate)}
+                      {formatHumanDate(draftDate)}
                     </Text>
 
                     <Ionicons
@@ -434,7 +507,7 @@ export default function TimeModal({
                     </Text>
                   </View>
                   <Text style={styles.optionValue}>
-                    {formatHumanTime(selectedTime)}
+                    {formatHumanTime(draftTime)}
                   </Text>
                 </TouchableOpacity>
 
@@ -475,9 +548,9 @@ export default function TimeModal({
                   </View>
                   <Text style={styles.optionValue}>
                     {formatRepeatLabel({
-                      repeatMode,
-                      repeatDays,
-                      repeatInterval,
+                      repeatMode: draftRepeatMode,
+                      repeatDays: draftRepeatDays,
+                      repeatInterval: draftRepeatInterval,
                     })}
                   </Text>
                 </TouchableOpacity>
@@ -517,9 +590,9 @@ export default function TimeModal({
                   >
                     <Text style={styles.optionValue}>
                       {formatReminder(
-                        reminder,
-                        selectedDate,
-                        selectedTime
+                        draftReminder,
+                        draftDate,
+                        draftTime
                       )}
                     </Text>
                     <Ionicons
@@ -536,14 +609,25 @@ export default function TimeModal({
                   style={[styles.saveButton, { marginTop: 22 }]}
                   onPress={() => {
                     onTimeSelected({
-                      date: selectedDate,
-                      time: selectedTime,
-                      repeatMode,
-                      repeatDays,
-                      repeatInterval,
-                      reminder,
-                      endDate,
+                      date: draftDate,
+                      time: draftTime,
+
+                      repeatMode:
+                        draftRepeatMode,
+
+                      repeatDays:
+                        draftRepeatDays,
+
+                      repeatInterval:
+                        draftRepeatInterval,
+
+                      reminder:
+                        draftReminder,
+
+                      endDate:
+                        draftEndDate,
                     });
+
                     animateClose();
                   }}
                 >
