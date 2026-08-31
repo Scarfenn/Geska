@@ -909,6 +909,14 @@ const toggleSubtaskDone =
       if (!repeatDays.includes(weekdayLetter)) return false;
     }
 
+    // MENSUAL
+    if (repeatMode === "monthly") {
+      return (
+        diffDays >= 0 &&
+        viewDate.getDate() === taskDate.getDate()
+      );
+    }
+
     return false;
   }
 
