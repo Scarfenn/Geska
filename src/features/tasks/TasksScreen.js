@@ -142,8 +142,6 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
         "No se pudieron cargar las tareas",
         error
       );
-
-      setTasksLoadError(true);
     }
   };
 
