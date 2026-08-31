@@ -12,7 +12,6 @@ import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
 import { Ionicons } from "@expo/vector-icons";
 import RepeatModal from "./SubModals/RepeatModal";
-import CustomRepeatModal from "./SubModals/CustomRepeatModal";
 import DateSelectorModal from "./SubModals/DateSelectorModal";
 import HourModal from "./SubModals/HourModal";
 import ReminderModal from "./SubModals/ReminderModal";
@@ -35,6 +34,9 @@ export default function TimeModal({
   repeatDays,
   setRepeatDays,
 
+  repeatInterval,
+  setRepeatInterval,
+
   reminder,
   setReminder,
 
@@ -50,7 +52,6 @@ export default function TimeModal({
   const [dateVisible, setDateVisible] = useState(false);
   const [hourVisible, setHourVisible] = useState(false);
   const [repeatVisible, setRepeatVisible] = useState(false);
-  const [customRepeatVisible, setCustomRepeatVisible] = useState(false);
   const [reminderVisible, setReminderVisible] = useState(false);
 
   // -------------------------------------------------
@@ -180,16 +181,88 @@ export default function TimeModal({
     setSelectedTime(nextTime);
   };
 
-  // -------------------------------------------------
-  // Repetición
-  // -------------------------------------------------
-  const repeatLabels = {
-    none: "Sin repetir",
-    daily: "Diario",
-    weekly: "Semanal",
-    monthly: "Mensual",
-    custom: "Personalizado",
-  };
+  function formatRepeatLabel({
+    repeatMode,
+    repeatDays = [],
+    repeatInterval = 1,
+  }) {
+    if (repeatMode === "none") {
+      return "Sin repetir";
+    }
+
+    if (repeatMode === "daily") {
+      return repeatInterval === 1
+        ? "Diario"
+        : `Cada ${repeatInterval} días`;
+    }
+
+    if (repeatMode === "weekly") {
+      const allDaysSelected = repeatDays.length === 7;
+
+      if (allDaysSelected) {
+        return repeatInterval === 1
+          ? "Diario"
+          : `Cada ${repeatInterval} semanas · Todos los días`;
+      }
+
+      const daysLabel =
+        repeatDays.length > 0
+          ? repeatDays.join(", ")
+          : "Semanal";
+
+      return repeatInterval === 1
+        ? daysLabel
+        : `Cada ${repeatInterval} semanas · ${daysLabel}`;
+    }
+
+    if (repeatMode === "monthly") {
+      const allDaysSelected = 
+        repeatDays.length === 31;
+
+      if (allDaysSelected) {
+        return repeatInterval === 1
+          ? "Diario"
+          : `Cada ${repeatInterval} meses · Todos los días`;
+      }
+
+      const intervalLabel =
+        repeatInterval === 1
+          ? "Mensual"
+          : `Cada ${repeatInterval} meses`;
+
+      const daysLabel =
+        repeatDays.length > 0
+          ? `Días ${repeatDays.join(", ")}`
+          : null;
+
+      return daysLabel
+        ? `${intervalLabel} · ${daysLabel}`
+        : intervalLabel;
+    }
+    if (repeatMode === "monthly" && repeatInterval % 12 === 0) {
+      const years = repeatInterval / 12;
+
+      const intervalLabel =
+        years === 1
+          ? "Anual"
+          : `Cada ${years} años`;
+      
+      const monthLabel = selectedDate.toLocaleDateString("es-CL", {
+        month: "long",
+      });
+      
+      const daysLabel =
+        repeatDays.length === 1
+          ? `${repeatDays[0]} de ${monthLabel}`
+          : repeatDays.length > 1
+            ? `${repeatDays.join(", ")} de ${monthLabel}`
+            : null;
+
+      return daysLabel ? `${intervalLabel} · ${daysLabel}` : intervalLabel;
+    }
+
+    return "Sin repetir";
+  }
 
   return (
     <>
@@ -207,32 +280,17 @@ export default function TimeModal({
       <RepeatModal
         visible={repeatVisible}
         closeModal={() => setRepeatVisible(false)}
-        openCustomRepeat={() => setCustomRepeatVisible(true)}
         themeName={themeName}
         mode={mode}
+        selectedDate={selectedDate}
         repeatMode={repeatMode}
         setRepeatMode={setRepeatMode}
         repeatDays={repeatDays}
         setRepeatDays={setRepeatDays}
+        repeatInterval={repeatInterval}
+        setRepeatInterval={setRepeatInterval}
         endDate={endDate}
         setEndDate={setEndDate}
-      />
-
-      <CustomRepeatModal
-        visible={customRepeatVisible}
-        themeName={themeName}
-        mode={mode}
-        repeatData={{
-          mode: repeatMode,
-          days: repeatDays,
-          endDate,
-        }}
-        setRepeatData={(data) => {
-          if (data.mode) setRepeatMode(data.mode);
-          if (data.days) setRepeatDays(data.days);
-          if (data.endDate !== undefined) setEndDate(data.endDate);
-        }}
-        closeModal={() => setCustomRepeatVisible(false)}
       />
 
       {/* Modal de Hora */}
@@ -416,7 +474,11 @@ export default function TimeModal({
                     </Text>
                   </View>
                   <Text style={styles.optionValue}>
-                    {repeatLabels[repeatMode] || "Sin repetir"}
+                    {formatRepeatLabel({
+                      repeatMode,
+                      repeatDays,
+                      repeatInterval,
+                    })}
                   </Text>
                 </TouchableOpacity>
 
@@ -478,6 +540,7 @@ export default function TimeModal({
                       time: selectedTime,
                       repeatMode,
                       repeatDays,
+                      repeatInterval,
                       reminder,
                       endDate,
                     });
