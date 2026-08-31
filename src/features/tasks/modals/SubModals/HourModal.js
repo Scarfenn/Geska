@@ -22,7 +22,7 @@ const CENTER_PADDING = (WHEEL_HEIGHT - ITEM_HEIGHT) / 2;
 const HOUR_WIDTH = 68;
 const MINUTE_WIDTH = 68;
 
-const LOOP_COUNT = 21;
+const LOOP_COUNT = 16;
 const MIDDLE_BLOCK = Math.floor(LOOP_COUNT / 2);
 
 const AnimatedFlatList =

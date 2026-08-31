@@ -5,14 +5,6 @@ const db = SQLite.openDatabaseSync("tasks.db");
 /* ------------------------------------------------------
    UTILIDAD PARA EJECUTAR SQL
 ------------------------------------------------------ */
-async function safeExec(sql) {
-  try {
-    await db.execAsync(sql);
-  } catch (err) {
-    console.error("DB exec error:", err);
-  }
-}
-
 function parseNotificationIds(
   value,
   legacyId = null
@@ -153,12 +145,113 @@ async function ensureSubtaskColumns() {
   }
 }
 
+/* HELPERS */
+function groupBy(items, key) {
+  const map = new Map();
+
+  for (const item of items) {
+    const value = item[key];
+
+    if (!map.has(value)) {
+      map.set(value, []);
+    }
+
+    map.get(value).push(item);
+  }
+
+  return map;
+}
+
+function mapOccurrence(occurrence) {
+  return {
+    ...occurrence,
+    done: !!occurrence.done,
+  };
+}
+
+function mapTask(task) {
+  const hasLegacyRelativeReminder =
+    task.time &&
+    task.reminder_minutes != null;
+
+  return {
+    id: task.id,
+    title: task.title,
+
+    description:
+      task.description ?? null,
+
+    done:
+      !!task.done,
+
+    categoryId:
+      task.category_id ?? null,
+
+    date:
+      task.date ?? null,
+
+    time:
+      task.time ?? null,
+
+    repeat_mode:
+      task.repeat_mode || "none",
+
+    repeat_days:
+      task.repeat_days ?? null,
+
+    repeat_end:
+      task.repeat_end ?? null,
+
+    repeat_interval:
+      task.repeat_interval ?? 1,
+
+    reminder_type:
+      task.reminder_type ||
+      (
+        hasLegacyRelativeReminder
+          ? "relative"
+          : null
+      ),
+
+    reminder_value:
+      task.reminder_value ??
+      (
+        hasLegacyRelativeReminder
+          ? task.reminder_minutes
+          : null
+      ),
+
+    reminder_unit:
+      task.reminder_unit ||
+      (
+        hasLegacyRelativeReminder
+          ? "minutes"
+          : null
+      ),
+
+    reminder_at:
+      task.reminder_at ?? null,
+
+    reminder_minutes:
+      task.reminder_minutes ?? null,
+
+    notification_ids:
+      parseNotificationIds(
+        task.notification_ids,
+        task.notification_id
+      ),
+
+    notification_id:
+      task.notification_id ?? null,
+  };
+}
+
 /* ------------------------------------------------------
    INICIALIZAR BASE DE DATOS
 ------------------------------------------------------ */
 export async function initDB() {
   try {
-    await safeExec(`
+    await db.execAsync(`
       CREATE TABLE IF NOT EXISTS categories (
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT NOT NULL UNIQUE
@@ -282,102 +375,92 @@ export async function deleteCategory(id) {
 
 export async function getAllTasks() {
   try {
-    const tasks = await db.getAllAsync("SELECT * FROM tasks");
-    const subtasks = await db.getAllAsync(`SELECT * FROM subtasks ORDER BY task_id, sort_order ASC`);
-    const occurrences = await db.getAllAsync("SELECT * FROM task_occurrences");
-    const subtaskOccurrences = await db.getAllAsync("SELECT * FROM subtask_occurrences");
+    const [
+      tasks,
+      subtasks,
+      occurrences,
+      subtaskOccurrences,
+    ] = await Promise.all([
+      db.getAllAsync(
+        "SELECT * FROM tasks"
+      ),
+
+      db.getAllAsync(`
+        SELECT *
+        FROM subtasks
+        ORDER BY
+          task_id,
+          sort_order ASC,
+          rowid ASC
+      `),
+
+      db.getAllAsync(
+        "SELECT * FROM task_occurrences"
+      ),
+
+      db.getAllAsync(
+        "SELECT * FROM subtask_occurrences"
+      ),
+    ]);
+
+    const subtasksByTask =
+      groupBy(
+        subtasks,
+        "task_id"
+      );
+
+    const occurrencesByTask =
+      groupBy(
+        occurrences,
+        "task_id"
+      );
+
+    const occurrencesBySubtask =
+      groupBy(
+        subtaskOccurrences,
+        "subtask_id"
+      );
 
     return tasks.map((task) => ({
-      id: task.id,
-      title: task.title,
-      description: task.description || null,
-      done: !!task.done,
-      categoryId: task.category_id || null,
+      ...mapTask(task),
 
-      date: task.date || null,
-      time: task.time || null,
-
-      repeat_mode: task.repeat_mode || "none",
-      repeat_days: task.repeat_days || null,
-      repeat_end: task.repeat_end || null,
-      repeat_interval: task.repeat_interval || 1,
-
-      reminder_type:
-        task.reminder_type ||
+      subtasks:
         (
-          task.time &&
-          task.reminder_minutes != null
-            ? "relative"
-            : null
-        ),
-
-      reminder_value:
-        task.reminder_value ??
-        (
-          task.time &&
-          task.reminder_minutes != null
-            ? task.reminder_minutes
-            : null
-        ),
-
-      reminder_unit:
-        task.reminder_unit ||
-        (
-          task.time &&
-          task.reminder_minutes != null
-            ? "minutes"
-            : null
-        ),
-
-      reminder_at:
-        task.reminder_at ?? null,
-
-      reminder_minutes:
-        task.reminder_minutes ?? null,
-
-      notification_ids:
-        parseNotificationIds(
-          task.notification_ids,
-          task.notification_id
-        ),
-
-      notification_id:
-        task.notification_id || null,
-
-      subtasks: subtasks
-        .filter(
-          (s) =>
-            s.task_id === task.id
-        )
-        .map((s) => ({
-          ...s,
+          subtasksByTask.get(
+            task.id
+          ) || []
+        ).map((subtask) => ({
+          ...subtask,
 
           done:
-            !!s.done,
+            !!subtask.done,
 
           occurrences:
-            subtaskOccurrences
-              .filter(
-                (occurrence) =>
-                  occurrence.subtask_id ===
-                  s.id
-              )
-              .map(
-                (occurrence) => ({
-                  ...occurrence,
-                  done:
-                    !!occurrence.done,
-                })
-              ),
+            (
+              occurrencesBySubtask.get(
+                subtask.id
+              ) || []
+            ).map(
+              mapOccurrence
+            ),
         })),
 
-      occurrences: occurrences
-        .filter(o => o.task_id === task.id)
-        .map(o => ({ ...o, done: !!o.done })),
+      occurrences:
+        (
+          occurrencesByTask.get(
+            task.id
+          ) || []
+        ).map(
+          mapOccurrence
+        ),
     }));
   } catch (e) {
-    console.error("getAllTasks error:", e);
-    return [];
+    console.error(
+      "getAllTasks error:",
+      e
+    );
+
+    throw e;
   }
 }
 

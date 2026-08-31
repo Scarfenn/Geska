@@ -132,8 +132,19 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
   }, [tasksVersion]);
 
   const loadTasks = async () => {
-    const loadedTasks = await getAllTasks();
-    setTasks(loadedTasks);
+    try {
+      const loadedTasks =
+        await getAllTasks();
+
+      setTasks(loadedTasks);
+    } catch (error) {
+      console.error(
+        "No se pudieron cargar las tareas",
+        error
+      );
+
+      setTasksLoadError(true);
+    }
   };
 
   const loadCategories = async () => {
