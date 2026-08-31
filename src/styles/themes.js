@@ -263,35 +263,35 @@ export const themes = {
   ========================================================== */
   orchid: {
     light: {
-      background: "#FFF1F8",
-      text: "#5A3046",
+      background: "#FFF0FA",
+      text: "#592044",
       card: "#FFFFFF",
-      border: "#E8B7CF",
-      primary: "#D9439A",
+      border: "#E6A4CA",
+      primary: "#D62A91",
 
-      doneText: "#A88797",
-      doneCheck: "#E07AB4",
-      pendingText: "#7A405F",
-      pendingCheck: "#C96A9D",
+      doneText: "#A47B91",
+      doneCheck: "#D95CA5",
+      pendingText: "#792653",
+      pendingCheck: "#C83A8A",
 
-      inactiveCategory: "#F4D4E3",
-      inactiveCategoryText: "#96617B",
+      inactiveCategory: "#F1C8E0",
+      inactiveCategoryText: "#93436E",
     },
 
     dark: {
-      background: "#24151F",
-      text: "#F3DDE8",
-      card: "#351E2C",
-      border: "#87546E",
-      primary: "#D96BA5",
+      background: "#24121E",
+      text: "#F5D9E9",
+      card: "#351629",
+      border: "#8D416A",
+      primary: "#E0449E",
 
-      doneText: "#8E667A",
-      doneCheck: "#C45F91",
-      pendingText: "#E6A8C7",
-      pendingCheck: "#E487B5",
+      doneText: "#8D5C76",
+      doneCheck: "#C93B89",
+      pendingText: "#E89BC3",
+      pendingCheck: "#E965AA",
 
-      inactiveCategory: "#543044",
-      inactiveCategoryText: "#D7A4BD",
+      inactiveCategory: "#54243E",
+      inactiveCategoryText: "#D99ABA",
     },
   },
 
