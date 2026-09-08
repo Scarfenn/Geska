@@ -1,3 +1,4 @@
+import { occursOnDate, parseLocalDate as parseTaskDate } from "@/features/tasks/domain/recurrence";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -29,16 +30,6 @@ export const TASK_REMINDER_CATEGORY_ID =
 
 export const COMPLETE_TASK_ACTION_ID =
   "complete-task";
-
-const LETTER_TO_WEEKDAY = {
-  D: 0,
-  L: 1,
-  M: 2,
-  X: 3,
-  J: 4,
-  V: 5,
-  S: 6,
-};
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -118,26 +109,6 @@ export async function initNotifications() {
   }
 }
 
-function parseTaskDate(value) {
-  if (!value) return null;
-
-  const [year, month, day] = value.split("-").map(Number);
-
-  if (![year, month, day].every(Number.isFinite)) return null;
-
-  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
-
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null;
-  }
-
-  return date;
-}
-
 function parseTaskTime(value) {
   if (!value) return null;
 
@@ -155,14 +126,6 @@ function parseTaskTime(value) {
   }
 
   return { hour, minute };
-}
-
-function parseRepeatEnd(value) {
-  const date = parseTaskDate(value);
-  if (!date) return null;
-
-  date.setHours(23, 59, 59, 999);
-  return date;
 }
 
 function formatDateLocal(date) {
@@ -183,59 +146,6 @@ function combineOccurrenceAndTime(occurrence, time) {
   return date;
 }
 
-function getTaskWeekdays(task) {
-  const anchor = parseTaskDate(task.date);
-  if (!anchor) return [];
-
-  const selected = task.repeat_days
-    ? task.repeat_days
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean)
-    : [];
-
-  if (!selected.length) return [anchor.getDay()];
-
-  return [
-    ...new Set(
-      selected
-        .map((letter) => LETTER_TO_WEEKDAY[letter])
-        .filter((value) => value != null)
-    ),
-  ];
-}
-
-function occursOnDate(task, date) {
-  const anchor = parseTaskDate(task.date);
-  if (!anchor || !date) return false;
-
-  const target = startOfDay(date);
-  const start = startOfDay(anchor);
-
-  if (target < start) return false;
-
-  const repeatEnd = parseRepeatEnd(task.repeat_end);
-  if (repeatEnd && target > repeatEnd) return false;
-
-  const mode = task.repeat_mode || "none";
-
-  if (mode === "none") {
-    return target.getTime() === start.getTime();
-  }
-
-  if (mode === "daily") return true;
-
-  if (mode === "weekly") {
-    return getTaskWeekdays(task).includes(target.getDay());
-  }
-
-  if (mode === "monthly") {
-    return target.getDate() === start.getDate();
-  }
-
-  return false;
-}
-
 function findNextOccurrenceDate(task, from = new Date()) {
   const anchor = parseTaskDate(task.date);
   if (!anchor) return null;
@@ -250,9 +160,6 @@ function findNextOccurrenceDate(task, from = new Date()) {
     candidate.setDate(cursor.getDate() + offset);
 
     if (occursOnDate(task, candidate)) return candidate;
-
-    const repeatEnd = parseRepeatEnd(task.repeat_end);
-    if (repeatEnd && candidate > repeatEnd) return null;
 
     if ((task.repeat_mode || "none") === "none" && candidate > start) {
       return null;

@@ -1,3 +1,4 @@
+import { occursOnDate, parseLocalDate } from "@/features/tasks/domain/recurrence";
 import { useEffect, useState } from "react";
 import {
   Text,
@@ -535,7 +536,7 @@ function getSubtaskDoneForDate(
   // ======================================================
 
   const tasksForSelectedDay = tasks.filter((t) =>
-    doesTaskOccurOnDate(t, selectedDay)
+    occursOnDate(t, selectedDay)
   );
 
 
@@ -796,7 +797,7 @@ const toggleSubtaskDone =
     setTaskModalMode("edit");
 
     // Pre-cargar valores de tiempo de la tarea
-    setSelectedDate(task.date ? parseLocalDateString(task.date) : new Date());
+    setSelectedDate(task.date ? parseLocalDate(task.date) : new Date());
     setSelectedTime(parseTimeString(task.time));
     setRepeatMode(task.repeat_mode || "none");
     setRepeatDays(
@@ -869,67 +870,6 @@ const toggleSubtaskDone =
     return result;
   };
   
-  // ==========================================
-  // FILTRO DE REPETICIÓN
-  // ==========================================
-
-  function parseLocalDateString(str) {
-    if (!str) return null;
-    const [year, month, day] = str.split("-").map(Number);
-    // Año, mes (0-based), día → fecha local sin UTC raro
-    return new Date(year, month - 1, day);
-  }
-
-  function doesTaskOccurOnDate(task, selectedDay) {
-    const taskDate = parseLocalDateString(task.date);
-    const viewDate = new Date(selectedDay);
-
-    if (!taskDate) return false;
-
-    taskDate.setHours(0,0,0,0);
-    viewDate.setHours(0,0,0,0);
-
-    const diffDays = Math.floor((viewDate - taskDate) / 86400000);
-
-    const repeatMode = task.repeat_mode || "none";
-    const repeatDays = task.repeat_days
-      ? task.repeat_days.split(",")
-      : [];
-
-    // SIN REPETICIÓN
-    if (repeatMode === "none") {
-      return diffDays === 0;
-    }
-
-    // DIARIO
-    if (repeatMode === "daily") {
-      return diffDays >= 0;
-    }
-
-    // SEMANAL
-    if (repeatMode === "weekly") {
-      const days = ["L", "M", "X", "J", "V", "S", "D"];
-      const weekdayLetter = days[(viewDate.getDay() + 6) % 7];
-
-      if (!repeatDays.length) {
-      const baseLetter = days[(taskDate.getDay() + 6) % 7];
-      return weekdayLetter === baseLetter && diffDays >= 0;
-    }
-      if (!repeatDays.includes(weekdayLetter)) return false;
-    }
-
-    // MENSUAL
-    if (repeatMode === "monthly") {
-      return (
-        diffDays >= 0 &&
-        viewDate.getDate() === taskDate.getDate()
-      );
-    }
-
-    return false;
-  }
-
-
   // ======================================================
   // RENDER
   // ======================================================

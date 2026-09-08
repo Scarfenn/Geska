@@ -259,12 +259,12 @@ export default function createStyles(themeName = "basic", mode = "light") {
     },
 
     optionLabel: {
-      fontSize: 16,
+      fontSize: 14,
       color: theme.text,
     },
 
     optionValue: {
-      fontSize: 16,
+      fontSize: 14,
       color: theme.pendingText,
       marginRight: 6,
     },

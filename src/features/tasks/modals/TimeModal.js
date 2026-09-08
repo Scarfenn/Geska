@@ -230,7 +230,11 @@ export default function TimeModal({
         : `Cada ${repeatInterval} semanas · ${daysLabel}`;
     }
 
-    if (repeatMode === "monthly") {
+    if (repeatMode === "monthly" && repeatInterval % 12 !== 0) {
+      const sortedDays = [...repeatDays]
+        .map(Number)
+        .sort((a, b) => a - b);
+
       const allDaysSelected = 
         repeatDays.length === 31;
 
@@ -245,10 +249,15 @@ export default function TimeModal({
           ? "Mensual"
           : `Cada ${repeatInterval} meses`;
 
-      const daysLabel =
-        repeatDays.length > 0
-          ? `Días ${repeatDays.join(", ")}`
-          : null;
+      let daysLabel = null;
+
+      if (sortedDays.length === 1) {
+        daysLabel = `Día ${sortedDays[0]}`;
+      } else if (sortedDays.length <= 4) {
+        daysLabel = `Días ${sortedDays.join(", ")}`;
+      } else if (sortedDays.length > 4) {
+        daysLabel = `${sortedDays.length} días del mes`;
+      }
 
       return daysLabel
         ? `${intervalLabel} · ${daysLabel}`
@@ -476,7 +485,7 @@ export default function TimeModal({
                       name="chevron-forward"
                       size={17}
                       color={theme.inactiveCategoryText}
-                      style={{ marginLeft: 5 }}
+                      style={{ marginLeft: 2 }}
                     />
                   </View>
                 </TouchableOpacity>
@@ -599,7 +608,7 @@ export default function TimeModal({
                       name="chevron-forward"
                       size={17}
                       color={theme.inactiveCategoryText}
-                      style={{ marginLeft: 5 }}
+                      style={{ marginLeft: 2 }}
                     />
                   </View>
                 </TouchableOpacity>
