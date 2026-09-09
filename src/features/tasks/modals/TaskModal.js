@@ -347,14 +347,14 @@ export default function TaskModal({
                       name="pricetag"
                       size={14}
                       color={
-                        theme.primary
+                        theme.primaryText
                       }
                     />
 
                     <Text
                       style={{
                         color:
-                          theme.primary,
+                          theme.primaryText,
 
                         marginLeft: 5,
                         fontSize: 13,
@@ -378,7 +378,7 @@ export default function TaskModal({
                         name="close"
                         size={16}
                         color={
-                          theme.primary
+                          theme.primaryText
                         }
                         style={{
                           marginLeft: 7,
@@ -411,7 +411,7 @@ export default function TaskModal({
                       size={24}
                       color={
                         hasCustomTimeConfig
-                          ? theme.primary
+                          ? theme.primaryText
                           : styles.iconColor.color
                       }
                     />
@@ -511,7 +511,7 @@ export default function TaskModal({
                 >
                   <Text
                     style={{
-                      color: "red",
+                      color: theme.inactiveCategoryText,
                       textAlign:
                         "center",
                     }}

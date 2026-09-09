@@ -294,7 +294,7 @@ export default function DateSelectorModal({
                       <Text
                         style={{
                           color: active
-                            ? "#fff"
+                            ? theme.onPrimary
                             : theme.inactiveCategoryText,
                           fontSize: 11,
                           fontWeight: "600",
@@ -305,7 +305,7 @@ export default function DateSelectorModal({
 
                       <Text
                         style={{
-                          color: active ? "#fff" : theme.text,
+                          color: active ? theme.onPrimary : theme.text,
                           fontSize: 20,
                           fontWeight: "700",
                           marginTop: 2,
@@ -317,7 +317,7 @@ export default function DateSelectorModal({
                       <Text
                         style={{
                           color: active
-                            ? "#fff"
+                            ? theme.onPrimary
                             : theme.inactiveCategoryText,
                           fontSize: 10,
                           marginTop: 1,
@@ -358,7 +358,7 @@ export default function DateSelectorModal({
               >
                 <Text
                   style={{
-                    color: theme.primary,
+                    color: theme.primaryText,
                     fontWeight: "600",
                   }}
                 >
@@ -370,7 +370,7 @@ export default function DateSelectorModal({
                 onPress={animateClose}
                 style={{ marginTop: 12 }}
               >
-                <Text style={{ color: "red", textAlign: "center" }}>
+                <Text style={styles.modalCancelText}>
                   Cancelar
                 </Text>
               </TouchableOpacity>

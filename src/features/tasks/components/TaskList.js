@@ -59,12 +59,7 @@ export default function TaskList({
 
   const emptyState = (
     <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        paddingHorizontal: 20,
-      }}
+      style={styles.taskEmptyState}
     >
       <Ionicons
         name="document-text-outline"
@@ -73,33 +68,17 @@ export default function TaskList({
           styles.categoryContainer
             .inactiveColor
         }
-        style={{ marginBottom: 15 }}
+        style={styles.taskEmptyIcon}
       />
 
       <Text
-        style={{
-          textAlign: "center",
-          fontSize: 18,
-          color:
-            mode === "light"
-              ? "#444"
-              : "#ccc",
-          fontWeight: "600",
-        }}
+        style={styles.taskEmptyTitle}
       >
         ¡No tienes ninguna tarea!
       </Text>
 
       <Text
-        style={{
-          textAlign: "center",
-          fontSize: 14,
-          color:
-            mode === "light"
-              ? "#666"
-              : "#aaa",
-          marginTop: 8,
-        }}
+        style={styles.taskEmptyDescription}
       >
         Añade una con el botón{" "}
         <Ionicons
@@ -119,7 +98,7 @@ export default function TaskList({
     <TouchableWithoutFeedback
       onPress={closeOptions}
     >
-      <View style={{ flex: 1 }}>
+      <View style={styles.fill}>
         {sortedTasks.length === 0 ? (
           emptyState
         ) : (
@@ -128,9 +107,7 @@ export default function TaskList({
             keyExtractor={(item) =>
               String(item.id)
             }
-            contentContainerStyle={{
-              paddingBottom: 20,
-            }}
+            contentContainerStyle={styles.taskListContent}
             renderItem={({ item }) => (
               <TaskCard
                 task={item}

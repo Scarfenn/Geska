@@ -82,20 +82,11 @@ const handleDelete = () => {
               {/* Botón eliminar (solo si se está editando) */}
               {categoryToEdit && (
                 <TouchableOpacity
-                  style={{
-                    marginTop: 12,
-                    padding: 12,
-                    borderRadius: 6,
-                    backgroundColor: "#ff4d4d",
-                  }}
+                  style={styles.categoryDeleteButton}
                   onPress={handleDelete}
                 >
                   <Text
-                    style={{
-                      color: "#fff",
-                      textAlign: "center",
-                      fontWeight: "bold",
-                    }}
+                    style={styles.categoryDeleteLabel}
                   >
                     Eliminar categoría
                   </Text>
@@ -104,13 +95,13 @@ const handleDelete = () => {
 
               {/* Cancelar */}
               <TouchableOpacity
-                style={{ marginTop: 12 }}
+                style={styles.categoryCancelButton}
                 onPress={() => {
                   setCategoryName("");
                   closeModal();
                 }}
               >
-                <Text style={{ textAlign: "center", color: "red" }}>
+                <Text style={styles.modalCancelText}>
                   Cancelar
                 </Text>
               </TouchableOpacity>

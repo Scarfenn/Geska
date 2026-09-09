@@ -10,12 +10,24 @@ export default function createStyles(themeName = "basic", mode = "light") {
        ✦ TEXTO GLOBAL
     ───────────────────────── */
     text: { color: theme.text },
-    textSecondary: { color: theme.pendingText },
+    textSecondary: { color: theme.inactiveCategoryText },
+    dangerText: { color: theme.danger },
+    dangerButton: { backgroundColor: theme.dangerBackground },
+    dangerButtonText: { color: theme.onDanger },
 
 
     /* ─────────────────────────
        ✦ CONTENEDOR GLOBAL
     ───────────────────────── */
+    rowCenter: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    fill: {
+      flex: 1,
+    },
+
     container: {
       flex: 1,
       paddingHorizontal: 20,
@@ -108,7 +120,7 @@ export default function createStyles(themeName = "basic", mode = "light") {
     },
 
     dayItemLabelActive: {
-      color: "#fff",
+      color: theme.onPrimary,
       fontWeight: "600",
     },
 
@@ -119,7 +131,7 @@ export default function createStyles(themeName = "basic", mode = "light") {
     },
 
     dayItemNumberActive: {
-      color: "#fff",
+      color: theme.onPrimary,
       fontWeight: "700",
     },
 
@@ -137,7 +149,7 @@ export default function createStyles(themeName = "basic", mode = "light") {
     },
 
     categoryTextActive: {
-      color: "#fff",
+      color: theme.onPrimary,
       fontWeight: "600",
     },
 
@@ -150,6 +162,125 @@ export default function createStyles(themeName = "basic", mode = "light") {
     /* ─────────────────────────
        ✦ TAREAS
     ───────────────────────── */
+    taskCardContainer: {
+      marginBottom: 3,
+    },
+
+    taskCardHeader: {
+      marginBottom: 6,
+    },
+
+    taskCardContent: {
+      flex: 1,
+      marginLeft: 8,
+    },
+
+    taskTitle: {
+      fontSize: 18,
+    },
+
+    taskTime: {
+      marginTop: 2,
+      fontSize: 13,
+      color: theme.pendingText + "AA",
+    },
+
+    subtaskProgress: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginLeft: 8,
+    },
+
+    subtaskProgressBadge: {
+      backgroundColor: theme.subtaskCounterBackground,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 8,
+    },
+
+    subtaskProgressBadgeComplete: {
+      backgroundColor: theme.subtaskCounterCompleteBackground,
+    },
+
+    subtaskProgressTextComplete: {
+      color: theme.subtaskCounterCompleteText,
+    },
+
+    subtaskProgressText: {
+      color: theme.subtaskCounterText,
+      fontSize: 12,
+      fontWeight: "600",
+    },
+
+    subtaskCollapseButton: {
+      marginLeft: 6,
+    },
+
+    subtaskList: {
+      marginLeft: 32,
+      marginTop: 7,
+      marginRight: 3,
+    },
+
+    subtaskRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 6,
+    },
+
+    subtaskLabel: {
+      marginLeft: 6,
+    },
+
+    taskMenuItem: {
+      paddingVertical: 5,
+      flexDirection: "row",
+    },
+
+    taskMenuIcon: {
+      marginRight: 5,
+    },
+
+    taskMenuLabel: {
+      color: theme.text,
+      fontWeight: "bold",
+    },
+
+    taskMenuDangerLabel: {
+      color: theme.danger,
+      fontWeight: "bold",
+    },
+
+    taskEmptyState: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 20,
+    },
+
+    taskEmptyIcon: {
+      marginBottom: 15,
+    },
+
+    taskEmptyTitle: {
+      textAlign: "center",
+      fontSize: 18,
+      color: mode === "light" ? "#444" : "#ccc",
+      fontWeight: "600",
+    },
+
+    taskEmptyDescription: {
+      textAlign: "center",
+      fontSize: 14,
+      color: mode === "light" ? "#666" : "#aaa",
+      marginTop: 8,
+    },
+
+    taskListContent: {
+      paddingBottom: 20,
+    },
+
     task: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -214,6 +345,28 @@ export default function createStyles(themeName = "basic", mode = "light") {
     /* ─────────────────────────
        ✦ MODALES
     ───────────────────────── */
+    categoryDeleteButton: {
+      marginTop: 12,
+      padding: 12,
+      borderRadius: 6,
+      backgroundColor: theme.dangerBackground,
+    },
+
+    categoryDeleteLabel: {
+      color: theme.onDanger,
+      textAlign: "center",
+      fontWeight: "bold",
+    },
+
+    categoryCancelButton: {
+      marginTop: 12,
+    },
+
+    modalCancelText: {
+      textAlign: "center",
+      color: theme.inactiveCategoryText,
+    },
+
     modalOverlay: {
       flex: 1,
       justifyContent: "center",
@@ -244,7 +397,7 @@ export default function createStyles(themeName = "basic", mode = "light") {
     },
 
     saveButtonText: {
-      color: "#fff",
+      color: theme.onPrimary,
       fontWeight: "bold",
       fontSize: 16,
     },
@@ -346,7 +499,7 @@ export default function createStyles(themeName = "basic", mode = "light") {
     calendarTitle: {
       fontSize: 22,
       fontWeight: "bold",
-      color: theme.primary,
+      color: theme.primaryText,
       marginBottom: 6,
     },
 
@@ -366,6 +519,40 @@ export default function createStyles(themeName = "basic", mode = "light") {
     /* ─────────────────────────
        ✦ SECCIÓN DE PRÓXIMAS TAREAS
     ───────────────────────── */
+    drawerHeader: {
+      padding: 20,
+      backgroundColor: theme.background,
+      borderBottomWidth: 1,
+      borderTopWidth: 1,
+      borderColor: theme.text + "33",
+      borderRadius: 10,
+      marginBottom: 10,
+    },
+
+    drawerTitle: {
+      fontSize: 22,
+      fontWeight: "bold",
+      color: theme.text,
+    },
+
+    drawerSubtitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 5,
+    },
+
+    drawerSubtitle: {
+      fontSize: 14,
+      color: theme.pendingText,
+      marginLeft: 3,
+    },
+
+    drawerItems: {
+      flex: 1,
+      backgroundColor: theme.card,
+      marginTop: 5,
+    },
+
     upcomingSection: {
       marginTop: 28,
       marginLeft: 10,
@@ -390,6 +577,7 @@ export default function createStyles(themeName = "basic", mode = "light") {
       fontSize: 14,
       fontWeight: "500",
     },
+
 
 
   });

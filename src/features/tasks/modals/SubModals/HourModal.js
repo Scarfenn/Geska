@@ -746,7 +746,7 @@ const settleWheel = (
 
                             color:
                               active
-                                ? theme.card
+                                ? theme.onPrimary
                                 : theme.inactiveCategoryText,
                           }}
                         >

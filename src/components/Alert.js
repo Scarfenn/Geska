@@ -77,7 +77,7 @@ export default function ConfirmDialog({
               <Text style={[styles.text, { marginBottom: 10 }]}>{message}</Text>
 
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <Text onPress={onCancel} style={{ color: "red", fontSize: 16, marginTop: 6 }}>
+                <Text onPress={onCancel} style={{ color: styles.textSecondary.color, fontSize: 16, marginTop: 6 }}>
                   Cancelar
                 </Text>
 

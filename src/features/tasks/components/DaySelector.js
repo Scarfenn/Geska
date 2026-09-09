@@ -362,7 +362,7 @@ export default function DaySelector({
                   <Text
                     style={{
                       color: isSelected
-                        ? "#fff"
+                        ? theme.onPrimary
                         : theme.text,
                       fontWeight:
                         isSelected
@@ -385,7 +385,7 @@ export default function DaySelector({
                   <Text
                     style={{
                       color: isSelected
-                        ? "#fff"
+                        ? theme.onPrimary
                         : theme.text,
                       opacity: isSelected
                         ? 1
@@ -436,7 +436,7 @@ export default function DaySelector({
         >
           <Text
             style={{
-              color: "#fff",
+              color: theme.onPrimary,
               fontWeight: "600",
             }}
           >

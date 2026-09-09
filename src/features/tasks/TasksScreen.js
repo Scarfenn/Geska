@@ -881,7 +881,7 @@ const toggleSubtaskDone =
       <View style={styles.container}>
         <StatusBar
           barStyle={mode === "light" ? "dark-content" : "light-content"}
-          backgroundColor={mode === "light" ? "#fff" : "#111"}
+          backgroundColor={styles.container.backgroundColor}
         />
 
         {/* Header */}
@@ -974,7 +974,7 @@ const toggleSubtaskDone =
 
         {/* Botón agregar tarea */}
         <TouchableOpacity style={styles.mainButton} onPress={openModalAdd}>
-          <Ionicons name="add" size={32} color="#fff" />
+          <Ionicons name="add" size={32} color={styles.saveButtonText.color} />
         </TouchableOpacity>
 
         {/* Modales */}

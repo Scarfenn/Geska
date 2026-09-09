@@ -200,7 +200,7 @@ export default function TaskCategoryModal({
                   },
 
                   selectedCategory === null && {
-                    color: theme.primary,
+                    color: theme.primaryText,
                     fontWeight: "600",
                   },
                 ]}
@@ -213,7 +213,7 @@ export default function TaskCategoryModal({
               <Ionicons
                 name="checkmark"
                 size={20}
-                color={theme.primary}
+                color={theme.primaryText}
               />
             )}
           </TouchableOpacity>
@@ -253,7 +253,7 @@ export default function TaskCategoryModal({
                     size={19}
                     color={
                       active
-                        ? theme.primary
+                        ? theme.primaryText
                         : styles.iconColor.color
                     }
                   />
@@ -266,7 +266,7 @@ export default function TaskCategoryModal({
                       },
 
                       active && {
-                        color: theme.primary,
+                        color: theme.primaryText,
                         fontWeight: "600",
                       },
                     ]}
@@ -279,7 +279,7 @@ export default function TaskCategoryModal({
                   <Ionicons
                     name="checkmark"
                     size={20}
-                    color={theme.primary}
+                    color={theme.primaryText}
                   />
                 )}
               </TouchableOpacity>
@@ -301,7 +301,7 @@ export default function TaskCategoryModal({
             <Ionicons
               name="add-circle-outline"
               size={20}
-              color={theme.primary}
+              color={theme.primaryText}
             />
 
             <Text
@@ -309,7 +309,7 @@ export default function TaskCategoryModal({
                 styles.optionLabel,
                 {
                   marginLeft: 8,
-                  color: theme.primary,
+                  color: theme.primaryText,
                   fontWeight: "600",
                 },
               ]}

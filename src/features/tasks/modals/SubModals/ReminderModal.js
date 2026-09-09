@@ -572,7 +572,7 @@ export default function ReminderModal({
 
                       active && {
                         color:
-                          theme.primary,
+                          theme.primaryText,
 
                         fontWeight:
                           "600",
@@ -602,7 +602,7 @@ export default function ReminderModal({
                     name="checkmark"
                     size={20}
                     color={
-                      theme.primary
+                      theme.primaryText
                     }
                   />
                 )}

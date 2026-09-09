@@ -340,7 +340,7 @@ export default function RepeatModal({
                           : "500",
 
                         color: active
-                          ? theme.card
+                          ? theme.onPrimary
                           : theme.text,
                       }}
                     >
@@ -410,7 +410,7 @@ export default function RepeatModal({
                         <Text
                           style={{
                             color: active
-                              ? theme.card
+                              ? theme.onPrimary
                               : theme.text,
 
                             fontWeight: active
@@ -480,7 +480,7 @@ export default function RepeatModal({
                         <Text
                           style={{
                             color: active
-                              ? theme.card
+                              ? theme.onPrimary
                               : theme.text,
 
                             fontSize: 12,
@@ -696,10 +696,7 @@ export default function RepeatModal({
             }}
           >
             <Text
-              style={{
-                textAlign: "center",
-                color: theme.inactiveCategoryText,
-              }}
+              style={styles.modalCancelText}
             >
               Cancelar
             </Text>

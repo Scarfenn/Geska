@@ -83,8 +83,8 @@ export default function TaskCard({
   };
 
   return (
-    <View style={{ marginBottom: 3 }}>
-      <View style={{ marginBottom: 6 }}>
+    <View style={styles.taskCardContainer}>
+      <View style={styles.taskCardHeader}>
         <TouchableOpacity
           activeOpacity={0.6}
           style={styles.task}
@@ -105,34 +105,22 @@ export default function TaskCard({
             }
           />
 
-          <View style={{ flex: 1, marginLeft: 8 }}>
+          <View style={styles.taskCardContent}>
             <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-              }}
+              style={styles.rowCenter}
             >
-              <View style={{ flex: 1 }}>
+              <View style={styles.fill}>
                 <Text
-                  style={{
-                    color: task.done
+                  style={[styles.taskTitle, { color: task.done
                       ? styles.doneText.color
-                      : styles.pendingText.color,
-                    fontSize: 18,
-                  }}
+                      : styles.pendingText.color }]}
                 >
                   {task.title}
                 </Text>
 
                 {task.time && (
                   <Text
-                    style={{
-                      marginTop: 2,
-                      fontSize: 13,
-                      color:
-                        styles.pendingText.color + "AA",
-                      opacity: task.done ? 0.45 : 0.85,
-                    }}
+                    style={[styles.taskTime, { opacity: task.done ? 0.45 : 0.85 }]}
                   >
                     {task.time}
                   </Text>
@@ -141,33 +129,19 @@ export default function TaskCard({
 
               {totalSubtasks > 0 && (
                 <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginLeft: 8,
-                  }}
+                  style={styles.subtaskProgress}
                 >
                   <View
-                    style={{
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                      borderRadius: 8,
-                      backgroundColor:
-                        doneSubtasks === totalSubtasks
-                          ? styles.doneCheck.color + "22"
-                          : styles.pendingCheck.color + "22",
-                    }}
+                    style={[
+                      styles.subtaskProgressBadge,
+                      doneSubtasks === totalSubtasks && styles.subtaskProgressBadgeComplete,
+                    ]}
                   >
                     <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "600",
-                        color:
-                          doneSubtasks === totalSubtasks
-                            ? styles.doneCheck.color
-                            : styles.pendingText.color,
-                      }}
+                      style={[
+                        styles.subtaskProgressText,
+                        doneSubtasks === totalSubtasks && styles.subtaskProgressTextComplete,
+                      ]}
                     >
                       {doneSubtasks}/{totalSubtasks}
                     </Text>
@@ -177,7 +151,7 @@ export default function TaskCard({
                     onPress={() =>
                       setCollapsed((current) => !current)
                     }
-                    style={{ marginLeft: 6 }}
+                    style={styles.subtaskCollapseButton}
                     hitSlop={{
                       top: 6,
                       bottom: 6,
@@ -204,20 +178,12 @@ export default function TaskCard({
 
       {totalSubtasks > 0 && !collapsed && (
         <View
-          style={{
-            marginLeft: 32,
-            marginTop: 7,
-            marginRight: 3,
-          }}
+          style={styles.subtaskList}
         >
           {subtasks.map((subtask) => (
             <TouchableOpacity
               key={subtask.id}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 6,
-              }}
+              style={styles.subtaskRow}
               onPress={() =>
                 toggleSubtaskDone(
                   task.id,
@@ -240,12 +206,9 @@ export default function TaskCard({
               />
 
               <Text
-                style={{
-                  marginLeft: 6,
-                  color: subtask.done
+                style={[styles.subtaskLabel, { color: subtask.done
                     ? styles.doneText.color
-                    : styles.pendingText.color,
-                }}
+                    : styles.pendingText.color }]}
               >
                 {subtask.text}
               </Text>
@@ -275,22 +238,16 @@ export default function TaskCard({
         >
           <TouchableOpacity
             onPress={handleManageSubtasks}
-            style={{
-              paddingVertical: 5,
-              flexDirection: "row",
-            }}
+            style={styles.taskMenuItem}
           >
             <Ionicons
               name="list-outline"
               size={18}
-              color={mode === "light" ? "#000" : "#fff"}
-              style={{ marginRight: 5 }}
+              color={styles.text.color}
+              style={styles.taskMenuIcon}
             />
             <Text
-              style={{
-                color: mode === "light" ? "#000" : "#fff",
-                fontWeight: "bold",
-              }}
+              style={styles.taskMenuLabel}
             >
               Administrar subtareas
             </Text>
@@ -298,22 +255,16 @@ export default function TaskCard({
 
           <TouchableOpacity
             onPress={handleEdit}
-            style={{
-              paddingVertical: 5,
-              flexDirection: "row",
-            }}
+            style={styles.taskMenuItem}
           >
             <Ionicons
               name="create-outline"
               size={18}
-              color={mode === "light" ? "#000" : "#fff"}
-              style={{ marginRight: 5 }}
+              color={styles.text.color}
+              style={styles.taskMenuIcon}
             />
             <Text
-              style={{
-                color: mode === "light" ? "#000" : "#fff",
-                fontWeight: "bold",
-              }}
+              style={styles.taskMenuLabel}
             >
               Editar
             </Text>
@@ -321,22 +272,16 @@ export default function TaskCard({
 
           <TouchableOpacity
             onPress={handleDelete}
-            style={{
-              paddingVertical: 5,
-              flexDirection: "row",
-            }}
+            style={styles.taskMenuItem}
           >
             <Ionicons
               name="trash-outline"
               size={18}
-              color="red"
-              style={{ marginRight: 5 }}
+              color={styles.dangerText.color}
+              style={styles.taskMenuIcon}
             />
             <Text
-              style={{
-                color: "red",
-                fontWeight: "bold",
-              }}
+              style={styles.taskMenuDangerLabel}
             >
               Eliminar
             </Text>

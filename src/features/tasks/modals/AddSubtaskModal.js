@@ -439,12 +439,12 @@ export default function AddSubtaskModal({
                   <Ionicons
                     name="add-circle-outline"
                     size={20}
-                    color={theme.primary}
+                    color={theme.primaryText}
                   />
 
                   <Text
                     style={{
-                      color: theme.primary,
+                      color: theme.primaryText,
                       marginLeft: 6,
                       fontWeight: "600",
                     }}
@@ -486,7 +486,7 @@ export default function AddSubtaskModal({
                         <Ionicons
                           name="reorder-three-outline"
                           size={26}
-                          color={theme.primary}
+                          color={theme.primaryText}
                         />
                       </TouchableOpacity>
 
@@ -556,7 +556,7 @@ export default function AddSubtaskModal({
                         <Ionicons
                           name="trash-outline"
                           size={19}
-                          color="red"
+                          color={theme.danger}
                         />
                       </TouchableOpacity>
                     </View>
@@ -585,7 +585,7 @@ export default function AddSubtaskModal({
                       <Ionicons
                         name="add-circle-outline"
                         size={18}
-                        color={theme.primary}
+                        color={theme.primaryText}
                         style={{
                           marginHorizontal: 8,
                         }}
@@ -636,7 +636,7 @@ export default function AddSubtaskModal({
                   textAlign:
                     "center",
 
-                  color: "red",
+                  color: theme.inactiveCategoryText,
                 }}
               >
                 Cancelar

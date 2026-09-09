@@ -647,7 +647,7 @@ export default function TimeModal({
                   onPress={animateClose}
                   style={{ marginTop: 10 }}
                 >
-                  <Text style={{ color: "red", textAlign: "center" }}>
+                  <Text style={styles.modalCancelText}>
                     Cancelar
                   </Text>
                 </TouchableOpacity>
