@@ -74,9 +74,9 @@ export const themes = {
       dangerBackground: "#B42332",
       onDanger: "#FFFFFF",
 
-      doneText: "#7A706F",
+      doneText: "#7B7170",
       doneCheck: "#8FD8BE",           // Menta pastel
-      pendingText: "#6A5650",
+      pendingText: "#4A3C38",
       pendingCheck: "#C7B3AE",
 
       inactiveCategory: "#F5DEDF",
@@ -103,7 +103,7 @@ export const themes = {
 
       doneText: "#A996A2",
       doneCheck: "#8FD8BE",           // Menta pastel
-      pendingText: "#E8D8DF",
+      pendingText: "#EEE2E7",
       pendingCheck: "#C7AEBB",
 
       inactiveCategory: "#524451",
@@ -133,7 +133,7 @@ export const themes = {
       dangerBackground: "#B42332",
       onDanger: "#FFFFFF",
     
-    doneText: "#566D7F",
+    doneText: "#586E80",
     doneCheck: "#2AAFA3",
     pendingText: "#0F3A5F",
     pendingCheck: "#6F96B8",
@@ -160,7 +160,7 @@ export const themes = {
       dangerBackground: "#8D2635",
       onDanger: "#FFFFFF",
 
-      doneText: "#9DB1C9",
+      doneText: "#778BA0",
       doneCheck: "#4FD1C5",
       pendingText: "#E2EEFF",
       pendingCheck: "#ADC5DD",
@@ -194,7 +194,7 @@ export const themes = {
 
       doneText: "#587769",
       doneCheck: "#5FBF87",
-      pendingText: "#2F4B3A",
+      pendingText: "#294233",
       pendingCheck: "#8CAFA0",
 
       inactiveCategory: "#C4E0D2",
@@ -219,7 +219,7 @@ export const themes = {
       dangerBackground: "#8D2635",
       onDanger: "#FFFFFF",
 
-      doneText: "#A6CFC0",
+      doneText: "#749689",
       doneCheck: "#6ED69A",
       pendingText: "#E8FDF1",
       pendingCheck: "#C2E4D8",
@@ -253,7 +253,7 @@ export const themes = {
 
       doneText: "#776D63",
       doneCheck: "#B98A5F",
-      pendingText: "#5A4637",
+      pendingText: "#48382C",
       pendingCheck: "#92735B",
 
       inactiveCategory: "#DFCCB7",
@@ -278,7 +278,7 @@ export const themes = {
       dangerBackground: "#8D2635",
       onDanger: "#FFFFFF",
 
-      doneText: "#A9907E",
+      doneText: "#9E8675",
       doneCheck: "#C28A5E",
       pendingText: "#F0DFCF",
       pendingCheck: "#D1B39B",
@@ -310,9 +310,9 @@ export const themes = {
       dangerBackground: "#B42332",
       onDanger: "#FFFFFF",
 
-      doneText: "#806F58",
+      doneText: "#81705A",
       doneCheck: "#E3B35C",
-      pendingText: "#765B32",
+      pendingText: "#4E3C21",
       pendingCheck: "#D6A756",
 
       inactiveCategory: "#F6E3B9",
@@ -339,7 +339,7 @@ export const themes = {
 
       doneText: "#9E8A74",
       doneCheck: "#C89245",
-      pendingText: "#E8C98D",
+      pendingText: "#EBD09C",
       pendingCheck: "#F3BE62",
 
       inactiveCategory: "#574025",
@@ -371,7 +371,7 @@ export const themes = {
 
       doneText: "#826A66",
       doneCheck: "#D7776D",
-      pendingText: "#82453E",
+      pendingText: "#5B302B",
       pendingCheck: "#E7695D",
 
       inactiveCategory: "#F5D0C8",
@@ -398,7 +398,7 @@ export const themes = {
 
       doneText: "#A1837F",
       doneCheck: "#C5675D",
-      pendingText: "#E8AEA5",
+      pendingText: "#EEC5BE",
       pendingCheck: "#F08073",
 
       inactiveCategory: "#55312D",
@@ -430,7 +430,7 @@ export const themes = {
 
       doneText: "#886678",
       doneCheck: "#D95CA5",
-      pendingText: "#792653",
+      pendingText: "#692148",
       pendingCheck: "#C83A8A",
 
       inactiveCategory: "#F1C8E0",
@@ -455,7 +455,7 @@ export const themes = {
       dangerBackground: "#8D2635",
       onDanger: "#FFFFFF",
 
-      doneText: "#A47D91",
+      doneText: "#A37C90",
       doneCheck: "#C93B89",
       pendingText: "#EBDDE6",
       pendingCheck: "#E965AA",
@@ -489,7 +489,7 @@ export const themes = {
 
       doneText: "#74697A",
       doneCheck: "#C285E6",
-      pendingText: "#725487",
+      pendingText: "#443251",
       pendingCheck: "#9D7BB3",
 
       inactiveCategory: "#E5D0F5",
@@ -514,7 +514,7 @@ export const themes = {
       dangerBackground: "#8D2635",
       onDanger: "#FFFFFF",
 
-      doneText: "#9980B0",
+      doneText: "#987FAF",
       doneCheck: "#A555F0",
       pendingText: "#E6DDEC",
       pendingCheck: "#C69BEC",
