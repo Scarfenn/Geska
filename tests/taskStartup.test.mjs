@@ -15,7 +15,7 @@ function mount(overrides = {}) {
     useEffect: (fn) => effects.push(fn), createStyles: () => ({}),
     initDB: async () => {}, getAllTasks: async () => [task],
     getAllCategories: async () => [{ id: 'work', name: 'Trabajo' }],
-    syncTaskReminders: async () => {}, updateTask: async () => {},
+    syncTaskReminders: async () => {}, updateTaskNotificationIds: async () => {},
     DeviceEventEmitter: { addListener: () => ({ remove() {} }) },
     console: { error() {} }, ...overrides,
   };

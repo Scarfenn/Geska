@@ -87,3 +87,15 @@ export async function deleteTask(id) {
     transaction: true
   });
 }
+
+// Notification reconciliation must not overwrite a title/completion edited while
+// native scheduling was in flight. A deleted task is never recreated here.
+export async function updateTaskNotificationIds(task) {
+  return withDatabase(async (db) => {
+    const ids = Array.isArray(task.notification_ids) ? task.notification_ids.filter(Boolean) : [];
+    await db.runAsync(
+      "UPDATE tasks SET notification_ids=?, notification_id=? WHERE id=?",
+      [JSON.stringify(ids), ids[0] ?? null, task.id],
+    );
+  });
+}

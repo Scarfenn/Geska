@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeviceEventEmitter } from "react-native";
-import { initDB, getAllTasks, getAllCategories, updateTask } from "@/storage/database";
+import { initDB, getAllTasks, getAllCategories, updateTaskNotificationIds } from "@/storage/database";
 import { syncTaskReminders } from "../services/notifications";
 export default function useTasksData(tasksVersion) {
   const [tasks, setTasks] = useState([]);
@@ -44,7 +44,7 @@ export default function useTasksData(tasksVersion) {
     const loadedTasks = await loadTasks();
     if (!loadedTasks || !mounted.current) return;
     try {
-      await syncTaskReminders(loadedTasks, updateTask);
+      await syncTaskReminders(loadedTasks, updateTaskNotificationIds);
       if (mounted.current) await loadTasks();
     } catch (error) {
       console.error("No se pudieron sincronizar los recordatorios", error);

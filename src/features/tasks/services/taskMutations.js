@@ -1,13 +1,23 @@
-import { deleteCategory, addCategory, updateCategory, getAllTasks, saveTask, updateTask, setOccurrenceDone, getOccurrence, deleteTask, addSubtask } from "@/storage/database";
-import { scheduleTaskReminders, cancelTaskReminders, rescheduleTaskReminders } from "@/features/tasks/services/notifications";
+import { deleteCategory, addCategory, updateCategory, getAllTasks, saveTask, updateTask, updateTaskNotificationIds, setOccurrenceDone, getOccurrence, deleteTask, addSubtask } from "@/storage/database";
+import { reconcileTaskReminders, cancelTaskReminders } from "@/features/tasks/services/notifications";
 import { applyReminderToTask } from "@/features/tasks/services/reminderModel";
 import { formatDateLocal, formatTime } from "../domain/taskDates";
 import { saveSubtasks, toggleSubtaskDone as toggleSubtask } from "./subtaskMutations";
 // Actions receive the current task snapshot and refresh only after persistence.
 export function createTaskActions({
   tasks,
-  loadTasks
+  loadTasks,
+  onReminderError = () => {}
 }) {
+  const syncSavedTaskReminders = async (task) => {
+    try {
+      const result = await reconcileTaskReminders(task, updateTaskNotificationIds);
+      if (result.status === "permission-denied") onReminderError({ code: "permission-denied" });
+    } catch (error) {
+      console.error("La tarea se guardó, pero fallaron sus recordatorios", error);
+      onReminderError(error);
+    }
+  };
   const saveSubtasksHandler = async (taskId, draftSubtasks, reload = true) => {
     await saveSubtasks(tasks.find(task => task.id === taskId), draftSubtasks);
     if (reload) await loadTasks();
@@ -56,14 +66,7 @@ export function createTaskActions({
       }
       await addSubtask(newTask.id, subtask.text.trim());
     }
-    const notificationIds = await scheduleTaskReminders(newTask);
-    if (notificationIds.length) {
-      await updateTask({
-        ...newTask,
-        notification_ids: notificationIds,
-        notification_id: notificationIds[0]
-      });
-    }
+    await syncSavedTaskReminders(newTask);
     await loadTasks();
   };
   const saveEditTaskHandler = async (taskData, taskToEdit, schedule) => {
@@ -97,23 +100,17 @@ export function createTaskActions({
       repeat_days: Array.isArray(repeatDays) ? repeatDays.join(",") : null,
       repeat_end: formatDateLocal(endDate),
       repeat_interval: repeatInterval || 1,
-      notification_ids: [],
-      notification_id: null
+      notification_ids: taskToEdit.notification_ids || [],
+      notification_id: taskToEdit.notification_id || null
     }, reminder);
-    await cancelTaskReminders(taskToEdit.notification_ids || taskToEdit.notification_id);
     await updateTask(updatedTask);
     await saveSubtasksHandler(updatedTask.id, subtasks, false);
-    const notificationIds = await scheduleTaskReminders(updatedTask);
-    await updateTask({
-      ...updatedTask,
-      notification_ids: notificationIds,
-      notification_id: notificationIds[0] ?? null
-    });
+    await syncSavedTaskReminders(updatedTask);
     await loadTasks();
   };
   const removeTask = async id => {
     const taskToRemove = tasks.find(task => task.id === id);
-    await cancelTaskReminders(taskToRemove?.notification_ids || taskToRemove?.notification_id);
+    await cancelTaskReminders(taskToRemove?.notification_ids || taskToRemove?.notification_id, { taskId: id });
     await deleteTask(id);
     await loadTasks();
   };
@@ -125,18 +122,13 @@ export function createTaskActions({
       await setOccurrenceDone(task.id, dateStr, newDone);
       const freshTasks = await getAllTasks();
       const freshTask = freshTasks.find(currentTask => currentTask.id === task.id);
-      if (freshTask) {
-        const rescheduledTask = await rescheduleTaskReminders(freshTask);
-        if (rescheduledTask) {
-          await updateTask(rescheduledTask);
-        }
-      }
+      if (freshTask) await syncSavedTaskReminders(freshTask);
       await loadTasks();
       return;
     }
     const newDone = !task.done;
     if (newDone) {
-      await cancelTaskReminders(task.notification_ids || task.notification_id);
+      await cancelTaskReminders(task.notification_ids || task.notification_id, { taskId: task.id });
       await updateTask({
         ...task,
         done: true,
@@ -153,12 +145,7 @@ export function createTaskActions({
       notification_id: null
     };
     await updateTask(reopenedTask);
-    const notificationIds = await scheduleTaskReminders(reopenedTask);
-    await updateTask({
-      ...reopenedTask,
-      notification_ids: notificationIds,
-      notification_id: notificationIds[0] ?? null
-    });
+    await syncSavedTaskReminders(reopenedTask);
     await loadTasks();
   };
   const saveCategoryHandler = async cat => {

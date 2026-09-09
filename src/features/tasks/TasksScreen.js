@@ -43,7 +43,13 @@ export default function TasksScreen({
   } = editor;
   const actions = createTaskActions({
     tasks,
-    loadTasks
+    loadTasks,
+    onReminderError: (error) => Alert.alert(
+      "Tarea guardada",
+      error.code === "permission-denied"
+        ? "Activa el permiso de notificaciones en la configuración del sistema para recibir recordatorios."
+        : "No se pudieron actualizar sus recordatorios. Se reintentará al reiniciar la aplicación.",
+    ),
   });
   const {
     toggleTaskDone,

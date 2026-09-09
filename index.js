@@ -1,6 +1,7 @@
 import { registerRootComponent } from 'expo';
 
-import "./src/features/tasks/services/notificationsActions";
+import { registerNotifications } from "./src/features/tasks/services/notifications/registerNotifications";
 import App from './App';
 
+registerNotifications();
 registerRootComponent(App);

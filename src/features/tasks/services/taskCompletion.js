@@ -2,6 +2,7 @@ import {
   initDB,
   getAllTasks,
   updateTask,
+  updateTaskNotificationIds,
   setOccurrenceDone,
 } from "@/storage/database";
 
@@ -62,12 +63,7 @@ export async function completeTask(taskId, occurrenceDate = null) {
     );
 
     if (freshTask) {
-      const rescheduled =
-        await rescheduleTaskReminders(freshTask);
-
-      if (rescheduled) {
-        await updateTask(rescheduled);
-      }
+      await rescheduleTaskReminders(freshTask, updateTaskNotificationIds);
     }
     DeviceEventEmitter.emit("tasks-updated")
 
@@ -81,7 +77,8 @@ export async function completeTask(taskId, occurrenceDate = null) {
 
   await cancelTaskReminders(
     task.notification_ids ||
-      task.notification_id
+      task.notification_id,
+    { taskId: task.id }
   );
 
   await updateTask({

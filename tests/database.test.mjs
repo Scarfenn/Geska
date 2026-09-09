@@ -157,3 +157,16 @@ test('a failed aggregate read rejects and does not poison the next transaction',
   h.intercept(() => {});
   assert.equal((await h.api.getAllTasks()).length, 1);
 });
+
+test('notification persistence cannot overwrite concurrent task edits or recreate deleted tasks', async t => {
+  const h = databaseHarness(t); await h.api.saveTask(task());
+  const stale = (await h.api.getAllTasks())[0];
+  await h.api.updateTask({ ...stale, title: 'Edited while scheduling', done: true });
+  await h.api.updateTaskNotificationIds({ ...stale, notification_ids: ['native-id'] });
+  const [current] = await h.api.getAllTasks();
+  assert.equal(current.title, 'Edited while scheduling'); assert.equal(current.done, true);
+  assert.equal(current.notification_id, 'native-id');
+  await h.api.deleteTask(current.id);
+  await h.api.updateTaskNotificationIds({ ...stale, notification_ids: ['late-id'] });
+  assert.equal((await h.api.getAllTasks()).length, 0);
+});
