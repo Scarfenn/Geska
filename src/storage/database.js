@@ -249,7 +249,19 @@ function mapTask(task) {
 /* ------------------------------------------------------
    INICIALIZAR BASE DE DATOS
 ------------------------------------------------------ */
-export async function initDB() {
+let initializationPromise = null;
+
+export function initDB() {
+  if (!initializationPromise) {
+    initializationPromise = initializeDatabase().catch((error) => {
+      initializationPromise = null;
+      throw error;
+    });
+  }
+  return initializationPromise;
+}
+
+async function initializeDatabase() {
   try {
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS categories (
@@ -315,6 +327,7 @@ export async function initDB() {
     console.log("Base de datos lista");
   } catch (e) {
     console.error("initDB error:", e);
+    throw e;
   }
 }
 
@@ -327,7 +340,7 @@ export async function getAllCategories() {
     return await db.getAllAsync("SELECT id, name FROM categories");
   } catch (e) {
     console.error("getAllCategories error:", e);
-    return [];
+    throw e;
   }
 }
 

@@ -1,5 +1,5 @@
 import { occursOnDate, parseLocalDate } from "@/features/tasks/domain/recurrence";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Text,
   View,
@@ -7,6 +7,7 @@ import {
   StatusBar,
   ScrollView,
   DeviceEventEmitter,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -56,7 +57,13 @@ import AddSubtaskModal from "@/features/tasks/modals/AddSubtaskModal";
 export default function TasksScreen({ themeName, mode, setThemeName, setMode, tasksVersion }) {
   const [tasks, setTasks] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const loadRequest = useRef(0);
+  const mounted = useRef(false);
+  const hasLoadedTasks = useRef(false);
+  const previousTasksVersion = useRef(tasksVersion);
   const [selectedCategoryForTask, setSelectedCategoryForTask] = useState(null);
 
   const [activeModal, setActiveModal] = useState(null);
@@ -109,60 +116,66 @@ export default function TasksScreen({ themeName, mode, setThemeName, setMode, ta
   // DB SETUP
   // ======================================================
 
-  useEffect(() => {
-    const setup = async () => {
-      await initDB();
-
-      const loadedTasks =
-        await getAllTasks();
-
-      await syncTaskReminders(
-        loadedTasks,
-        updateTask
-      );
-
-      await loadTasks();
-      await loadCategories();
-    };
-
-    setup();
-  }, []);
-
-  useEffect(() => {
-    loadTasks();
-  }, [tasksVersion]);
-
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
+    const request = ++loadRequest.current;
+    setLoadError(null);
     try {
-      const loadedTasks =
-        await getAllTasks();
-
+      await initDB();
+      const [loadedTasks, cats] = await Promise.all([
+        getAllTasks(),
+        getAllCategories(),
+      ]);
+      if (!mounted.current || request !== loadRequest.current) return null;
+      hasLoadedTasks.current = true;
       setTasks(loadedTasks);
-    } catch (error) {
-      console.error(
-        "No se pudieron cargar las tareas",
-        error
+      setCategories([{ id: "all", name: "Todas" }, ...cats]);
+      setSelectedCategory((current) =>
+        current === "all" || cats.some((cat) => cat.id === current) ? current : "all"
       );
+      setIsLoading(false);
+      return loadedTasks;
+    } catch (error) {
+      console.error("No se pudieron cargar las tareas", error);
+      if (mounted.current && request === loadRequest.current) {
+        setLoadError("No se pudieron cargar tus tareas. Inténtalo de nuevo.");
+        setIsLoading(false);
+      }
+      return null;
     }
-  };
+  }, []);
 
-  const loadCategories = async () => {
-    const cats = await getAllCategories();
-    setCategories([{ id: "all", name: "Todas" }, ...cats]);
-    setSelectedCategory((prev) => prev || "all");
-  };
+  const loadCategories = loadTasks;
+
+  const setup = useCallback(async () => {
+    setIsLoading(true);
+    // Publish the view before notifications: permissions or scheduling failures
+    // must never hide tasks or prevent category initialization.
+    const loadedTasks = await loadTasks();
+    if (!loadedTasks || !mounted.current) return;
+    try {
+      await syncTaskReminders(loadedTasks, updateTask);
+      if (mounted.current) await loadTasks();
+    } catch (error) {
+      console.error("No se pudieron sincronizar los recordatorios", error);
+    }
+  }, [loadTasks]);
 
   useEffect(() => {
-    const subscription =
-      DeviceEventEmitter.addListener(
-        "tasks-updated",
-        () => {
-          loadTasks();
-        }
-      );
+    mounted.current = true;
+    setup();
+    const subscription = DeviceEventEmitter.addListener("tasks-updated", loadTasks);
+    return () => {
+      mounted.current = false;
+      ++loadRequest.current;
+      subscription.remove();
+    };
+  }, [loadTasks, setup]);
 
-    return () => subscription.remove();
-  }, []);
+  useEffect(() => {
+    if (previousTasksVersion.current === tasksVersion) return;
+    previousTasksVersion.current = tasksVersion;
+    loadTasks();
+  }, [tasksVersion, loadTasks]);
 
   // ======================================================
   // SELECCIÓN TEMPORAL
@@ -952,8 +965,29 @@ const toggleSubtaskDone =
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Lista de tareas */}
-        <AllTasks
+        {loadError && hasLoadedTasks.current && (
+          <View>
+            <Text accessibilityRole="alert" style={styles.textSecondary}>{loadError}</Text>
+            <TouchableOpacity accessibilityRole="button" onPress={loadTasks} style={styles.saveButton}>
+              <Text style={styles.saveButtonText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Loading and failures are distinct from a genuinely empty day. */}
+        {isLoading ? (
+          <View style={styles.taskEmptyState}>
+            <ActivityIndicator color={styles.text.color} />
+            <Text style={styles.taskEmptyDescription}>Cargando tareas…</Text>
+          </View>
+        ) : loadError && !hasLoadedTasks.current ? (
+          <View style={styles.taskEmptyState}>
+            <Text accessibilityRole="alert" style={styles.taskEmptyDescription}>{loadError}</Text>
+            <TouchableOpacity accessibilityRole="button" onPress={setup} style={styles.saveButton}>
+              <Text style={styles.saveButtonText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : <AllTasks
           tasks={tasksForRender}
           toggleTaskDone={(taskId) => {
             const taskObj = tasks.find((t) => t.id === taskId);
@@ -970,7 +1004,7 @@ const toggleSubtaskDone =
           startEditTask={openModalEdit}
           setActiveModal={setActiveModal}
           setModalTaskId={setModalTaskId}
-        />
+        />}
 
         {/* Botón agregar tarea */}
         <TouchableOpacity style={styles.mainButton} onPress={openModalAdd}>
