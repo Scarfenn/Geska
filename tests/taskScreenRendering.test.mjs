@@ -5,17 +5,38 @@ import vm from 'node:vm';
 import { test } from 'node:test';
 const require = createRequire(import.meta.url);
 const babel = require('@babel/core');
-const source = await readFile(new URL('../src/features/tasks/TasksScreen.js', import.meta.url), 'utf8');
-const imports = {};
-const compiled = babel.transformSync(source, {
-  configFile: false, babelrc: false,
-  plugins: [function () { return { visitor: {
-    ImportDeclaration(path) { for (const spec of path.node.specifiers) imports[spec.local.name] = spec.local.name; path.remove(); },
-    ExportDefaultDeclaration(path) { path.replaceWith(path.node.declaration); },
-  } }; }, ['@babel/plugin-transform-react-jsx', { runtime: 'classic' }]],
-}).code;
-const recurrence = await readFile(new URL('../src/features/tasks/domain/recurrence.js', import.meta.url), 'utf8');
-const domain = vm.runInNewContext(recurrence.replace(/export /g, '') + ';({ occursOnDate, parseLocalDate })', { Date });
+const root = new URL('../src/features/tasks/', import.meta.url);
+const modulePaths = [
+  'TasksScreen.js', 'hooks/useTasksData.js', 'hooks/useTaskEditor.js',
+  'domain/taskDates.js', 'domain/taskSelectors.js', 'domain/recurrence.js',
+  'services/taskMutations.js', 'services/subtaskMutations.js',
+  'components/CategoryBar.js', 'components/TasksModals.js',
+];
+const modules = new Map(await Promise.all(modulePaths.map(async path => {
+  const source = await readFile(new URL(path, root), 'utf8');
+  return [new URL(path, root).pathname, babel.transformSync(source, {
+    configFile: false, babelrc: false,
+    plugins: ['@babel/plugin-transform-modules-commonjs', ['@babel/plugin-transform-react-jsx', { runtime: 'classic' }]],
+  }).code];
+})));
+function loadModule(path, context, cache = new Map()) {
+  if (cache.has(path)) return cache.get(path).exports;
+  const module = { exports: {} }; cache.set(path, module);
+  const localRequire = spec => {
+    const resolved = spec.startsWith('.') ? new URL(spec + '.js', 'file://' + path).pathname : '';
+    if (modules.has(resolved)) return loadModule(resolved, context, cache);
+    if (spec === 'react') return context;
+    if (spec === 'react-native') return { ...Object.fromEntries(['Text', 'View', 'TouchableOpacity', 'StatusBar', 'ActivityIndicator', 'ScrollView'].map(n => [n, n])), DeviceEventEmitter: context.DeviceEventEmitter };
+    if (spec.includes('safe-area')) return { SafeAreaView: 'SafeAreaView' };
+    if (spec.includes('vector-icons')) return { Ionicons: 'Ionicons' };
+    if (spec.endsWith('/styles')) return context.createStyles;
+    if (spec.endsWith('/themes')) return { themes: context.themes };
+    if (spec.includes('/components/') || spec.includes('/modals/')) return spec.split('/').at(-1);
+    return context;
+  };
+  vm.runInNewContext(modules.get(path), { ...context, module, exports: module.exports, require: localRequire });
+  return module.exports;
+}
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 const today = new Date();
@@ -27,8 +48,8 @@ const task = { id: '1', title: 'Demo', categoryId: 'work', date, repeat_mode: 'n
 function screen(overrides = {}) {
   let cursor = 0, tree; const slots = [], cleanups = [], effects = [], listeners = new Map();
   const same = (a, b) => a && b && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
-  const context = { ...imports, ...domain, Date,
-    React: { createElement: (type, props, ...children) => ({ type, props: props || {}, children }) },
+  const context = { Date,
+    React: { createElement: (type, props, ...children) => typeof type === 'function' ? type(props || {}) : ({ type, props: props || {}, children }) },
     useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; },
     useRef(current) { const i = cursor++; return slots[i] ||= { current }; },
     useCallback(fn, deps) { const i = cursor++; if (!same(slots[i]?.deps, deps)) slots[i] = { deps, fn }; return slots[i].fn; },
@@ -39,7 +60,7 @@ function screen(overrides = {}) {
     initDB: async () => {}, getAllTasks: async () => [task], getAllCategories: async () => [{ id: 'work', name: 'Trabajo' }],
     syncTaskReminders: async () => {}, updateTask: async () => {}, console: { error() {} }, ...overrides,
   };
-  const component = vm.runInNewContext(compiled + '; TasksScreen', context);
+  const component = loadModule(new URL('TasksScreen.js', root).pathname, context).default;
   const render = (props = {}) => { cursor = 0; tree = component({ themeName: 'basic', mode: 'light', ...props }); effects.splice(0).forEach(fn => fn()); return tree; };
   const find = type => { const found = []; function walk(node) { if (Array.isArray(node)) return node.forEach(walk); if (!node || typeof node !== 'object') return; if (node.type === type) found.push(node); node.children?.forEach(walk); } walk(tree); return found; };
   render();
@@ -134,4 +155,74 @@ test('retrying a failed refresh clears the alert and updates cached tasks', asyn
   assert.ok(retry); fail = false; title = 'Updated'; await retry.props.onPress(); app.render();
   assert.equal(app.find('AllTasks')[0].props.tasks[0].title, 'Updated');
   assert.equal(app.find('Text').filter(node => node.props.accessibilityRole === 'alert').length, 0); app.unmount();
+});
+
+test('new task saves the selected schedule, category, subtasks and reminder IDs', async () => {
+  const saved = [], updated = [], subtasks = [];
+  const app = screen({
+    applyReminderToTask: value => value,
+    saveTask: async value => saved.push(value),
+    addSubtask: async (...args) => subtasks.push(args),
+    scheduleTaskReminders: async () => ['notification-1'],
+    updateTask: async value => updated.push(value),
+  });
+  await tick(); app.render();
+  app.find('TouchableOpacity').find(node => node.children.some(child => child?.props?.name === 'add' && child.props.size === 32)).props.onPress();
+  app.render(); assert.equal(app.find('TaskModal')[0].props.visible, true);
+  const selectedDate = new Date(2026, 8, 15);
+  app.find('TimeModal')[0].props.onTimeSelected({ date: selectedDate, time: null, repeatMode: 'weekly', repeatDays: ['2'], repeatInterval: 2, reminder: null, endDate: null });
+  app.render();
+  app.find('TaskModal')[0].props.saveTask({ text: ' New task ', categoryId: 'work', subtasks: [{ text: ' First ' }] });
+  await tick();
+  assert.equal(saved[0].title, 'New task'); assert.equal(saved[0].date, '2026-09-15');
+  assert.equal(saved[0].categoryId, 'work'); assert.equal(saved[0].repeat_interval, 2);
+  assert.equal(saved[0].repeat_days, '2'); assert.equal(subtasks[0][1], 'First');
+  assert.equal(updated[0].notification_id, 'notification-1'); app.unmount();
+});
+
+test('editing preserves task identity and reconciles deleted, edited and new subtasks', async () => {
+  const original = { ...task, notification_ids: ['old'], subtasks: [{ id: 'a', text: 'Before', sort_order: 0 }, { id: 'b', text: 'Remove', sort_order: 1 }] };
+  const calls = [], updates = [];
+  const app = screen({
+    getAllTasks: async () => [original], reminderFromTask: () => null,
+    applyReminderToTask: value => value,
+    cancelTaskReminders: async ids => calls.push(['cancel', ...ids]),
+    updateTask: async value => updates.push(value),
+    deleteSubtask: async id => calls.push(['delete', id]),
+    updateSubtaskText: async (...args) => calls.push(['text', ...args]),
+    updateSubtaskOrder: async (...args) => calls.push(['order', ...args]),
+    addSubtask: async (...args) => calls.push(['add', ...args]),
+    scheduleTaskReminders: async () => ['new'],
+  });
+  await tick(); app.render(); app.find('AllTasks')[0].props.startEditTask(original); app.render();
+  app.find('TaskModal')[0].props.saveTask({ text: 'Edited', categoryId: 'work', subtasks: [{ id: 'a', text: 'After', sort_order: 1 }, { id: 'draft', isNew: true, text: 'New', sort_order: 0 }] });
+  await tick();
+  assert.equal(updates.at(-1).id, original.id); assert.equal(updates.at(-1).title, 'Edited');
+  assert.equal(updates.at(-1).notification_id, 'new');
+  assert.deepEqual(calls, [['cancel', 'old'], ['delete', 'b'], ['text', 'a', 'After'], ['order', 'a', 1], ['add', original.id, 'New', 0]]);
+  app.unmount();
+});
+
+test('recurring completion writes the selected occurrence and reschedules the refreshed task', async () => {
+  const recurring = { ...task, repeat_mode: 'daily', occurrences: [] };
+  const writes = [], updated = [];
+  const app = screen({
+    getAllTasks: async () => [recurring], getOccurrence: async () => ({ done: true }),
+    setOccurrenceDone: async (...args) => writes.push(args),
+    rescheduleTaskReminders: async value => ({ ...value, notification_ids: ['rescheduled'] }),
+    updateTask: async value => updated.push(value),
+  });
+  await tick(); app.render(); app.find('AllTasks')[0].props.toggleTaskDone(task.id); await tick();
+  assert.deepEqual(writes[0], [task.id, date, false]);
+  assert.equal(updated[0].notification_ids[0], 'rescheduled'); app.unmount();
+});
+
+test('a category created from the task editor is selected in that editor', async () => {
+  const app = screen({ addCategory: async name => ({ id: 'new-category', name }) });
+  await tick(); app.render();
+  app.find('TaskModal')[0].props.openAddCategoryModal(); app.render();
+  assert.equal(app.find('CategoryModal')[0].props.visible, true);
+  await app.find('CategoryModal')[0].props.saveCategory({ name: 'New category' }); app.render();
+  assert.equal(app.find('TaskModal')[0].props.selectedCategoryForTask, 'new-category');
+  assert.equal(app.find('CategoryModal')[0].props.visible, false); app.unmount();
 });

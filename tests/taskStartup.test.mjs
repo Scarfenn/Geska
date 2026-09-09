@@ -3,8 +3,8 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { test } from 'node:test';
 
-const screen = await readFile(new URL('../src/features/tasks/TasksScreen.js', import.meta.url), 'utf8');
-const prefix = screen.slice(screen.indexOf('export default function TasksScreen'), screen.indexOf('  // SELECCIÓN TEMPORAL'));
+const hook = await readFile(new URL('../src/features/tasks/hooks/useTasksData.js', import.meta.url), 'utf8');
+const prefix = hook.slice(hook.indexOf('export default function useTasksData'), hook.lastIndexOf('return {'));
 // Exercise the actual startup callbacks with controlled React state and I/O.
 function mount(overrides = {}) {
   const state = [], effects = [];
@@ -19,7 +19,7 @@ function mount(overrides = {}) {
     DeviceEventEmitter: { addListener: () => ({ remove() {} }) },
     console: { error() {} }, ...overrides,
   };
-  const component = vm.runInNewContext(prefix.replace('export default ', '') + '\nreturn { loadTasks, setup };\n}; TasksScreen', context);
+  const component = vm.runInNewContext(prefix.replace('export default ', '') + '\nreturn { loadTasks, setup };\n}; useTasksData', context);
   const callbacks = component({});
   const cleanup = effects[0]();
   effects[1]();
