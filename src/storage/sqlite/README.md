@@ -8,6 +8,9 @@ independent of the repositories and exposes the same function names.
 - `migrations.js` adds legacy columns and backfills subtask order.
 - `taskMappers.js` converts SQLite values, including legacy reminder fields.
 - `repositories/` contains SQL for tasks, categories, subtasks and occurrences.
+- `repositories/taskRows.js` exposes transaction-internal task reads/writes.
+- `repositories/taskWrites.js` commits task/subtask drafts as aggregates and handles
+  completion read-modify-write operations against the current stored state.
 
 Every public operation rejects on database failure. Occurrence lookups return
 `null` only when no row exists. UI callers must await mutations before clearing
@@ -24,8 +27,15 @@ its supplied connection directly; calling a public repository function from insi
 it would wait on the same queue. The queue coordinates this JavaScript module's
 connection, not separate app processes or other database connections.
 
-Transactions cover individual repository operations. A service that calls several
-repositories and schedules OS notifications is not a single atomic operation.
+Task commands use aggregate operations: task creation/editing and all subtask
+changes share a single transaction. Existing subtask completion/history is retained
+on text/order edits. Omitted rows and their occurrences are deleted; unknown existing
+IDs fail rather than updating another task or resurrecting a removed row. Subtask
+arrays represent the complete desired list, not a patch.
+
+The low-level saveTask/updateTask APIs remain available for compatibility. Calling
+several low-level repositories separately does not create a single transaction.
+OS notifications run after the aggregate commit, outside the SQLite transaction.
 
 Run `npm test` from the project root. Database tests execute the real SQL against
 Python 3's in-memory SQLite through `tests/helpers/sqlite_bridge.py`, with failures

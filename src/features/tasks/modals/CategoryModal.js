@@ -13,6 +13,7 @@ import createStyles from "@/styles/styles";
 
 export default function CategoryModal({
   visible,
+  isSaving = false,
   themeName,
   mode,
   categoryToEdit = null,
@@ -75,7 +76,7 @@ export default function CategoryModal({
               />
 
               {/* Botón guardar */}
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+              <TouchableOpacity style={styles.saveButton} disabled={isSaving} onPress={handleSave}>
                 <Text style={styles.saveButtonText}>
                   {categoryToEdit ? "Guardar cambios" : "Crear categoría"}
                 </Text>
@@ -85,6 +86,7 @@ export default function CategoryModal({
               {categoryToEdit && (
                 <TouchableOpacity
                   style={styles.categoryDeleteButton}
+                  disabled={isSaving}
                   onPress={handleDelete}
                 >
                   <Text

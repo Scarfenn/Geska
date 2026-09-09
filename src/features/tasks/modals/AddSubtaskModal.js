@@ -29,6 +29,7 @@ import { themes } from "@/styles/themes";
 
 export default function AddSubtaskModal({
   visible,
+  isSaving = false,
   themeName,
   mode,
 
@@ -618,6 +619,7 @@ export default function AddSubtaskModal({
                   marginTop: 12,
                 },
               ]}
+              disabled={isSaving}
               onPress={handleSave}
             >
               <Text

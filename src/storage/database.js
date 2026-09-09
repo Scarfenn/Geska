@@ -6,3 +6,7 @@ export { getAllTasks, saveTask, updateTask, updateTaskNotificationIds, deleteTas
 export { getAllCategories, addCategory, updateCategory, deleteCategory } from "./sqlite/repositories/categories";
 export { addSubtask, deleteSubtask, updateSubtaskOrder, updateSubtaskDone, updateSubtaskText } from "./sqlite/repositories/subtasks";
 export { getOccurrence, setOccurrenceDone, clearOccurrence, getSubtaskOccurrence, setSubtaskOccurrenceDone } from "./sqlite/repositories/occurrences";
+export {
+  newTaskId, createTaskWithSubtasks, editTaskWithSubtasks, replaceTaskSubtasks,
+  changeTaskCompletion, removeTaskWithSnapshot,
+} from "./sqlite/repositories/taskWrites";

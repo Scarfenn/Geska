@@ -50,6 +50,7 @@ export default function TasksModals({
     <>
         <TaskModal
           visible={taskModalVisible}
+          isSaving={actions.isTaskSaving}
           themeName={themeName}
           mode={mode}
           selectedDate={selectedDate}
@@ -93,6 +94,7 @@ export default function TasksModals({
 
         <AddSubtaskModal
           visible={activeModal === "subtask"}
+          isSaving={actions.isSubtaskSaving}
           themeName={themeName}
           mode={mode}
           modalTaskId={modalTaskId}
@@ -113,6 +115,7 @@ export default function TasksModals({
 
         <CategoryModal
           visible={categoryModalState.visible}
+          isSaving={actions.isCategorySaving}
           themeName={themeName}
           mode={mode}
           categoryToEdit={categoryModalState.category}

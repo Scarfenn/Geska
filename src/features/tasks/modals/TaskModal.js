@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function TaskModal({
   visible,
+  isSaving = false,
   themeName,
   mode,
 
@@ -489,6 +490,7 @@ export default function TaskModal({
                   style={
                     styles.saveButton
                   }
+                  disabled={isSaving}
                   onPress={handleSave}
                 >
                   <Text

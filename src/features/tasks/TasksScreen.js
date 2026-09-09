@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Text, View, TouchableOpacity, StatusBar, ActivityIndicator } from "react-native";
+import { Text, View, TouchableOpacity, StatusBar, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import createStyles from "@/styles/styles";
@@ -12,7 +12,7 @@ import TasksModals from "./components/TasksModals";
 import useTasksData from "./hooks/useTasksData";
 import useTaskEditor from "./hooks/useTaskEditor";
 import { selectTasksForDay } from "./domain/taskSelectors";
-import { createTaskActions } from "./services/taskMutations";
+import useTaskActions from "./hooks/useTaskActions";
 export default function TasksScreen({
   themeName,
   mode,
@@ -41,28 +41,7 @@ export default function TasksScreen({
     setActiveModal,
     setModalTaskId
   } = editor;
-  const actions = createTaskActions({
-    tasks,
-    loadTasks,
-    onReminderError: (error) => Alert.alert(
-      "Tarea guardada",
-      error.code === "permission-denied"
-        ? "Activa el permiso de notificaciones en la configuración del sistema para recibir recordatorios."
-        : "No se pudieron actualizar sus recordatorios. Se reintentará al reiniciar la aplicación.",
-    ),
-  });
-  const {
-    toggleTaskDone,
-    removeTask
-  } = actions;
-  const runTaskAction = async (action) => {
-    try {
-      await action();
-    } catch (error) {
-      console.error("No se pudo actualizar la tarea", error);
-      Alert.alert("No se pudo actualizar", "Inténtalo de nuevo.");
-    }
-  };
+  const actions = useTaskActions(loadTasks);
   const styles = createStyles(themeName, mode);
   const tasksForRender = selectTasksForDay(tasks, selectedDay, selectedCategory);
   return (
@@ -133,15 +112,9 @@ export default function TasksScreen({
           </View>
         ) : <AllTasks
           tasks={tasksForRender}
-          toggleTaskDone={(taskId) => {
-            const taskObj = tasks.find((t) => t.id === taskId);
-            if (!taskObj) return;
-            return runTaskAction(() => toggleTaskDone(taskObj, selectedDay));
-          }}
-          toggleSubtaskDone={(taskId, subtaskId) =>
-            runTaskAction(() => actions.toggleSubtaskDone(taskId, subtaskId, selectedDay))
-          }
-          removeTask={(id) => runTaskAction(() => removeTask(id))}
+          toggleTaskDone={(id) => actions.toggleTaskDone(id, selectedDay)}
+          toggleSubtaskDone={(id, subtaskId) => actions.toggleSubtaskDone(id, subtaskId, selectedDay)}
+          removeTask={actions.removeTask}
           themeName={themeName}
           mode={mode}
           openOptions={(id) => setActiveTaskId(id)}

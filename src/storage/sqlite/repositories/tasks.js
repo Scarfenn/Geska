@@ -1,5 +1,6 @@
+import { insertTaskRow, updateTaskRow, deleteTaskRows } from "./taskRows";
 import { withDatabase } from "../initialize";
-import { groupBy, mapTask, mapOccurrence, taskWriteValues } from "../taskMappers";
+import { groupBy, mapTask, mapOccurrence } from "../taskMappers";
 export async function getAllTasks() {
   return withDatabase(async db => {
     // Await every read before leaving the transaction, including on failure.
@@ -25,64 +26,17 @@ export async function getAllTasks() {
 }
 export async function saveTask(task) {
   return withDatabase(async db => {
-    await db.runAsync(`INSERT INTO tasks (
-        id, title, description, done, date, time,
-        repeat_mode, repeat_days, repeat_end, repeat_interval,
-
-        reminder_minutes,
-        reminder_type, reminder_value,
-        reminder_unit, reminder_at,
-
-        notification_id, notification_ids,
-        category_id
-      ) VALUES (
-        ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?,
-        ?, ?, ?, ?, ?,
-        ?, ?, ?
-      )`, [task.id, ...taskWriteValues(task)]);
+    await insertTaskRow(db, task);
   });
 }
 export async function updateTask(task) {
   return withDatabase(async db => {
-    await db.runAsync(`UPDATE tasks SET
-        title=?,
-        description=?,
-        done=?,
-        date=?,
-        time=?,
-
-        repeat_mode=?,
-        repeat_days=?,
-        repeat_end=?,
-        repeat_interval=?,
-
-        reminder_minutes=?,
-        reminder_type=?,
-        reminder_value=?,
-        reminder_unit=?,
-        reminder_at=?,
-
-        notification_id=?,
-        notification_ids=?,
-
-        category_id=?
-      WHERE id=?`, [...taskWriteValues(task), task.id]);
+    await updateTaskRow(db, task);
   });
 }
 export async function deleteTask(id) {
   return withDatabase(async db => {
-    await db.runAsync("DELETE FROM task_occurrences WHERE task_id=?", [id]);
-    await db.runAsync(`
-      DELETE FROM subtask_occurrences
-      WHERE subtask_id IN (
-        SELECT id
-        FROM subtasks
-        WHERE task_id=?
-      )
-      `, [id]);
-    await db.runAsync("DELETE FROM subtasks WHERE task_id=?", [id]);
-    await db.runAsync("DELETE FROM tasks WHERE id=?", [id]);
+    await deleteTaskRows(db, id);
   }, {
     transaction: true
   });
@@ -91,11 +45,8 @@ export async function deleteTask(id) {
 // Notification reconciliation must not overwrite a title/completion edited while
 // native scheduling was in flight. A deleted task is never recreated here.
 export async function updateTaskNotificationIds(task) {
-  return withDatabase(async (db) => {
+  return withDatabase(async db => {
     const ids = Array.isArray(task.notification_ids) ? task.notification_ids.filter(Boolean) : [];
-    await db.runAsync(
-      "UPDATE tasks SET notification_ids=?, notification_id=? WHERE id=?",
-      [JSON.stringify(ids), ids[0] ?? null, task.id],
-    );
+    await db.runAsync("UPDATE tasks SET notification_ids=?, notification_id=? WHERE id=?", [JSON.stringify(ids), ids[0] ?? null, task.id]);
   });
 }

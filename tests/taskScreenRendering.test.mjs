@@ -7,9 +7,9 @@ const require = createRequire(import.meta.url);
 const babel = require('@babel/core');
 const root = new URL('../src/features/tasks/', import.meta.url);
 const modulePaths = [
-  'TasksScreen.js', 'hooks/useTasksData.js', 'hooks/useTaskEditor.js',
+  'TasksScreen.js', 'hooks/useTasksData.js', 'hooks/useTaskEditor.js', 'hooks/useTaskActions.js',
   'domain/taskDates.js', 'domain/taskSelectors.js', 'domain/recurrence.js',
-  'services/taskMutations.js', 'services/subtaskMutations.js',
+  'services/taskMutations.js', 'services/subtaskMutations.js', 'services/taskCommands.js', 'domain/taskDraft.js', 'services/reminderModel.js',
   'components/CategoryBar.js', 'components/TasksModals.js',
 ];
 const modules = new Map(await Promise.all(modulePaths.map(async path => {
@@ -57,6 +57,7 @@ function screen(overrides = {}) {
     createStyles: () => new Proxy({}, { get: () => ({ color: '#111111', backgroundColor: '#ffffff' }) }),
     themes: { basic: { light: {} } },
     DeviceEventEmitter: { addListener: (name, fn) => { listeners.set(name, fn); return { remove: () => listeners.delete(name) }; } },
+    newTaskId: () => "new-task",
     initDB: async () => {}, getAllTasks: async () => [task], getAllCategories: async () => [{ id: 'work', name: 'Trabajo' }],
     syncTaskReminders: async () => {}, updateTask: async () => {}, updateTaskNotificationIds: async () => {}, Alert: { alert() {} }, console: { error() {} }, ...overrides,
   };
@@ -166,7 +167,7 @@ test('new task saves the selected schedule, category, subtasks and reminder IDs'
   const saved = [], updated = [], subtasks = [];
   const app = screen({
     applyReminderToTask: value => value,
-    saveTask: async value => saved.push(value),
+    createTaskWithSubtasks: async (value, drafts) => { saved.push(value); subtasks.push(...drafts); return { ...value, subtasks: drafts }; },
     addSubtask: async (...args) => subtasks.push(args),
     scheduleTaskReminders: async () => ['notification-1'],
     updateTask: async value => updated.push(value),
@@ -176,52 +177,45 @@ test('new task saves the selected schedule, category, subtasks and reminder IDs'
   app.find('TouchableOpacity').find(node => node.children.some(child => child?.props?.name === 'add' && child.props.size === 32)).props.onPress();
   app.render(); assert.equal(app.find('TaskModal')[0].props.visible, true);
   const selectedDate = new Date(2026, 8, 15);
-  app.find('TimeModal')[0].props.onTimeSelected({ date: selectedDate, time: null, repeatMode: 'weekly', repeatDays: ['2'], repeatInterval: 2, reminder: null, endDate: null });
+  app.find('TimeModal')[0].props.onTimeSelected({ date: selectedDate, time: null, repeatMode: 'weekly', repeatDays: ['M'], repeatInterval: 2, reminder: null, endDate: null });
   app.render();
   app.find('TaskModal')[0].props.saveTask({ text: ' New task ', categoryId: 'work', subtasks: [{ text: ' First ' }] });
   await tick();
   assert.equal(saved[0].title, 'New task'); assert.equal(saved[0].date, '2026-09-15');
   assert.equal(saved[0].categoryId, 'work'); assert.equal(saved[0].repeat_interval, 2);
-  assert.equal(saved[0].repeat_days, '2'); assert.equal(subtasks[0][1], 'First');
+  assert.equal(saved[0].repeat_days, 'M'); assert.equal(subtasks[0].text, 'First');
   assert.equal(updated[0].notification_ids[0], 'notification-1'); app.unmount();
 });
 
-test('editing preserves task identity and reconciles deleted, edited and new subtasks', async () => {
-  const original = { ...task, notification_ids: ['old'], subtasks: [{ id: 'a', text: 'Before', sort_order: 0 }, { id: 'b', text: 'Remove', sort_order: 1 }] };
+test('editing submits one aggregate draft and preserves task identity', async () => {
+  const original = { ...task, notification_ids: ['old'], subtasks: [{ id: 'a', text: 'Before', sort_order: 0 }] };
   const calls = [], updates = [];
   const app = screen({
-    getAllTasks: async () => [original], reminderFromTask: () => null,
-    applyReminderToTask: value => value,
-    cancelTaskReminders: async ids => calls.push(['cancel', ...ids]),
-    updateTask: async value => updates.push(value),
+    getAllTasks: async () => [original],
+    editTaskWithSubtasks: async (id, fields, drafts) => { calls.push({ id, fields, drafts }); return { ...original, ...fields }; },
     updateTaskNotificationIds: async value => updates.push(value),
-    deleteSubtask: async id => calls.push(['delete', id]),
-    updateSubtaskText: async (...args) => calls.push(['text', ...args]),
-    updateSubtaskOrder: async (...args) => calls.push(['order', ...args]),
-    addSubtask: async (...args) => calls.push(['add', ...args]),
     scheduleTaskReminders: async () => ['new'],
   });
   await tick(); app.render(); app.find('AllTasks')[0].props.startEditTask(original); app.render();
-  app.find('TaskModal')[0].props.saveTask({ text: 'Edited', categoryId: 'work', subtasks: [{ id: 'a', text: 'After', sort_order: 1 }, { id: 'draft', isNew: true, text: 'New', sort_order: 0 }] });
-  await tick();
-  assert.equal(updates.at(-1).id, original.id); assert.equal(updates[0].title, 'Edited');
-  assert.equal(updates.at(-1).notification_ids[0], 'new');
-  assert.deepEqual(calls, [['delete', 'b'], ['text', 'a', 'After'], ['order', 'a', 1], ['add', original.id, 'New', 0]]);
-  app.unmount();
+  await app.find('TaskModal')[0].props.saveTask({ text: 'Edited', categoryId: 'work', subtasks: [{ id: 'a', text: 'After' }, { id: 'draft', isNew: true, text: 'New' }] });
+  assert.equal(calls.length, 1); assert.equal(calls[0].id, original.id);
+  assert.equal(calls[0].fields.title, 'Edited'); assert.equal(calls[0].fields.done, undefined);
+  assert.equal(calls[0].drafts[0].text, 'After'); assert.equal(calls[0].drafts[1].sort_order, 1);
+  assert.equal(updates[0].notification_ids[0], 'new'); app.unmount();
 });
 
 test('recurring completion writes the selected occurrence and reschedules the refreshed task', async () => {
   const recurring = { ...task, repeat_mode: 'daily', occurrences: [] };
   const writes = [], updated = [];
   const app = screen({
-    getAllTasks: async () => [recurring], getOccurrence: async () => ({ done: true }),
-    setOccurrenceDone: async (...args) => writes.push(args),
+    getAllTasks: async () => [recurring],
+    changeTaskCompletion: async (id, options) => { writes.push([id, options.date, options.done]); return { task: recurring, changed: true }; },
     scheduleTaskReminders: async () => ['rescheduled'],
     updateTask: async value => updated.push(value),
     updateTaskNotificationIds: async value => updated.push(value),
   });
   await tick(); app.render(); app.find('AllTasks')[0].props.toggleTaskDone(task.id); await tick();
-  assert.deepEqual(writes[0], [task.id, date, false]);
+  assert.deepEqual(writes[0], [task.id, date, undefined]);
   assert.equal(updated[0].notification_ids[0], 'rescheduled'); app.unmount();
 });
 
@@ -237,7 +231,7 @@ test('a category created from the task editor is selected in that editor', async
 
 test('task editor stays open when the persistence action rejects', async () => {
   const failure = new Error('database failed');
-  const app = screen({ applyReminderToTask: value => value, saveTask: async () => { throw failure; } });
+  const app = screen({ applyReminderToTask: value => value, createTaskWithSubtasks: async () => { throw failure; } });
   await tick(); app.render();
   app.find('TouchableOpacity').find(node => node.children.some(child => child?.props?.name === 'add' && child.props.size === 32)).props.onPress();
   app.render();
@@ -248,7 +242,7 @@ test('task editor stays open when the persistence action rejects', async () => {
 test('a reminder failure after saving warns without presenting the task save as failed', async () => {
   let saves = 0, warnings = 0;
   const app = screen({
-    applyReminderToTask: value => value, saveTask: async () => { saves++; },
+    applyReminderToTask: value => value, createTaskWithSubtasks: async value => { saves++; return value; },
     reconcileTaskReminders: async () => { throw new Error('native scheduling failed'); },
     Alert: { alert: title => { assert.equal(title, 'Tarea guardada'); warnings++; } },
   });
@@ -257,4 +251,21 @@ test('a reminder failure after saving warns without presenting the task save as 
   app.render(); await app.find('TaskModal')[0].props.saveTask({ text: 'Saved task', subtasks: [] });
   app.render(); assert.equal(saves, 1); assert.equal(warnings, 1);
   assert.equal(app.find('TaskModal')[0].props.visible, false); app.unmount();
+});
+
+test('double save shares one in-flight command and exposes saving state until completion', async () => {
+  const pending = deferred(); let saves = 0;
+  const app = screen({
+    createTaskWithSubtasks: async value => { saves++; await pending.promise; return value; },
+    scheduleTaskReminders: async () => [],
+  });
+  await tick(); app.render();
+  app.find('TouchableOpacity').find(node => node.children.some(child => child?.props?.name === 'add' && child.props.size === 32)).props.onPress();
+  app.render(); const modal = app.find('TaskModal')[0];
+  const a = modal.props.saveTask({ text: 'One task', subtasks: [] });
+  const b = modal.props.saveTask({ text: 'One task', subtasks: [] });
+  await tick(); app.render();
+  assert.equal(saves, 1); assert.equal(app.find('TaskModal')[0].props.isSaving, true);
+  pending.resolve(); await Promise.all([a, b]); app.render();
+  assert.equal(app.find('TaskModal')[0].props.isSaving, false); app.unmount();
 });

@@ -7,7 +7,7 @@ const require = createRequire(import.meta.url);
 const babel = require('@babel/core');
 const compiled = new Map();
 
-export function loadDatabase(db) {
+export function loadDatabase(db, { entry = "../../src/storage/database.js", stubs = {} } = {}) {
   const cache = new Map();
   function load(url) {
     if (cache.has(url.href)) return cache.get(url.href).exports;
@@ -18,6 +18,7 @@ export function loadDatabase(db) {
     vm.runInNewContext(compiled.get(url.href), {
       module, exports: module.exports, Date, console,
       require(spec) {
+        if (spec in stubs) return stubs[spec];
         if (spec === 'expo-sqlite') return { openDatabaseSync: () => db };
         if (!spec.startsWith('.')) throw new Error(`Unexpected dependency: ${spec}`);
         return load(new URL(spec + '.js', url));
@@ -25,7 +26,7 @@ export function loadDatabase(db) {
     });
     return module.exports;
   }
-  return load(new URL('../../src/storage/database.js', import.meta.url));
+  return load(new URL(entry, import.meta.url));
 }
 
 export function databaseHarness(t) {
