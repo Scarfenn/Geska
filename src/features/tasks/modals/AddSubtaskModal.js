@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import {
+  Alert,
   Modal,
   View,
   Text,
@@ -319,9 +320,13 @@ export default function AddSubtaskModal({
           sort_order: index,
         }));
 
-    await onSave(cleaned);
-
-    animateClose();
+    try {
+      await onSave(cleaned);
+      animateClose();
+    } catch (error) {
+      console.error("No se pudieron guardar las subtareas", error);
+      Alert.alert("No se pudo guardar", "Revisa los datos e inténtalo de nuevo.");
+    }
   };
 
   // ======================================================

@@ -63,9 +63,9 @@ export default function TasksModals({
           clearSelectedCategoryForTask={() => setSelectedCategoryForTask(null)}
           openTimeModal={() => setTimeModalVisible(true)}
           openAddCategoryModal={openAddCategoryFromTask}
-          saveTask={(taskData) => {
-            if (taskModalMode === "add") addTaskHandler(taskData, schedule);
-            else if (taskModalMode === "edit") saveEditTaskHandler(taskData, taskToEdit, schedule);
+          saveTask={async (taskData) => {
+            if (taskModalMode === "add") await addTaskHandler(taskData, schedule);
+            else if (taskModalMode === "edit") await saveEditTaskHandler(taskData, taskToEdit, schedule);
             setSelectedCategoryForTask(null);
             closeTaskModal();
           }}

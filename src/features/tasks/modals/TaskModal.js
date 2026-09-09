@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
+  Alert,
   Modal,
   View,
   Text,
@@ -193,20 +194,19 @@ export default function TaskModal({
   // GUARDAR
   // ======================================================
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const finalText =
       taskText.trim() === ""
         ? "Nueva tarea"
         : taskText.trim();
 
-    saveTask({
-      text: finalText,
-      categoryId:
-        selectedCategory,
-      subtasks: draftSubtasks,
-    });
-
-    animateClose();
+    try {
+      await saveTask({ text: finalText, categoryId: selectedCategory, subtasks: draftSubtasks });
+      animateClose();
+    } catch (error) {
+      console.error("No se pudo guardar la tarea", error);
+      Alert.alert("No se pudo guardar", "Revisa los datos e inténtalo de nuevo.");
+    }
   };
 
   // ======================================================

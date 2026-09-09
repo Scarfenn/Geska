@@ -1,0 +1,89 @@
+import { withDatabase } from "../initialize";
+import { groupBy, mapTask, mapOccurrence, taskWriteValues } from "../taskMappers";
+export async function getAllTasks() {
+  return withDatabase(async db => {
+    // Await every read before leaving the transaction, including on failure.
+    const tasks = await db.getAllAsync("SELECT * FROM tasks");
+    const subtasks = await db.getAllAsync("SELECT * FROM subtasks ORDER BY task_id, sort_order ASC, rowid ASC");
+    const occurrences = await db.getAllAsync("SELECT * FROM task_occurrences");
+    const subtaskOccurrences = await db.getAllAsync("SELECT * FROM subtask_occurrences");
+    const subtasksByTask = groupBy(subtasks, "task_id");
+    const occurrencesByTask = groupBy(occurrences, "task_id");
+    const occurrencesBySubtask = groupBy(subtaskOccurrences, "subtask_id");
+    return tasks.map(task => ({
+      ...mapTask(task),
+      subtasks: (subtasksByTask.get(task.id) || []).map(subtask => ({
+        ...subtask,
+        done: !!subtask.done,
+        occurrences: (occurrencesBySubtask.get(subtask.id) || []).map(mapOccurrence)
+      })),
+      occurrences: (occurrencesByTask.get(task.id) || []).map(mapOccurrence)
+    }));
+  }, {
+    transaction: true
+  });
+}
+export async function saveTask(task) {
+  return withDatabase(async db => {
+    await db.runAsync(`INSERT INTO tasks (
+        id, title, description, done, date, time,
+        repeat_mode, repeat_days, repeat_end, repeat_interval,
+
+        reminder_minutes,
+        reminder_type, reminder_value,
+        reminder_unit, reminder_at,
+
+        notification_id, notification_ids,
+        category_id
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?
+      )`, [task.id, ...taskWriteValues(task)]);
+  });
+}
+export async function updateTask(task) {
+  return withDatabase(async db => {
+    await db.runAsync(`UPDATE tasks SET
+        title=?,
+        description=?,
+        done=?,
+        date=?,
+        time=?,
+
+        repeat_mode=?,
+        repeat_days=?,
+        repeat_end=?,
+        repeat_interval=?,
+
+        reminder_minutes=?,
+        reminder_type=?,
+        reminder_value=?,
+        reminder_unit=?,
+        reminder_at=?,
+
+        notification_id=?,
+        notification_ids=?,
+
+        category_id=?
+      WHERE id=?`, [...taskWriteValues(task), task.id]);
+  });
+}
+export async function deleteTask(id) {
+  return withDatabase(async db => {
+    await db.runAsync("DELETE FROM task_occurrences WHERE task_id=?", [id]);
+    await db.runAsync(`
+      DELETE FROM subtask_occurrences
+      WHERE subtask_id IN (
+        SELECT id
+        FROM subtasks
+        WHERE task_id=?
+      )
+      `, [id]);
+    await db.runAsync("DELETE FROM subtasks WHERE task_id=?", [id]);
+    await db.runAsync("DELETE FROM tasks WHERE id=?", [id]);
+  }, {
+    transaction: true
+  });
+}

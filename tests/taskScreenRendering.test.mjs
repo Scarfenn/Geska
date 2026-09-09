@@ -226,3 +226,13 @@ test('a category created from the task editor is selected in that editor', async
   assert.equal(app.find('TaskModal')[0].props.selectedCategoryForTask, 'new-category');
   assert.equal(app.find('CategoryModal')[0].props.visible, false); app.unmount();
 });
+
+test('task editor stays open when the persistence action rejects', async () => {
+  const failure = new Error('database failed');
+  const app = screen({ applyReminderToTask: value => value, saveTask: async () => { throw failure; } });
+  await tick(); app.render();
+  app.find('TouchableOpacity').find(node => node.children.some(child => child?.props?.name === 'add' && child.props.size === 32)).props.onPress();
+  app.render();
+  await assert.rejects(app.find('TaskModal')[0].props.saveTask({ text: 'Draft', subtasks: [] }), e => e === failure);
+  app.render(); assert.equal(app.find('TaskModal')[0].props.visible, true); app.unmount();
+});

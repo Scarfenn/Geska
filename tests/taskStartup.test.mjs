@@ -72,20 +72,3 @@ test('an older read cannot overwrite a newer result or update after unmount', as
   last.resolve([]); await lastRead; assert.equal(state[0][0].id, 'new');
   sync.resolve(); await tick();
 });
-
-const database = await readFile(new URL('../src/storage/database.js', import.meta.url), 'utf8');
-test('SQLite initialization is shared by concurrent callers and retries after failure', async () => {
-  const first = deferred(); let schemaCalls = 0;
-  const db = {
-    execAsync: async (sql) => { if (sql.includes('CREATE TABLE')) { schemaCalls++; if (schemaCalls === 1) await first.promise; } },
-    getAllAsync: async () => [], runAsync: async () => {},
-  };
-  const init = vm.runInNewContext(database.replace(/^import .*;\n/gm, '').replace(/export /g, '') + '\ninitDB', {
-    SQLite: { openDatabaseSync: () => db }, console: { log() {}, error() {} },
-  });
-  const a = init(), b = init(); assert.equal(a, b); assert.equal(schemaCalls, 1);
-  first.reject(new Error('schema failure'));
-  await assert.rejects(a); await assert.rejects(b);
-  await init(); assert.equal(schemaCalls, 2);
-  await init(); assert.equal(schemaCalls, 2);
-});

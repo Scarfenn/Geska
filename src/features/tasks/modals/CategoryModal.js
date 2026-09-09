@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {
+  Alert,
   Modal,
   View,
   Text,
@@ -32,27 +33,28 @@ export default function CategoryModal({
     }
   }, [visible]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const name = categoryName.trim() || "Nueva categoría";
-    saveCategory({
-      id: categoryToEdit?.id || null,
-      name,
-    });
-    setCategoryName("");
+    try {
+      await saveCategory({ id: categoryToEdit?.id || null, name });
+      setCategoryName("");
+    } catch (error) {
+      console.error("No se pudo guardar la categoría", error);
+      Alert.alert("No se pudo guardar", "Revisa el nombre e inténtalo de nuevo.");
+    }
   };
 
-const handleDelete = () => {
-  if (!categoryToEdit) return;
-
-  deleteCategory(categoryToEdit.id);
-
-  if (selectedCategory === categoryToEdit.id) {
-    setSelectedCategory("all");
-  }
-
-  closeModal();
-};
-
+  const handleDelete = async () => {
+    if (!categoryToEdit) return;
+    try {
+      await deleteCategory(categoryToEdit.id);
+      if (selectedCategory === categoryToEdit.id) setSelectedCategory("all");
+      closeModal();
+    } catch (error) {
+      console.error("No se pudo eliminar la categoría", error);
+      Alert.alert("No se pudo eliminar", "Inténtalo de nuevo.");
+    }
+  };
 
   return (
     <Modal visible={visible} animationType="fade" transparent={true}>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Text, View, TouchableOpacity, StatusBar, ActivityIndicator } from "react-native";
+import { Alert, Text, View, TouchableOpacity, StatusBar, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import createStyles from "@/styles/styles";
@@ -49,6 +49,14 @@ export default function TasksScreen({
     toggleTaskDone,
     removeTask
   } = actions;
+  const runTaskAction = async (action) => {
+    try {
+      await action();
+    } catch (error) {
+      console.error("No se pudo actualizar la tarea", error);
+      Alert.alert("No se pudo actualizar", "Inténtalo de nuevo.");
+    }
+  };
   const styles = createStyles(themeName, mode);
   const tasksForRender = selectTasksForDay(tasks, selectedDay, selectedCategory);
   return (
@@ -122,12 +130,12 @@ export default function TasksScreen({
           toggleTaskDone={(taskId) => {
             const taskObj = tasks.find((t) => t.id === taskId);
             if (!taskObj) return;
-            toggleTaskDone(taskObj, selectedDay);
+            return runTaskAction(() => toggleTaskDone(taskObj, selectedDay));
           }}
           toggleSubtaskDone={(taskId, subtaskId) =>
-            actions.toggleSubtaskDone(taskId, subtaskId, selectedDay)
+            runTaskAction(() => actions.toggleSubtaskDone(taskId, subtaskId, selectedDay))
           }
-          removeTask={removeTask}
+          removeTask={(id) => runTaskAction(() => removeTask(id))}
           themeName={themeName}
           mode={mode}
           openOptions={(id) => setActiveTaskId(id)}
