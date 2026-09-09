@@ -17,6 +17,10 @@ import HourModal from "./SubModals/HourModal";
 import ReminderModal from "./SubModals/ReminderModal";
 import { formatReminder } from "@/features/tasks/services/reminderModel";
 
+const WEEK_DAY_LABELS = {
+  L: "Lun", M: "Mar", X: "Mié", J: "Jue", V: "Vie", S: "Sáb", D: "Dom",
+};
+
 export default function TimeModal({
   visible,
   themeName,
@@ -212,7 +216,11 @@ export default function TimeModal({
     }
 
     if (repeatMode === "weekly") {
-      const allDaysSelected = repeatDays.length === 7;
+      const selectedDays = Object.keys(WEEK_DAY_LABELS).filter((day) =>
+        repeatDays.includes(day)
+      );
+      const allDaysSelected = selectedDays.length === 7;
+      let daysLabel = "";
 
       if (allDaysSelected) {
         return repeatInterval === 1
@@ -220,14 +228,16 @@ export default function TimeModal({
           : `Cada ${repeatInterval} semanas · Todos los días`;
       }
 
-      const daysLabel =
-        repeatDays.length > 0
-          ? repeatDays.join(", ")
-          : "Semanal";
+      const intervalLabel = repeatInterval === 1
+        ? "Semanal"
+        : `Cada ${repeatInterval} semanas`;
+      if (selectedDays.length < 5) {
+        daysLabel = selectedDays.map((day) => WEEK_DAY_LABELS[day]).join(", ");
+      } else {
+        daysLabel = selectedDays.join(", ");
+      }
 
-      return repeatInterval === 1
-        ? daysLabel
-        : `Cada ${repeatInterval} semanas · ${daysLabel}`;
+      return daysLabel ? `${intervalLabel} · ${daysLabel}` : intervalLabel;
     }
 
     if (repeatMode === "monthly" && repeatInterval % 12 !== 0) {

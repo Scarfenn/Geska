@@ -1,18 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  Animated,
-  Easing,
-  StyleSheet,
-  ScrollView,
+  Modal, View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
+  Animated, Easing, StyleSheet, ScrollView, KeyboardAvoidingView, Platform,
+  useWindowDimensions,
 } from "react-native";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import createStyles from "@/styles/styles";
-import { themes } from "@/styles/themes";
+import {
+  WEEK_DAYS, WEEK_DAY_NAMES, MONTH_DAYS, editorDays, toggleRepeatDay,
+  parseInterval, repeatSummary,
+} from "@/features/tasks/domain/repeatEditor";
 
 const MODES = [
   { key: "none", label: "Ninguno" },
@@ -20,690 +17,203 @@ const MODES = [
   { key: "weekly", label: "Semanal" },
   { key: "monthly", label: "Mensual" },
 ];
-
-const WEEK_DAYS = ["L", "M", "X", "J", "V", "S", "D"];
-const MONTH_DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+const MODAL_HEIGHTS = { none: 270, daily: 470, weekly: 570, monthly: 760 };
 
 export default function RepeatModal({
-  visible,
-  themeName,
-  mode,
-
-  selectedDate,
-
-  repeatMode,
-  setRepeatMode,
-
-  repeatDays,
-  setRepeatDays,
-
-  repeatInterval,
-  setRepeatInterval,
-
-  endDate,
-  setEndDate,
-
-  closeModal,
+  visible, themeName, mode, selectedDate, repeatMode, setRepeatMode,
+  repeatDays, setRepeatDays, repeatInterval, setRepeatInterval,
+  endDate, setEndDate, closeModal,
 }) {
   const styles = createStyles(themeName, mode);
-  const theme = themes[themeName][mode];
-
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
-  const scaleAnim = useRef(new Animated.Value(0.96)).current;
-
-  const [localMode, setLocalMode] = useState(repeatMode);
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const [localMode, setLocalMode] = useState(repeatMode || "none");
   const [localWeekDays, setLocalWeekDays] = useState([]);
   const [localMonthDays, setLocalMonthDays] = useState([]);
-
-  const [localInterval, setLocalInterval] = useState(repeatInterval || 1);
+  const [intervalText, setIntervalText] = useState("1");
   const [localEndDate, setLocalEndDate] = useState(endDate);
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const modalHeight = useRef(new Animated.Value(290)).current;
+  const closing = useRef(false);
+  const wasVisible = useRef(false);
+  const interval = parseInterval(intervalText);
+  const canApply = localMode === "none" || interval !== null;
+  const selectedDays = localMode === "weekly" ? localWeekDays : localMonthDays;
+  const maxHeight = Math.max(0, height - insets.top - insets.bottom - 32);
 
-  const modalHeight = useRef(new Animated.Value(230)).current;
-
-  const MODAL_HEIGHTS = {
-    none: 230,
-    daily: 420,
-    weekly: 500,
-    monthly: 670,
-  };
+  // Initialize once per opening; parent updates must not erase an active draft.
+  useEffect(() => {
+    if (visible && !wasVisible.current) {
+      const nextMode = MODES.some((item) => item.key === repeatMode) ? repeatMode : "none";
+      setLocalMode(nextMode);
+      setLocalWeekDays(editorDays("weekly", nextMode === "weekly" ? repeatDays : [], selectedDate));
+      setLocalMonthDays(editorDays("monthly", nextMode === "monthly" ? repeatDays : [], selectedDate));
+      setIntervalText(String(parseInterval(repeatInterval) || 1));
+      setLocalEndDate(endDate);
+      closing.current = false;
+      modalHeight.setValue(Math.min(MODAL_HEIGHTS[nextMode], maxHeight));
+    }
+    wasVisible.current = visible;
+  }, [visible, repeatMode, repeatDays, selectedDate, repeatInterval, endDate, maxHeight, modalHeight]);
 
   useEffect(() => {
     if (!visible) return;
-
-    setLocalWeekDays(
-      repeatMode === "weekly"
-        ? [...(repeatDays || [])]
-        : []
-    );
-    setLocalMonthDays(
-      repeatMode === "monthly"
-        ? (repeatDays || []).map(String)
-        : []
-    );
-    setLocalMode(repeatMode);
-    setLocalInterval(repeatInterval || 1);
-    setLocalEndDate(endDate);
-  }, [visible]);
+    const animation = Animated.timing(modalHeight, {
+      toValue: Math.min(MODAL_HEIGHTS[localMode], maxHeight),
+      duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [localMode, maxHeight, visible, modalHeight]);
 
   const animateOpen = () => {
     opacityAnim.setValue(0);
     slideAnim.setValue(20);
-    scaleAnim.setValue(0.96);
-
     Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 220,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   };
 
-  const animateClose = (callback) => {
+  const animateClose = () => {
+    if (closing.current) return;
+    closing.current = true;
     Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 160,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(slideAnim, {
-        toValue: 20,
-        duration: 160,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(scaleAnim, {
-        toValue: 0.96,
-        duration: 160,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      callback?.();
-      closeModal();
+      Animated.timing(opacityAnim, { toValue: 0, duration: 160, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 20, duration: 160, useNativeDriver: true }),
+    ]).start(({ finished }) => {
+      if (finished) closeModal();
+      else closing.current = false;
     });
   };
 
-  useEffect(() => {
-    Animated.timing(modalHeight, {
-      toValue: MODAL_HEIGHTS[localMode],
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [localMode]);
-
-  const getDefaultWeekDay = () => {
-    if (!selectedDate) return "L";
-
-    const day = new Date(selectedDate).getDay();
-    const map = ["D", "L", "M", "X", "J", "V", "S"];
-
-    return map[day];
-  };
-
-  const getDefaultMonthDay = () => {
-    if (!selectedDate) return 1;
-    return new Date(selectedDate).getDate();
-  };
-
   const selectMode = (nextMode) => {
+    if (nextMode === localMode) return;
     setLocalMode(nextMode);
-    setLocalInterval(1);
-
-    if (nextMode === "none") {
-      setLocalEndDate(null);
-      return;
-    }
-
-    if (nextMode === "weekly" && !localWeekDays.length) {
-        setLocalWeekDays([getDefaultWeekDay()]);
-    }
-
-    if (nextMode === "monthly" && !localMonthDays.length) {
-        setLocalMonthDays([String(getDefaultMonthDay())]);
-    }
-  };
-
-  const toggleWeekDay = (day) => {
-    setLocalWeekDays((current) =>
-      current.includes(day)
-        ? current.filter((value) => value !== day)
-        : [...current, day]
-    );
-  };
-
-  const toggleMonthDay = (day) => {
-    const value = String(day);
-
-    setLocalMonthDays((current) =>
-      current.includes(value)
-        ? current.filter((item) => item !== value)
-        : [...current, value]
-    );
-  };
-
-  const decreaseInterval = () => {
-    setLocalInterval((current) => Math.max(1, current - 1));
-  };
-
-  const increaseInterval = () => {
-    setLocalInterval((current) => current + 1);
+    setIntervalText("1");
+    if (nextMode === "none") setLocalEndDate(null);
   };
 
   const handleApply = () => {
+    if (!canApply || closing.current) return;
     setRepeatMode(localMode);
-
-    if (localMode === "weekly") {
-      setRepeatDays(localWeekDays);
-    } else if (localMode === "monthly") {
-      setRepeatDays(localMonthDays);
-    } else {
-      setRepeatDays([]);
-    }
-
-    setRepeatInterval(localInterval);
+    setRepeatDays(localMode === "weekly" || localMode === "monthly" ? [...selectedDays] : []);
+    setRepeatInterval(localMode === "none" ? 1 : interval);
     setEndDate(localEndDate);
-
     animateClose();
   };
 
-  const getUnitLabel = () => {
-    if (localMode === "daily") {
-      return localInterval === 1 ? "día" : "días";
-    }
+  const changeInterval = (amount) => {
+    const next = (interval || 1) + amount;
+    if (Number.isSafeInteger(next) && next >= 1) setIntervalText(String(next));
+  };
 
-    if (localMode === "weekly") {
-      return localInterval === 1 ? "semana" : "semanas";
-    }
-
-    if (localMode === "monthly") {
-      return localInterval === 1 ? "mes" : "meses";
-    }
-
-    return "";
+  const renderDay = (day, index) => {
+    const weekly = localMode === "weekly";
+    const selected = selectedDays.includes(day);
+    const lastSelected = selected && selectedDays.length === 1;
+    return (
+      <View key={day} style={styles.repeatDayCell}>
+        <TouchableOpacity
+          accessibilityRole="checkbox"
+          accessibilityLabel={weekly ? WEEK_DAY_NAMES[index] : `Día ${day}`}
+          accessibilityState={{ checked: selected, disabled: lastSelected }}
+          accessibilityHint={lastSelected ? "Debe quedar al menos un día seleccionado" : undefined}
+          disabled={lastSelected}
+          onPress={() => (weekly ? setLocalWeekDays : setLocalMonthDays)((days) => toggleRepeatDay(days, day))}
+          style={[styles.repeatDayButton, selected && styles.repeatSelection]}
+        >
+          <Text style={[styles.repeatDayText, selected && styles.repeatSelectedText]}>{day}</Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onShow={animateOpen}
-    >
-      <Animated.View
-        style={[
-          styles.modalOverlay,
-          {
-            opacity: opacityAnim,
-          },
-        ]}
+    <Modal visible={visible} transparent animationType="none" onShow={animateOpen} onRequestClose={animateClose}>
+      <KeyboardAvoidingView
+        style={styles.repeatKeyboardContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <TouchableWithoutFeedback onPress={() => animateClose()}>
-          <View style={StyleSheet.absoluteFillObject} />
-        </TouchableWithoutFeedback>
-        
-        <Animated.View
-          style={{
-            width: "90%",
-            opacity: opacityAnim,
-            transform: [
-              { translateY: slideAnim },
-              { scale: scaleAnim },
-            ],
-          }}
-        >
-        <Animated.View
-          style={[
-            styles.modalBox,
-            {
-              width: "100%",
-              height: modalHeight,
-
-              borderRadius: 16,
-
-              paddingVertical: 20,
-              paddingHorizontal: 18,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.modalTitle,
-              {
-                marginBottom: 16,
-              },
-            ]}
-          >
-            Repetición
-          </Text>
-
-            {/* SELECTOR */}
-            <View
-              style={{
-                flexDirection: "row",
-
-                borderWidth: 1,
-                borderColor: theme.border,
-
-                borderRadius: 12,
-
-                overflow: "hidden",
-              }}
-            >
-              {MODES.map((item) => {
-                const active = localMode === item.key;
-
-                return (
-                  <TouchableOpacity
-                    key={item.key}
+        <Animated.View style={[styles.modalOverlay, { opacity: opacityAnim }]}>
+          <TouchableWithoutFeedback onPress={animateClose} accessible={false}>
+            <View style={StyleSheet.absoluteFillObject} />
+          </TouchableWithoutFeedback>
+          <Animated.View style={[styles.repeatShell, { transform: [{ translateY: slideAnim }] }]}>
+            <Animated.View style={[styles.modalBox, styles.repeatModalBox, { height: modalHeight, maxHeight }]}>
+              <Text accessibilityRole="header" style={[styles.modalTitle, styles.repeatTitle]}>Repetición</Text>
+              <View style={styles.repeatModes}>
+                {MODES.map((item) => (
+                  <TouchableOpacity key={item.key} accessibilityRole="radio"
+                    accessibilityState={{ selected: localMode === item.key }}
                     onPress={() => selectMode(item.key)}
-                    activeOpacity={0.75}
-                    style={{
-                      flex: 1,
-
-                      paddingVertical: 10,
-
-                      alignItems: "center",
-                      justifyContent: "center",
-
-                      backgroundColor: active
-                        ? theme.primary
-                        : "transparent",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-
-                        fontWeight: active
-                          ? "700"
-                          : "500",
-
-                        color: active
-                          ? theme.onPrimary
-                          : theme.text,
-                      }}
-                    >
-                      {item.label}
-                    </Text>
+                    style={[styles.repeatModeButton, localMode === item.key && styles.repeatSelection]}>
+                    <Text style={[styles.repeatModeText, localMode === item.key && styles.repeatSelectedText]}>{item.label}</Text>
                   </TouchableOpacity>
-                );
-              })}
-            </View>
-
-          <ScrollView
-            showsVerticalScrollIndicator={true}
-            contentContainerStyle={{
-              paddingTop: 18,
-              paddingBottom: 4,
-            }}
-          >
-            {/* OPCIONES SEMANALES */}
-            {localMode === "weekly" && (
-              <View
-                style={{
-                  marginBottom: 18,
-                }}
-              >
-                <Text
-                  style={{
-                    color: theme.inactiveCategoryText,
-                    fontSize: 13,
-                    marginBottom: 10,
-                  }}
-                >
-                  Días de la semana
-                </Text>
-
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  {WEEK_DAYS.map((day) => {
-                    const active = localWeekDays.includes(day);
-
-                    return (
-                      <TouchableOpacity
-                        key={day}
-                        onPress={() => toggleWeekDay(day)}
-                        style={{
-                          width: 36,
-                          height: 36,
-
-                          borderRadius: 18,
-
-                          justifyContent: "center",
-                          alignItems: "center",
-
-                          backgroundColor: active
-                            ? theme.primary
-                            : theme.card,
-
-                          borderWidth: 1,
-                          borderColor: active
-                            ? theme.primary
-                            : theme.border,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: active
-                              ? theme.onPrimary
-                              : theme.text,
-
-                            fontWeight: active
-                              ? "700"
-                              : "500",
-                          }}
-                        >
-                          {day}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+                ))}
               </View>
-            )}
-
-            {/* OPCIONES MENSUALES */}
-            {localMode === "monthly" && (
-              <View
-                style={{
-                  marginBottom: 18,
-                }}
-              >
-                <Text
-                  style={{
-                    color: theme.inactiveCategoryText,
-                    fontSize: 13,
-                    marginBottom: 10,
-                  }}
-                >
-                  Días del mes
-                </Text>
-
-                <View
-                  style={{
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    gap: 8,
-                  }}
-                >
-                  {MONTH_DAYS.map((day) => {
-                    const active = localMonthDays.includes(String(day));
-
-                    return (
-                      <TouchableOpacity
-                        key={day}
-                        onPress={() => toggleMonthDay(day)}
-                        style={{
-                          width: 36,
-                          height: 36,
-
-                          borderRadius: 18,
-
-                          justifyContent: "center",
-                          alignItems: "center",
-
-                          backgroundColor: active
-                            ? theme.primary
-                            : theme.card,
-
-                          borderWidth: 1,
-                          borderColor: active
-                            ? theme.primary
-                            : theme.border,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: active
-                              ? theme.onPrimary
-                              : theme.text,
-
-                            fontSize: 12,
-
-                            fontWeight: active
-                              ? "700"
-                              : "500",
-                          }}
-                        >
-                          {day}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-
-            {/* INTERVALO */}
-            {localMode !== "none" && (
-              <View
-                style={{
-                  marginBottom: 18,
-                }}
-              >
-                <Text
-                  style={{
-                    color: theme.inactiveCategoryText,
-                    fontSize: 13,
-                    marginBottom: 10,
-                  }}
-                >
-                  Intervalo
-                </Text>
-
-                <View
-                  style={{
-                    flexDirection: "row",
-
-                    alignItems: "center",
-                    justifyContent: "space-between",
-
-                    paddingVertical: 10,
-                    paddingHorizontal: 14,
-
-                    borderRadius: 12,
-
-                    borderWidth: 1,
-                    borderColor: theme.border,
-
-                    backgroundColor: theme.card,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: theme.text,
-                      fontSize: 15,
-                    }}
-                  >
-                    Cada
-                  </Text>
-
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <TouchableOpacity
-                      onPress={decreaseInterval}
-                      style={{
-                        width: 34,
-                        height: 34,
-
-                        borderRadius: 17,
-
-                        justifyContent: "center",
-                        alignItems: "center",
-
-                        borderWidth: 1,
-                        borderColor: theme.border,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: theme.text,
-                          fontSize: 20,
-                        }}
-                      >
-                        −
-                      </Text>
-                    </TouchableOpacity>
-
-                    <Text
-                      style={{
-                        color: theme.text,
-
-                        minWidth: 38,
-
-                        textAlign: "center",
-
-                        fontSize: 16,
-                        fontWeight: "700",
-
-                        marginHorizontal: 6,
-                      }}
-                    >
-                      {localInterval}
-                    </Text>
-
-                    <TouchableOpacity
-                      onPress={increaseInterval}
-                      style={{
-                        width: 34,
-                        height: 34,
-
-                        borderRadius: 17,
-
-                        justifyContent: "center",
-                        alignItems: "center",
-
-                        borderWidth: 1,
-                        borderColor: theme.border,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: theme.text,
-                          fontSize: 20,
-                        }}
-                      >
-                        +
-                      </Text>
-                    </TouchableOpacity>
+              <ScrollView style={styles.repeatScroll} contentContainerStyle={styles.repeatScrollContent} keyboardShouldPersistTaps="handled">
+                {(localMode === "weekly" || localMode === "monthly") && (
+                  <View style={styles.repeatSection}>
+                    <Text style={styles.repeatSectionLabel}>{localMode === "weekly" ? "Días de la semana" : "Días del mes"}</Text>
+                    <View style={styles.repeatDaysGrid}>
+                      {(localMode === "weekly" ? WEEK_DAYS : MONTH_DAYS).map(renderDay)}
+                    </View>
+                    {localMode === "monthly" && localMonthDays.some((day) => Number(day) >= 29) && (
+                      <Text style={styles.repeatHint}>Se omiten los meses que no tengan estos días.</Text>
+                    )}
                   </View>
-
-                  <Text
-                    style={{
-                      color: theme.text,
-                      fontSize: 15,
-                    }}
-                  >
-                    {getUnitLabel()}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* FECHA DE TÉRMINO */}
-            {localMode !== "none" && (
-              <View
-                style={{
-                  marginBottom: 4,
-                }}
-              >
-                <Text
-                  style={{
-                    color: theme.inactiveCategoryText,
-                    fontSize: 13,
-                    marginBottom: 10,
-                  }}
-                >
-                  Fecha de término
-                </Text>
-
-                <TouchableOpacity
-                  activeOpacity={0.75}
-                  style={{
-                    paddingVertical: 14,
-                    paddingHorizontal: 14,
-
-                    borderRadius: 12,
-
-                    borderWidth: 1,
-                    borderColor: theme.border,
-
-                    backgroundColor: theme.card,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: theme.text,
-                      fontSize: 15,
-                    }}
-                  >
-                    {localEndDate
-                      ? localEndDate.toLocaleDateString("es-CL")
-                      : "Nunca"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </ScrollView>
-
-          <TouchableOpacity
-            style={[
-              styles.saveButton,
-              {
-                marginTop: 18,
-              },
-            ]}
-            onPress={handleApply}
-          >
-            <Text style={styles.saveButtonText}>
-              Aplicar
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => animateClose()}
-            style={{
-              marginTop: 10,
-            }}
-          >
-            <Text
-              style={styles.modalCancelText}
-            >
-              Cancelar
-            </Text>
-          </TouchableOpacity>
+                )}
+                {localMode !== "none" && (
+                  <>
+                    <View style={styles.repeatSection}>
+                      <Text style={styles.repeatSectionLabel}>Intervalo</Text>
+                      <View style={styles.repeatIntervalRow}>
+                        <Text style={styles.repeatBodyText}>Cada</Text>
+                        <View style={styles.rowCenter}>
+                          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Reducir intervalo"
+                            accessibilityState={{ disabled: !interval || interval <= 1 }} disabled={!interval || interval <= 1}
+                            onPress={() => changeInterval(-1)} style={[styles.repeatStepButton, (!interval || interval <= 1) && styles.repeatDisabled]}>
+                            <Text style={styles.repeatStepText}>−</Text>
+                          </TouchableOpacity>
+                          <TextInput accessibilityLabel="Intervalo de repetición" value={intervalText}
+                            onChangeText={setIntervalText} keyboardType="number-pad" selectTextOnFocus
+                            onBlur={() => { if (interval) setIntervalText(String(interval)); }}
+                            style={styles.repeatIntervalInput} />
+                          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Aumentar intervalo"
+                            accessibilityState={{ disabled: interval === Number.MAX_SAFE_INTEGER }} disabled={interval === Number.MAX_SAFE_INTEGER}
+                            onPress={() => changeInterval(1)} style={[styles.repeatStepButton, interval === Number.MAX_SAFE_INTEGER && styles.repeatDisabled]}>
+                            <Text style={styles.repeatStepText}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={styles.repeatBodyText}>
+                          {localMode === "daily" ? (interval === 1 ? "día" : "días") : localMode === "weekly" ? (interval === 1 ? "semana" : "semanas") : (interval === 1 ? "mes" : "meses")}
+                        </Text>
+                      </View>
+                      {!interval && <Text accessibilityLiveRegion="polite" style={styles.repeatError}>Introduce un número entero mayor o igual a 1.</Text>}
+                    </View>
+                    <View style={styles.repeatSection}>
+                      <Text style={styles.repeatSectionLabel}>Fecha de término</Text>
+                      <TouchableOpacity activeOpacity={0.75} style={styles.repeatEndDate}>
+                        <Text style={styles.repeatBodyText}>{localEndDate ? localEndDate.toLocaleDateString("es-CL") : "Nunca"}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+                <Text style={styles.repeatSummary}>{repeatSummary(localMode, interval, selectedDays)}</Text>
+              </ScrollView>
+              <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: !canApply }} disabled={!canApply}
+                onPress={handleApply} style={[styles.saveButton, styles.repeatApplyButton, !canApply && styles.repeatDisabled]}>
+                <Text style={styles.saveButtonText}>Aplicar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" onPress={animateClose} style={styles.repeatCancelButton}>
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
-    </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
