@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   Modal,
   View,
@@ -15,341 +15,14 @@ import { Ionicons } from "@expo/vector-icons";
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
 
-import {
-  MINUTE_MS,
-  HOUR_MS,
-  isSameDay,
-  startOfDay,
-  endOfDay,
-  combineDateAndTime,
-  getAllDayReminderDate,
-  getPersistentDatesForDay,
-  remindersEqual,
-} from "@/features/tasks/services/reminderModel";
+import useReminderOptions from "../../hooks/useReminderOptions";
+import { isOptionActive, optionKey } from "../../domain/reminderOptions";
 
-const TIMED_OPTIONS = [
-  {
-    label: "Sin recordatorio",
-    reminder: null,
-  },
-  {
-    label: "A la hora exacta",
-    reminder: {
-      type: "relative",
-      value: 0,
-      unit: "minutes",
-    },
-  },
-  {
-    label: "5 min antes",
-    reminder: {
-      type: "relative",
-      value: 5,
-      unit: "minutes",
-    },
-  },
-  {
-    label: "10 min antes",
-    reminder: {
-      type: "relative",
-      value: 10,
-      unit: "minutes",
-    },
-  },
-  {
-    label: "15 min antes",
-    reminder: {
-      type: "relative",
-      value: 15,
-      unit: "minutes",
-    },
-  },
-  {
-    label: "30 min antes",
-    reminder: {
-      type: "relative",
-      value: 30,
-      unit: "minutes",
-    },
-  },
-  {
-    label: "1 hora antes",
-    reminder: {
-      type: "relative",
-      value: 60,
-      unit: "minutes",
-    },
-  },
-];
-
-const TODAY_OPTIONS = [
-  {
-    label: "Sin recordatorio",
-    reminder: null,
-  },
-  {
-    label: "En 1 hora",
-    afterHours: 1,
-  },
-  {
-    label: "En 2 horas",
-    afterHours: 2,
-  },
-  {
-    label: "En 4 horas",
-    afterHours: 4,
-  },
-  {
-    label: "En 6 horas",
-    afterHours: 6,
-  },
-];
-
-const ALL_DAY_OPTIONS = [
-  {
-    label: "Sin recordatorio",
-    reminder: null,
-  },
-  {
-    label: "El mismo día",
-    reminder: {
-      type: "all_day",
-      value: 0,
-      unit: "days",
-    },
-  },
-  {
-    label: "1 día antes",
-    reminder: {
-      type: "all_day",
-      value: 1,
-      unit: "days",
-    },
-  },
-  {
-    label: "2 días antes",
-    reminder: {
-      type: "all_day",
-      value: 2,
-      unit: "days",
-    },
-  },
-  {
-    label: "1 semana antes",
-    reminder: {
-      type: "all_day",
-      value: 7,
-      unit: "days",
-    },
-  },
-];
-
-const PERSISTENT_OPTION = {
-  label: "Recordarme durante el día",
-  reminder: {
-    type: "persistent",
-    value: 4,
-    unit: "hours",
-  },
-};
-
-const NO_REMINDER_OPTION = {
-  label: "Sin recordatorio",
-  reminder: null,
-};
-
-function optionReminder(option) {
-  if (option.afterHours) {
-    return {
-      type: "after",
-      value: option.afterHours,
-      unit: "hours",
-      at:
-        Date.now() +
-        option.afterHours * HOUR_MS,
-    };
-  }
-
-  return option.reminder;
+export default function ReminderModal(props) {
+  return props.visible ? <ReminderModalSession {...props} /> : null;
 }
 
-function isOptionActive(
-  currentReminder,
-  option
-) {
-  if (option.afterHours) {
-    return (
-      currentReminder?.type === "after" &&
-      currentReminder?.value ===
-        option.afterHours &&
-      currentReminder?.unit === "hours"
-    );
-  }
-
-  return remindersEqual(
-    currentReminder,
-    option.reminder
-  );
-}
-
-function getAvailableOptions({
-  selectedDate,
-  selectedTime,
-  repeatMode,
-}) {
-
-  const now = new Date();
-
-  const isRepeating =
-    repeatMode &&
-    repeatMode !== "none";
-    
-
-  if (!selectedDate) {
-    return [NO_REMINDER_OPTION];
-  }
-
-  if (selectedTime) {
-    if (isRepeating) {
-      return TIMED_OPTIONS;
-    }
-
-    const taskDateTime =
-      combineDateAndTime(
-        selectedDate,
-        selectedTime
-      );
-
-    return TIMED_OPTIONS.filter((option) => {
-      if (!option.reminder) {
-        return true;
-      }
-
-      const reminderDate =
-        new Date(
-          taskDateTime.getTime() -
-            option.reminder.value *
-              MINUTE_MS
-        );
-
-      return reminderDate > now;
-    });
-  }
-
-  const taskDay =
-    startOfDay(selectedDate);
-
-  const today =
-    startOfDay(now);
-
-  if (
-    !isRepeating &&
-    taskDay < today
-  ) {
-    return [NO_REMINDER_OPTION];
-  }
-
-  if (isRepeating) {
-    return [
-      NO_REMINDER_OPTION,
-      PERSISTENT_OPTION,
-    ];
-  }
-
-  if (isSameDay(selectedDate, now)) {
-    if (isRepeating) {
-      return ALL_DAY_OPTIONS.filter(
-        (option) => {
-          if (!option.reminder) {
-            return true;
-          }
-
-          const reminderDate =
-            getAllDayReminderDate(
-              selectedDate,
-              option.reminder.value
-            );
-
-          return reminderDate > now;
-        }
-      );
-    }
-
-    const todayEnd =
-      endOfDay(now);
-
-    const options =
-      TODAY_OPTIONS.filter((option) => {
-        if (!option.afterHours) {
-          return true;
-        }
-
-        const reminderDate =
-          new Date(
-            now.getTime() +
-              option.afterHours *
-                HOUR_MS
-          );
-
-        return reminderDate <= todayEnd;
-      });
-
-    if (
-      getPersistentDatesForDay(
-        selectedDate,
-        now
-      ).length > 0
-    ) {
-      options.push(PERSISTENT_OPTION);
-    }
-
-    return options;
-  }
-
-  const options =
-    ALL_DAY_OPTIONS.filter((option) => {
-      if (!option.reminder) {
-        return true;
-      }
-
-      const reminderDate =
-        getAllDayReminderDate(
-          selectedDate,
-          option.reminder.value
-        );
-
-      return reminderDate > now;
-    });
-
-  if (!isRepeating) {
-    options.push(PERSISTENT_OPTION);
-  }
-
-  return options;
-}
-
-function getSubtitle({
-  selectedDate,
-  selectedTime,
-  repeatMode,
-}) {
-  if (selectedTime) {
-    return "Avísame antes de la hora de la tarea";
-  }
-
-  if (
-    selectedDate &&
-    isSameDay(selectedDate, new Date()) &&
-    (!repeatMode ||
-      repeatMode === "none")
-  ) {
-    return "Avísame más tarde hoy";
-  }
-
-  return "Avísame respecto al día de la tarea";
-}
-
-export default function ReminderModal({
+function ReminderModalSession({
   visible,
   themeName,
   mode,
@@ -381,19 +54,25 @@ export default function ReminderModal({
     new Animated.Value(0.95)
   ).current;
 
-  const options =
-    getAvailableOptions({
-      selectedDate,
-      selectedTime,
-      repeatMode,
-    });
+  const { options, subtitle, persistentText, select, notice } = useReminderOptions({
+    selectedDate, selectedTime, repeatMode,
+  });
+  const animation = useRef(null);
+  const closing = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; animation.current?.stop(); };
+  }, []);
 
   const animateOpen = () => {
+    if (closing.current) return;
     opacityAnim.setValue(0);
     slideAnim.setValue(20);
     scaleAnim.setValue(0.95);
 
-    Animated.parallel([
+    animation.current?.stop();
+    animation.current = Animated.parallel([
       Animated.timing(opacityAnim, {
         toValue: 1,
         duration: 200,
@@ -417,11 +96,15 @@ export default function ReminderModal({
           Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-    ]).start();
+    ]);
+    animation.current.start();
   };
 
   const animateClose = () => {
-    Animated.parallel([
+    if (closing.current || !mounted.current) return;
+    closing.current = true;
+    animation.current?.stop();
+    animation.current = Animated.parallel([
       Animated.timing(opacityAnim, {
         toValue: 0,
         duration: 160,
@@ -445,15 +128,18 @@ export default function ReminderModal({
           Easing.in(Easing.ease),
         useNativeDriver: true,
       }),
-    ]).start(closeModal);
+    ]);
+    animation.current.start(({ finished }) => {
+      if (finished && mounted.current) closeModal();
+    });
   };
 
   const selectOption = (option) => {
-    setReminder(
-      optionReminder(option)
-    );
-
+    if (closing.current || !mounted.current) return;
+    const result = select(optionKey(option));
+    if (!result.valid) return;
     animateClose();
+    setReminder(result.reminder);
   };
 
   return (
@@ -462,6 +148,7 @@ export default function ReminderModal({
       transparent
       animationType="none"
       onShow={animateOpen}
+      onRequestClose={animateClose}
     >
       <Animated.View
         style={[
@@ -524,13 +211,10 @@ export default function ReminderModal({
               marginBottom: 10,
             }}
           >
-            {getSubtitle({
-              selectedDate,
-              selectedTime,
-              repeatMode,
-            })}
+            {subtitle}
           </Text>
 
+          {notice && <Text accessibilityLiveRegion="polite" style={{ color: theme.inactiveCategoryText, marginBottom: 10 }}>{notice}</Text>}
           {options.map((option) => {
             const active =
               isOptionActive(
@@ -538,16 +222,13 @@ export default function ReminderModal({
                 option
               );
 
-            const key =
-              option.afterHours
-                ? `after-${option.afterHours}`
-                : option.reminder
-                ? `${option.reminder.type}-${option.reminder.value}`
-                : "none";
+            const key = optionKey(option);
 
             return (
               <TouchableOpacity
                 key={key}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: active }}
                 activeOpacity={0.7}
                 style={[
                   styles.optionRow,
@@ -592,7 +273,7 @@ export default function ReminderModal({
                           theme.inactiveCategoryText,
                       }}
                     >
-                      09:00 · 13:00 · 17:00 · 21:00
+                      {persistentText}
                     </Text>
                   )}
                 </View>
