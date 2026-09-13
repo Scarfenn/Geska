@@ -18,12 +18,14 @@ function handler(modal, name, dependencies) {
 }
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
-for (const modal of ['TaskModal', 'CategoryModal', 'AddSubtaskModal']) {
+for (const modal of ['TaskModal', 'CategoryModal', 'SubtaskModal']) {
   test(`${modal} waits for persistence and keeps its draft on failure`, async () => {
     let closes = 0, cleared = 0, alerts = 0;
     const pending = deferred();
     const save = handler(modal, 'handleSave', {
       taskText: 'Draft', selectedCategory: 'cat', categoryName: 'Draft category', categoryToEdit: null,
+      saving: { current: false }, isSaving: false, closing: { current: false }, mounted: { current: true },
+      setLocalSaving() {}, normalizeSubtaskDraft: rows => rows,
       draftSubtasks: [{ id: 'draft', text: 'Draft subtask' }],
       saveTask: () => pending.promise, saveCategory: () => pending.promise, onSave: () => pending.promise,
       animateClose: () => closes++, setCategoryName: () => cleared++, Alert: { alert: () => alerts++ },
@@ -43,4 +45,21 @@ test('category deletion failure does not close the modal or change the selected 
     closeModal: () => closes++, Alert: { alert: () => alerts++ },
   });
   await remove(); assert.equal(closes, 0); assert.equal(selected, 'cat'); assert.equal(alerts, 1);
+});
+
+test('SubtaskModal ignores duplicate saves and preserves completion in its payload', async () => {
+  const pending = deferred();
+  let calls = 0, closes = 0;
+  const save = handler('SubtaskModal', 'handleSave', {
+    saving: { current: false }, isSaving: false, closing: { current: false }, mounted: { current: true },
+    setLocalSaving() {},
+    draftSubtasks: [{ id: 'a', text: 'A', done: true }],
+    normalizeSubtaskDraft: () => [{ id: 'a', text: 'A', isNew: false, sort_order: 0 }],
+    onSave: rows => { calls++; assert.equal(rows[0].done, true); return pending.promise; },
+    animateClose: () => closes++, Alert: { alert() { assert.fail('Unexpected save error'); } },
+  });
+  const first = save(); await save();
+  assert.equal(calls, 1); assert.equal(closes, 0);
+  pending.resolve(); await first;
+  assert.equal(closes, 1);
 });

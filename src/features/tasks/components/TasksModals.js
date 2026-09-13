@@ -1,7 +1,7 @@
 import CategoryModal from "@/features/tasks/modals/CategoryModal";
 import TaskModal from "@/features/tasks/modals/TaskModal";
 import TimeModal from "@/features/tasks/modals/TimeModal";
-import AddSubtaskModal from "@/features/tasks/modals/AddSubtaskModal";
+import SubtaskModal from "@/features/tasks/modals/SubtaskModal";
 export default function TasksModals({
   editor,
   actions,
@@ -92,7 +92,7 @@ export default function TasksModals({
           closeModal={() => setTimeModalVisible(false)}
         />
 
-        <AddSubtaskModal
+        <SubtaskModal
           visible={activeModal === "subtask"}
           isSaving={actions.isSubtaskSaving}
           themeName={themeName}

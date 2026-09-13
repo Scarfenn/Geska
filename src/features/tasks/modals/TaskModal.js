@@ -11,7 +11,7 @@ import {
   Easing,
 } from "react-native";
 import TaskCategoryModal from "./SubModals/TaskCategoryModal";
-import AddSubtaskModal from "./AddSubtaskModal";
+import SubtaskModal from "./SubtaskModal";
 
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
@@ -243,7 +243,7 @@ export default function TaskModal({
       {/* ============================================= */}
       {/* MODAL SUBTAREAS                              */}
       {/* ============================================= */}
-      <AddSubtaskModal
+      <SubtaskModal
         visible={subtaskModalVisible}
         themeName={themeName}
         mode={mode}
