@@ -1,0 +1,59 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { test } from 'node:test';
+const load = async name => {
+  const source = await readFile(new URL(`../src/features/tasks/domain/${name}.js`, import.meta.url), 'utf8');
+  return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+};
+const { createScheduleDraft, scheduleDraftReducer: reduce } = await load('scheduleDraft');
+const { formatRepeatLabel, formatHumanDate, formatHumanTime } = await load('scheduleLabels');
+
+test('draft owns its dates and collections; reopening discards cancelled edits', () => {
+  const props = { selectedDate: new Date(2026, 8, 13), selectedTime: new Date(2026, 8, 13, 12), repeatDays: ['L'], reminder: { type: 'relative', value: 5 }, endDate: new Date(2026, 9, 10) };
+  const draft = createScheduleDraft(props);
+  draft.date.setDate(25); draft.time.setHours(18); draft.endDate.setDate(20);
+  draft.repeatDays.push('M'); draft.reminder.value = 10;
+  assert.equal(props.selectedDate.getDate(), 13);
+  assert.equal(props.selectedTime.getHours(), 12);
+  assert.equal(props.endDate.getDate(), 10);
+  assert.deepEqual(props.repeatDays, ['L']);
+  assert.equal(props.reminder.value, 5);
+  assert.equal(createScheduleDraft(props).date.getDate(), 13);
+});
+
+test('date clears reminder; time only clears it when entering or leaving all-day mode', () => {
+  const reminder = { type: 'relative', value: 5 };
+  const draft = createScheduleDraft({ selectedTime: new Date(2026, 8, 13, 12), reminder });
+  assert.equal(reduce(draft, { field: 'date', value: new Date(2026, 8, 14) }).reminder, null);
+  assert.deepEqual(reduce(draft, { field: 'time', value: new Date(2026, 8, 13, 13) }).reminder, reminder);
+  assert.equal(reduce(draft, { field: 'time', value: null }).reminder, null);
+  const allDay = createScheduleDraft({ reminder });
+  assert.equal(reduce(allDay, { field: 'time', value: new Date() }).reminder, null);
+  assert.deepEqual(draft.reminder, reminder);
+});
+
+test('repetition setters compose without dropping previous updates', () => {
+  let draft = createScheduleDraft({});
+  for (const [field, value] of [['repeatMode', 'monthly'], ['repeatDays', ['13']], ['repeatInterval', 12], ['endDate', new Date(2027, 8, 13)]]) draft = reduce(draft, { field, value });
+  assert.equal(draft.repeatMode, 'monthly');
+  assert.deepEqual(draft.repeatDays, ['13']);
+  assert.equal(draft.repeatInterval, 12);
+  assert.equal(draft.endDate.getFullYear(), 2027);
+});
+
+test('annual label follows draft date and tolerates missing dates', () => {
+  const options = { repeatMode: 'monthly', repeatInterval: 12, repeatDays: ['13'] };
+  assert.equal(formatRepeatLabel({ ...options, selectedDate: new Date(2026, 8, 13) }), 'Anual · 13 de septiembre');
+  assert.equal(formatRepeatLabel({ ...options, selectedDate: new Date(2026, 9, 13) }), 'Anual · 13 de octubre');
+  assert.equal(formatRepeatLabel(options), 'Anual');
+  assert.equal(formatRepeatLabel({ repeatMode: 'monthly', repeatDays: [] }), 'Mensual');
+});
+
+test('date and time labels preserve defaults and accept a deterministic today', () => {
+  const now = new Date(2026, 8, 13, 20);
+  assert.equal(formatHumanDate(null, now), 'Nunca');
+  assert.equal(formatHumanDate(new Date(2026, 8, 13), now), 'Hoy');
+  assert.equal(formatHumanDate(new Date(2026, 8, 14), now), 'Mañana');
+  assert.equal(formatHumanTime(null), 'En cualquier momento');
+  assert.equal(formatHumanTime(new Date(2026, 8, 13, 0, 5)), '00:05');
+});

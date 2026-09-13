@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import {
   Modal,
   View,
@@ -17,58 +17,24 @@ import HourModal from "./SubModals/HourModal";
 import ReminderModal from "./SubModals/ReminderModal";
 import { formatReminder } from "@/features/tasks/services/reminderModel";
 
-const WEEK_DAY_LABELS = {
-  L: "Lun", M: "Mar", X: "Mié", J: "Jue", V: "Vie", S: "Sáb", D: "Dom",
-};
+import useScheduleDraft from "../hooks/useScheduleDraft";
+import { formatHumanDate, formatHumanTime, formatRepeatLabel } from "../domain/scheduleLabels";
 
-export default function TimeModal({
-  visible,
-  themeName,
-  mode,
+export default function TimeModal(props) {
+  return props.visible ? <TimeModalSession {...props} /> : null;
+}
 
-  selectedDate,
-  selectedTime,
-
-  repeatMode,
-  repeatDays,
-  repeatInterval,
-
-  reminder,
-  endDate,
-
-  onTimeSelected,
-  closeModal,
-}) {
+function TimeModalSession(props) {
+  const { visible, themeName, mode, onTimeSelected, closeModal } = props;
   const styles = createStyles(themeName, mode);
   const theme = themes[themeName][mode];
-
-  const [draftDate, setDraftDate] =
-    useState(selectedDate);
-
-  const [draftTime, setDraftTime] =
-    useState(selectedTime);
-
-  const [draftRepeatMode, setDraftRepeatMode] =
-    useState(repeatMode);
-
-  const [draftRepeatDays, setDraftRepeatDays] =
-    useState(repeatDays);
-
-  const [
-    draftRepeatInterval,
-    setDraftRepeatInterval,
-  ] = useState(repeatInterval);
-
-  const [draftReminder, setDraftReminder] =
-    useState(reminder);
-
-  const [draftEndDate, setDraftEndDate] =
-    useState(endDate);
-
-  const [dateVisible, setDateVisible] = useState(false);
-  const [hourVisible, setHourVisible] = useState(false);
-  const [repeatVisible, setRepeatVisible] = useState(false);
-  const [reminderVisible, setReminderVisible] = useState(false);
+  const {
+    draft, activeModal, setActiveModal,
+    draftDate, handleDateSelected, draftTime, handleSelectedTimeChange,
+    draftRepeatMode, setDraftRepeatMode, draftRepeatDays, setDraftRepeatDays,
+    draftRepeatInterval, setDraftRepeatInterval, draftReminder, setDraftReminder,
+    draftEndDate, setDraftEndDate,
+  } = useScheduleDraft(props);
 
   // -------------------------------------------------
   // Animaciones principales del modal
@@ -77,12 +43,22 @@ export default function TimeModal({
   const slideAnim = useRef(new Animated.Value(20)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
+  const animation = useRef(null);
+  const closing = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; animation.current?.stop(); };
+  }, []);
+
   const animateOpen = () => {
+    if (closing.current) return;
+    animation.current?.stop();
     opacityAnim.setValue(0);
     slideAnim.setValue(20);
     scaleAnim.setValue(0.95);
 
-    Animated.parallel([
+    animation.current = Animated.parallel([
       Animated.timing(opacityAnim, {
         toValue: 1,
         duration: 260,
@@ -101,11 +77,15 @@ export default function TimeModal({
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-    ]).start();
+    ]);
+    animation.current.start();
   };
 
-  const animateClose = () => {
-    Animated.parallel([
+  const animateClose = (commit) => {
+    if (closing.current || !mounted.current) return;
+    closing.current = true;
+    animation.current?.stop();
+    animation.current = Animated.parallel([
       Animated.timing(opacityAnim, {
         toValue: 0,
         duration: 200,
@@ -124,236 +104,30 @@ export default function TimeModal({
         easing: Easing.in(Easing.ease),
         useNativeDriver: true,
       }),
-    ]).start(closeModal);
-  };
-
-  // -------------------------------------------------
-  // Fecha
-  // -------------------------------------------------
-
-  const handleDateSelected = (date) => {
-    setDraftDate(date);
-    setDraftReminder(null);
-  };
-
-  // -------------------------------------------------
-  // Formatos
-  // -------------------------------------------------
-  function formatHumanDate(date) {
-    if (!date) return "Nunca";
-
-    const today = new Date();
-    const d = new Date(date);
-
-    today.setHours(0, 0, 0, 0);
-    d.setHours(0, 0, 0, 0);
-
-    const diff = Math.round((d - today) / 86400000);
-
-    if (diff === 0) return "Hoy";
-    if (diff === 1) return "Mañana";
-
-    const names = [
-      "Domingo",
-      "Lunes",
-      "Martes",
-      "Miércoles",
-      "Jueves",
-      "Viernes",
-      "Sábado",
-    ];
-
-    if (diff > 1 && diff <= 6) {
-      return `Este ${names[d.getDay()]}`;
-    }
-
-    if (diff >= 7 && diff <= 13) {
-      return `Próx. ${names[d.getDay()]}`;
-    }
-
-    return d.toLocaleDateString("es-CL", {
-      day: "numeric",
-      month: "short",
+    ]);
+    animation.current.start(({ finished }) => {
+      if (!finished || !mounted.current) return;
+      closeModal();
+      commit?.();
     });
-  }
-
-  function formatHumanTime(date) {
-    if (!date) return "En cualquier momento";
-
-    const h = date.getHours().toString().padStart(2, "0");
-    const m = date.getMinutes().toString().padStart(2, "0");
-
-    return `${h}:${m}`;
-  }
-
-  const handleSelectedTimeChange = (nextTime) => {
-    const hadTime =
-      draftTime !== null;
-
-    const hasTime =
-      nextTime !== null;
-
-    if (hadTime !== hasTime) {
-      setDraftReminder(null);
-    }
-
-    setDraftTime(nextTime);
   };
-
-  function formatRepeatLabel({
-    repeatMode,
-    repeatDays = [],
-    repeatInterval = 1,
-  }) {
-    if (repeatMode === "none") {
-      return "Sin repetir";
-    }
-
-    if (repeatMode === "daily") {
-      return repeatInterval === 1
-        ? "Diario"
-        : `Cada ${repeatInterval} días`;
-    }
-
-    if (repeatMode === "weekly") {
-      const selectedDays = Object.keys(WEEK_DAY_LABELS).filter((day) =>
-        repeatDays.includes(day)
-      );
-      const allDaysSelected = selectedDays.length === 7;
-      let daysLabel = "";
-
-      if (allDaysSelected) {
-        return repeatInterval === 1
-          ? "Diario"
-          : `Cada ${repeatInterval} semanas · Todos los días`;
-      }
-
-      const intervalLabel = repeatInterval === 1
-        ? "Semanal"
-        : `Cada ${repeatInterval} semanas`;
-      if (selectedDays.length < 5) {
-        daysLabel = selectedDays.map((day) => WEEK_DAY_LABELS[day]).join(", ");
-      } else {
-        daysLabel = selectedDays.join(", ");
-      }
-
-      return daysLabel ? `${intervalLabel} · ${daysLabel}` : intervalLabel;
-    }
-
-    if (repeatMode === "monthly" && repeatInterval % 12 !== 0) {
-      const sortedDays = [...repeatDays]
-        .map(Number)
-        .sort((a, b) => a - b);
-
-      const allDaysSelected = 
-        repeatDays.length === 31;
-
-      if (allDaysSelected) {
-        return repeatInterval === 1
-          ? "Diario"
-          : `Cada ${repeatInterval} meses · Todos los días`;
-      }
-
-      const intervalLabel =
-        repeatInterval === 1
-          ? "Mensual"
-          : `Cada ${repeatInterval} meses`;
-
-      let daysLabel = null;
-
-      if (sortedDays.length === 1) {
-        daysLabel = `Día ${sortedDays[0]}`;
-      } else if (sortedDays.length <= 4) {
-        daysLabel = `Días ${sortedDays.join(", ")}`;
-      } else if (sortedDays.length > 4) {
-        daysLabel = `${sortedDays.length} días del mes`;
-      }
-
-      return daysLabel
-        ? `${intervalLabel} · ${daysLabel}`
-        : intervalLabel;
-    }
-    if (repeatMode === "monthly" && repeatInterval % 12 === 0) {
-      const years = repeatInterval / 12;
-
-      const intervalLabel =
-        years === 1
-          ? "Anual"
-          : `Cada ${years} años`;
-      
-      const monthLabel = selectedDate.toLocaleDateString("es-CL", {
-        month: "long",
-      });
-      
-      const daysLabel =
-        repeatDays.length === 1
-          ? `${repeatDays[0]} de ${monthLabel}`
-          : repeatDays.length > 1
-            ? `${repeatDays.join(", ")} de ${monthLabel}`
-            : null;
-
-      return daysLabel ? `${intervalLabel} · ${daysLabel}` : intervalLabel;
-    }
-
-    return "Sin repetir";
-  }
-
-  useEffect(() => {
-    if (!visible) return;
-
-    setDraftDate(
-      selectedDate
-        ? new Date(selectedDate)
-        : null
-    );
-
-    setDraftTime(
-      selectedTime
-        ? new Date(selectedTime)
-        : null
-    );
-
-    setDraftRepeatMode(
-      repeatMode || "none"
-    );
-
-    setDraftRepeatDays(
-      [...(repeatDays || [])]
-    );
-
-    setDraftRepeatInterval(
-      repeatInterval || 1
-    );
-
-    setDraftReminder(
-      reminder
-        ? { ...reminder }
-        : null
-    );
-
-    setDraftEndDate(
-      endDate
-        ? new Date(endDate)
-        : null
-    );
-  }, [visible]);
 
   return (
     <>
       {/* Modal de Fecha */}
       <DateSelectorModal
-        visible={dateVisible}
+        visible={activeModal === "date"}
         themeName={themeName}
         mode={mode}
         selectedDate={draftDate}
         onSelectDate={handleDateSelected}
-        closeModal={() => setDateVisible(false)}
+        closeModal={() => setActiveModal(null)}
       />
 
       {/* Modal de Repetición */}
       <RepeatModal
-        visible={repeatVisible}
-        closeModal={() => setRepeatVisible(false)}
+        visible={activeModal === "repeat"}
+        closeModal={() => setActiveModal(null)}
         themeName={themeName}
         mode={mode}
 
@@ -374,7 +148,7 @@ export default function TimeModal({
 
       {/* Modal de Hora */}
       <HourModal
-        visible={hourVisible}
+        visible={activeModal === "hour"}
         themeName={themeName}
         mode={mode}
 
@@ -385,13 +159,13 @@ export default function TimeModal({
         }
 
         closeModal={() =>
-          setHourVisible(false)
+          setActiveModal(null)
         }
       />
 
       {/* Modal de Recordatorio */}
       <ReminderModal
-        visible={reminderVisible}
+        visible={activeModal === "reminder"}
         themeName={themeName}
         mode={mode}
 
@@ -404,7 +178,7 @@ export default function TimeModal({
         setReminder={setDraftReminder}
 
         closeModal={() =>
-          setReminderVisible(false)
+          setActiveModal(null)
         }
       />
 
@@ -417,8 +191,9 @@ export default function TimeModal({
         transparent
         animationType="none"
         onShow={animateOpen}
+        onRequestClose={() => activeModal ? setActiveModal(null) : animateClose()}
       >
-        <TouchableWithoutFeedback onPress={animateClose}>
+        <TouchableWithoutFeedback onPress={() => animateClose()}>
           <Animated.View
             style={[
               styles.modalOverlay,
@@ -458,7 +233,7 @@ export default function TimeModal({
                 <TouchableOpacity
                   style={styles.optionRow}
                   activeOpacity={0.7}
-                  onPress={() => setDateVisible(true)}
+                  onPress={() => setActiveModal("date")}
                 >
                   <View
                     style={{
@@ -503,7 +278,7 @@ export default function TimeModal({
                 {/* HORA */}
                 <TouchableOpacity
                   style={styles.optionRow}
-                  onPress={() => setHourVisible(true)}
+                  onPress={() => setActiveModal("hour")}
                 >
                   <View
                     style={{
@@ -543,7 +318,7 @@ export default function TimeModal({
                 {/* REPETICIÓN */}
                 <TouchableOpacity
                   style={styles.optionRow}
-                  onPress={() => setRepeatVisible(true)}
+                  onPress={() => setActiveModal("repeat")}
                 >
                   <View
                     style={{
@@ -567,6 +342,7 @@ export default function TimeModal({
                   </View>
                   <Text style={styles.optionValue}>
                     {formatRepeatLabel({
+                      selectedDate: draftDate,
                       repeatMode: draftRepeatMode,
                       repeatDays: draftRepeatDays,
                       repeatInterval: draftRepeatInterval,
@@ -578,7 +354,7 @@ export default function TimeModal({
                 <TouchableOpacity
                   style={styles.optionRow}
                   activeOpacity={0.7}
-                  onPress={() => setReminderVisible(true)}
+                  onPress={() => setActiveModal("reminder")}
                 >
                   <View
                     style={{
@@ -626,35 +402,13 @@ export default function TimeModal({
                 {/* BOTÓN APLICAR */}
                 <TouchableOpacity
                   style={[styles.saveButton, { marginTop: 22 }]}
-                  onPress={() => {
-                    onTimeSelected({
-                      date: draftDate,
-                      time: draftTime,
-
-                      repeatMode:
-                        draftRepeatMode,
-
-                      repeatDays:
-                        draftRepeatDays,
-
-                      repeatInterval:
-                        draftRepeatInterval,
-
-                      reminder:
-                        draftReminder,
-
-                      endDate:
-                        draftEndDate,
-                    });
-
-                    animateClose();
-                  }}
+                  onPress={() => animateClose(() => onTimeSelected(draft))}
                 >
                   <Text style={styles.saveButtonText}>Aplicar</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={animateClose}
+                  onPress={() => animateClose()}
                   style={{ marginTop: 10 }}
                 >
                   <Text style={styles.modalCancelText}>
