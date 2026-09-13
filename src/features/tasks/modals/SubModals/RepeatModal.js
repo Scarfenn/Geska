@@ -153,7 +153,7 @@ export default function RepeatModal({
                   </TouchableOpacity>
                 ))}
               </View>
-              <ScrollView style={styles.repeatScroll} contentContainerStyle={styles.repeatScrollContent} keyboardShouldPersistTaps="handled">
+              <ScrollView style={styles.repeatScroll} contentContainerStyle={styles.repeatScrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 {(localMode === "weekly" || localMode === "monthly") && (
                   <View style={styles.repeatSection}>
                     <Text style={styles.repeatSectionLabel}>{localMode === "weekly" ? "Días de la semana" : "Días del mes"}</Text>
@@ -170,7 +170,7 @@ export default function RepeatModal({
                     <View style={styles.repeatSection}>
                       <Text style={styles.repeatSectionLabel}>Intervalo</Text>
                       <View style={styles.repeatIntervalRow}>
-                        <Text style={styles.repeatBodyText}>Cada</Text>
+                        <Text style={[styles.repeatBodyText, {marginRight: 16}]}>Cada</Text>
                         <View style={styles.rowCenter}>
                           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Reducir intervalo"
                             accessibilityState={{ disabled: !interval || interval <= 1 }} disabled={!interval || interval <= 1}
@@ -187,7 +187,7 @@ export default function RepeatModal({
                             <Text style={styles.repeatStepText}>+</Text>
                           </TouchableOpacity>
                         </View>
-                        <Text style={styles.repeatBodyText}>
+                        <Text style={[styles.repeatBodyText, styles.repeatUnitText]}>
                           {localMode === "daily" ? (interval === 1 ? "día" : "días") : localMode === "weekly" ? (interval === 1 ? "semana" : "semanas") : (interval === 1 ? "mes" : "meses")}
                         </Text>
                       </View>
