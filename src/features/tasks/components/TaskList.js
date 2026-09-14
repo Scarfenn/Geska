@@ -85,11 +85,7 @@ export default function TaskList({
         <Ionicons
           name="add-circle-outline"
           size={17}
-          color={
-            mode === "light"
-              ? "#666"
-              : "#aaa"
-          }
+          color={styles.taskEmptyDescription.color}
         />
       </Text>
     </View>

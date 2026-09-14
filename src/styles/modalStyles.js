@@ -1,7 +1,9 @@
 import createThemedStyles from "@/styles/createThemedStyles";
 import getCommonStyles from "@/styles/commonStyles";
+import getButtonStyles from "@/styles/buttonStyles";
 export default createThemedStyles((theme, mode, themeName) => ({
   ...getCommonStyles(themeName, mode),
+  ...getButtonStyles(themeName, mode),
   input: {
     borderWidth: 1,
     padding: 10,
@@ -49,18 +51,6 @@ export default createThemedStyles((theme, mode, themeName) => ({
     fontWeight: "bold",
     marginBottom: 10,
     color: theme.text
-  },
-  saveButton: {
-    padding: 15,
-    borderRadius: 5,
-    alignItems: "center",
-    marginBottom: 3,
-    backgroundColor: theme.primary
-  },
-  saveButtonText: {
-    color: theme.onPrimary,
-    fontWeight: "bold",
-    fontSize: 16
   },
   optionRow: {
     flexDirection: "row",

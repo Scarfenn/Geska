@@ -1,11 +1,11 @@
 import createThemedStyles from "@/styles/createThemedStyles";
 import getCommonStyles from "@/styles/commonStyles";
 import getListStyles from "@/features/tasks/styles/taskListStyles";
-import getModalStyles from "@/styles/modalStyles";
+import getButtonStyles from "@/styles/buttonStyles";
 export default createThemedStyles((theme, mode, themeName) => ({
   ...getCommonStyles(themeName, mode),
   ...getListStyles(themeName, mode),
-  ...getModalStyles(themeName, mode),
+  ...getButtonStyles(themeName, mode),
   container: {
     flex: 1,
     paddingHorizontal: 20,
