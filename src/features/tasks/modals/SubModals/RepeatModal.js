@@ -2,9 +2,10 @@ import useModalAnimation from "@/hooks/useModalAnimation";
 import { useEffect, useRef, useState } from "react";
 import {
   Modal, View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
-  Animated, Easing, StyleSheet, ScrollView, KeyboardAvoidingView, Platform,
+  Animated, StyleSheet, KeyboardAvoidingView, Platform,
   useWindowDimensions,
 } from "react-native";
+import Reanimated, { LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import getRepeatModalStyles from "@/features/tasks/styles/repeatModalStyles";
 import {
@@ -12,13 +13,14 @@ import {
   parseInterval, repeatSummary,
 } from "@/features/tasks/domain/repeatEditor";
 
+const modalLayoutTransition = LinearTransition.duration(220);
+
 const MODES = [
   { key: "none", label: "Ninguno" },
   { key: "daily", label: "Diario" },
   { key: "weekly", label: "Semanal" },
   { key: "monthly", label: "Mensual" },
 ];
-const MODAL_HEIGHTS = { none: 270, daily: 470, weekly: 570, monthly: 760 };
 
 export default function RepeatModal({
   visible, themeName, mode, selectedDate, repeatMode, setRepeatMode,
@@ -31,15 +33,18 @@ export default function RepeatModal({
   const [localMode, setLocalMode] = useState(repeatMode || "none");
   const [localWeekDays, setLocalWeekDays] = useState([]);
   const [localMonthDays, setLocalMonthDays] = useState([]);
-  const [intervalText, setIntervalText] = useState("1");
+  const [intervalDrafts, setIntervalDrafts] = useState({ daily: "1", weekly: "1", monthly: "1" });
   const [localEndDate, setLocalEndDate] = useState(endDate);
   const { opacityAnim, slideAnim, animateOpen, animateClose, closing } = useModalAnimation(closeModal, { visible, scale: null, opacityEasing: null, closeEasing: null });
-  const modalHeight = useRef(new Animated.Value(290)).current;
   const wasVisible = useRef(false);
+  const intervalText = intervalDrafts[localMode] ?? "1";
+  const setIntervalText = (text) => setIntervalDrafts((drafts) => ({ ...drafts, [localMode]: text }));
   const interval = parseInterval(intervalText);
   const canApply = localMode === "none" || interval !== null;
   const selectedDays = localMode === "weekly" ? localWeekDays : localMonthDays;
-  const maxHeight = Math.max(0, height - insets.top - insets.bottom - 32);
+  // Derive the cap from current dimensions, never from the keyboard-constrained
+  // overlay. Flex shrink handles any smaller space supplied by the native Modal.
+  const maxHeight = Math.max(0, (height - insets.top - insets.bottom) * 0.90);
 
   // Initialize once per opening; parent updates must not erase an active draft.
   useEffect(() => {
@@ -48,27 +53,16 @@ export default function RepeatModal({
       setLocalMode(nextMode);
       setLocalWeekDays(editorDays("weekly", nextMode === "weekly" ? repeatDays : [], selectedDate));
       setLocalMonthDays(editorDays("monthly", nextMode === "monthly" ? repeatDays : [], selectedDate));
-      setIntervalText(String(parseInterval(repeatInterval) || 1));
+      setIntervalDrafts({ daily: "1", weekly: "1", monthly: "1",
+        ...(nextMode !== "none" ? { [nextMode]: String(parseInterval(repeatInterval) || 1) } : {}) });
       setLocalEndDate(endDate);
-      modalHeight.setValue(Math.min(MODAL_HEIGHTS[nextMode], maxHeight));
     }
     wasVisible.current = visible;
-  }, [visible, repeatMode, repeatDays, selectedDate, repeatInterval, endDate, maxHeight, modalHeight]);
-
-  useEffect(() => {
-    if (!visible) return;
-    const animation = Animated.timing(modalHeight, {
-      toValue: Math.min(MODAL_HEIGHTS[localMode], maxHeight),
-      duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [localMode, maxHeight, visible, modalHeight]);
+  }, [visible, repeatMode, repeatDays, selectedDate, repeatInterval, endDate]);
 
   const selectMode = (nextMode) => {
     if (nextMode === localMode) return;
     setLocalMode(nextMode);
-    setIntervalText("1");
     if (nextMode === "none") setLocalEndDate(null);
   };
 
@@ -111,26 +105,34 @@ export default function RepeatModal({
     <Modal visible={visible} transparent animationType="none" onShow={animateOpen} onRequestClose={animateClose}>
       <KeyboardAvoidingView
         style={styles.repeatKeyboardContainer}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        // Android's native Modal already resizes its window for the keyboard.
+        enabled={Platform.OS === "ios"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <Animated.View style={[styles.modalOverlay, { opacity: opacityAnim }]}>
           <TouchableWithoutFeedback onPress={animateClose} accessible={false}>
             <View style={StyleSheet.absoluteFillObject} />
           </TouchableWithoutFeedback>
-          <Animated.View style={[styles.repeatShell, { transform: [{ translateY: slideAnim }] }]}>
-            <Animated.View style={[styles.modalBox, styles.repeatModalBox, { height: modalHeight, maxHeight }]}>
-              <Text accessibilityRole="header" style={[styles.modalTitle, styles.repeatTitle]}>Repetición</Text>
-              <View style={styles.repeatModes}>
-                {MODES.map((item) => (
-                  <TouchableOpacity key={item.key} accessibilityRole="radio"
-                    accessibilityState={{ selected: localMode === item.key }}
-                    onPress={() => selectMode(item.key)}
-                    style={[styles.repeatModeButton, localMode === item.key && styles.repeatSelection]}>
-                    <Text style={[styles.repeatModeText, localMode === item.key && styles.repeatSelectedText]}>{item.label}</Text>
-                  </TouchableOpacity>
-                ))}
+          <Reanimated.View layout={modalLayoutTransition} style={[styles.repeatShell, { maxHeight }]}>
+            <Animated.View style={[styles.repeatAnimatedContent, { transform: [{ translateY: slideAnim }] }]}>
+            <Reanimated.View layout={modalLayoutTransition}
+              style={[styles.modalBox, styles.repeatModalBox, { overflow: "hidden" }]}>
+              <View style={styles.repeatFixedSection}>
+                <Text accessibilityRole="header" style={[styles.modalTitle, styles.repeatTitle]}>Repetición</Text>
+                <View style={styles.repeatModes}>
+                  {MODES.map((item) => (
+                    <TouchableOpacity key={item.key} accessibilityRole="radio"
+                      accessibilityState={{ selected: localMode === item.key }}
+                      onPress={() => selectMode(item.key)}
+                      style={[styles.repeatModeButton, localMode === item.key && styles.repeatSelection]}>
+                      <Text style={[styles.repeatModeText, localMode === item.key && styles.repeatSelectedText]}>{item.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
-              <ScrollView style={styles.repeatScroll} contentContainerStyle={styles.repeatScrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Reanimated.ScrollView layout={modalLayoutTransition}
+                style={styles.repeatScroll} contentContainerStyle={styles.repeatScrollContent}
+                keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 {(localMode === "weekly" || localMode === "monthly") && (
                   <View style={styles.repeatSection}>
                     <Text style={styles.repeatSectionLabel}>{localMode === "weekly" ? "Días de la semana" : "Días del mes"}</Text>
@@ -138,7 +140,7 @@ export default function RepeatModal({
                       {(localMode === "weekly" ? WEEK_DAYS : MONTH_DAYS).map(renderDay)}
                     </View>
                     {localMode === "monthly" && localMonthDays.some((day) => Number(day) >= 29) && (
-                      <Text style={styles.repeatHint}>Se omiten los meses que no tengan estos días.</Text>
+                      <Text style={styles.repeatHint}>Los días que no existan en un mes se omitirán.</Text>
                     )}
                   </View>
                 )}
@@ -148,7 +150,7 @@ export default function RepeatModal({
                       <Text style={styles.repeatSectionLabel}>Intervalo</Text>
                       <View style={styles.repeatIntervalRow}>
                         <Text style={[styles.repeatBodyText, {marginRight: 16}]}>Cada</Text>
-                        <View style={styles.rowCenter}>
+                        <View style={styles.repeatIntervalControls}>
                           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Reducir intervalo"
                             accessibilityState={{ disabled: !interval || interval <= 1 }} disabled={!interval || interval <= 1}
                             onPress={() => changeInterval(-1)} style={[styles.repeatStepButton, (!interval || interval <= 1) && styles.repeatDisabled]}>
@@ -179,16 +181,19 @@ export default function RepeatModal({
                   </>
                 )}
                 <Text style={styles.repeatSummary}>{repeatSummary(localMode, interval, selectedDays)}</Text>
-              </ScrollView>
-              <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: !canApply }} disabled={!canApply}
-                onPress={handleApply} style={[styles.saveButton, styles.repeatApplyButton, !canApply && styles.repeatDisabled]}>
-                <Text style={styles.saveButtonText}>Aplicar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity accessibilityRole="button" onPress={animateClose} style={styles.repeatCancelButton}>
-                <Text style={styles.modalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
+              </Reanimated.ScrollView>
+              <Reanimated.View layout={modalLayoutTransition} style={styles.repeatFixedSection}>
+                <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: !canApply }} disabled={!canApply}
+                  onPress={handleApply} style={[styles.saveButton, styles.repeatApplyButton, !canApply && styles.repeatDisabled]}>
+                  <Text style={styles.saveButtonText}>Aplicar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" onPress={animateClose} style={styles.repeatCancelButton}>
+                  <Text style={styles.modalCancelText}>Cancelar</Text>
+                </TouchableOpacity>
+              </Reanimated.View>
+            </Reanimated.View>
             </Animated.View>
-          </Animated.View>
+          </Reanimated.View>
         </Animated.View>
       </KeyboardAvoidingView>
     </Modal>

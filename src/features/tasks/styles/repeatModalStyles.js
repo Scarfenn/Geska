@@ -9,11 +9,17 @@ export default createThemedStyles((theme, mode, themeName) => ({
     width: "94%",
     maxWidth: 480,
     flexShrink: 1,
+    minHeight: 0,
     paddingVertical: 16
+  },
+  repeatAnimatedContent: {
+    flexShrink: 1,
+    minHeight: 0
   },
   repeatModalBox: {
     width: "100%",
     flexShrink: 1,
+    minHeight: 0,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 14
@@ -50,8 +56,12 @@ export default createThemedStyles((theme, mode, themeName) => ({
     fontWeight: "700"
   },
   repeatScroll: {
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 1,
     minHeight: 0
+  },
+  repeatFixedSection: {
+    flexShrink: 0
   },
   repeatScrollContent: {
     paddingTop: 18,
@@ -97,12 +107,11 @@ export default createThemedStyles((theme, mode, themeName) => ({
   },
   repeatIntervalRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+    gap: 6,
     alignItems: "center",
     justifyContent: "space-around",
     paddingVertical: 6,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderWidth: 1,
     borderColor: theme.border,
     borderRadius: 12,
@@ -114,8 +123,15 @@ export default createThemedStyles((theme, mode, themeName) => ({
     fontSize: 15
   },
   repeatUnitText: {
-    minWidth: 55,
+    width: 60,
+    flexShrink: 0,
     textAlign: "right"
+  },
+  repeatIntervalControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 1,
+    minWidth: 0
   },
   repeatStepButton: {
     width: 40,
@@ -131,7 +147,9 @@ export default createThemedStyles((theme, mode, themeName) => ({
     fontSize: 20
   },
   repeatIntervalInput: {
-    width: 62,
+    width: 48,
+    minWidth: 28,
+    flexShrink: 1,
     minHeight: 44,
     marginHorizontal: 3,
     paddingHorizontal: 2,
