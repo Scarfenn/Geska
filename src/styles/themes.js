@@ -93,7 +93,7 @@ export const themes = {
       background: "#2B232D",          // Ciruela gris muy oscuro
       text: "#F4E9EC",                // Rosa crema
       card: "#3A303D",                // Ciruela suave
-      border: "#8F7387",
+      border: "#7A6277",
       primary: "#E7A8B9",             // Rosa pastel apagado
       onPrimary: "#17191F",
       primaryText: "#E7A8B9",
@@ -322,7 +322,7 @@ export const themes = {
       subtaskCounterBackground: "#FBF7F0",
       subtaskCounterText: "#7A6341",
       subtaskCounterCompleteBackground: "#fceed6",
-      subtaskCounterCompleteText: "#886B37",
+      subtaskCounterCompleteText: "#846733",
     },
 
     dark: {
@@ -381,7 +381,7 @@ export const themes = {
       subtaskCounterBackground: "#FDF2F0",
       subtaskCounterText: "#7F534C",
       subtaskCounterCompleteBackground: "#fDE5E3",
-      subtaskCounterCompleteText: "#9D5750",
+      subtaskCounterCompleteText: "#9A544D",
     },
 
     dark: {
@@ -440,7 +440,7 @@ export const themes = {
       subtaskCounterBackground: "#FAEDF4",
       subtaskCounterText: "#8D406A",
       subtaskCounterCompleteBackground: "#fce1f1",
-      subtaskCounterCompleteText: "#A7477F",
+      subtaskCounterCompleteText: "#A3447C",
     },
 
     dark: {
@@ -506,7 +506,7 @@ export const themes = {
       background: "#1F152A",
       text: "#E6D0FF",
       card: "#2C1B3A",
-      border: "#9B65C4",
+      border: "#80599D",
       primary: "#AB65E4",
       onPrimary: "#17191F",
       primaryText: "#AE6AE5",

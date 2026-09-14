@@ -118,6 +118,11 @@ test('empty-list text and inline icon keep their previous colors in every palett
     React: { createElement: (type, props, ...children) => ({ type, props: props || {}, children: children.flat() }) },
     require: name => {
       if (name === 'react-native') return Object.fromEntries(['FlatList', 'Text', 'TouchableWithoutFeedback', 'View'].map(key => [key, key]));
+      if (name === 'react-native-reanimated') return {
+        __esModule: true,
+        default: { FlatList: 'Animated.FlatList' },
+        LinearTransition: { duration: milliseconds => ({ milliseconds }) },
+      };
       if (name === '@expo/vector-icons') return { Ionicons: 'Ionicons' };
       if (name === '@/features/tasks/components/TaskCard') return 'TaskCard';
       if (name.startsWith('@/')) return load(name.slice(2));

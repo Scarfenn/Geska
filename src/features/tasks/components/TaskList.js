@@ -1,14 +1,16 @@
 import { themes } from "@/styles/themes";
 import {
-  FlatList,
   Text,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 import getTaskListStyles from "@/features/tasks/styles/taskListStyles";
 import TaskCard from "@/features/tasks/components/TaskCard";
+
+const taskLayoutTransition = LinearTransition.duration(250);
 
 function timeToMinutes(time) {
   if (!time) return null;
@@ -22,6 +24,9 @@ function timeToMinutes(time) {
 
 function sortTasksChronologically(tasks) {
   return [...tasks].sort((a, b) => {
+    const completionOrder = Number(Boolean(a.done)) - Number(Boolean(b.done));
+    if (completionOrder !== 0) return completionOrder;
+
     const aMinutes = timeToMinutes(a.time);
     const bMinutes = timeToMinutes(b.time);
 
@@ -99,8 +104,9 @@ export default function TaskList({
         {sortedTasks.length === 0 ? (
           emptyState
         ) : (
-          <FlatList
+          <Animated.FlatList
             data={sortedTasks}
+            itemLayoutAnimation={taskLayoutTransition}
             keyExtractor={(item) =>
               String(item.id)
             }
