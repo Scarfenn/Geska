@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
-import AllTasks from "./components/AllTasks";
+import TaskList from "./components/TaskList";
 import DaySelector from "./components/DaySelector";
 import ThemeSelector from "@/components/ThemeSelector";
 import CategoryBar from "./components/CategoryBar";
@@ -110,7 +110,7 @@ export default function TasksScreen({
               <Text style={styles.saveButtonText}>Reintentar</Text>
             </TouchableOpacity>
           </View>
-        ) : <AllTasks
+        ) : <TaskList
           tasks={tasksForRender}
           toggleTaskDone={(id) => actions.toggleTaskDone(id, selectedDay)}
           toggleSubtaskDone={(id, subtaskId) => actions.toggleSubtaskDone(id, subtaskId, selectedDay)}

@@ -75,36 +75,36 @@ function screen(overrides = {}) {
 
 test('real JSX shows loading then categorized tasks even with notifications blocked', async () => {
   const sync = deferred(); const app = screen({ syncTaskReminders: () => sync.promise });
-  assert.equal(app.find('ActivityIndicator').length, 1); assert.equal(app.find('AllTasks').length, 0);
+  assert.equal(app.find('ActivityIndicator').length, 1); assert.equal(app.find('TaskList').length, 0);
   await tick(); app.render();
   assert.equal(app.find('ActivityIndicator').length, 0);
-  assert.equal(app.find('AllTasks')[0].props.tasks[0].id, '1');
+  assert.equal(app.find('TaskList')[0].props.tasks[0].id, '1');
   sync.reject(new Error('notifications blocked')); await tick(); app.render();
-  assert.equal(app.find('AllTasks')[0].props.tasks.length, 1); app.unmount();
+  assert.equal(app.find('TaskList')[0].props.tasks.length, 1); app.unmount();
 });
 
 test('real JSX distinguishes failed startup from an empty database and retry recovers', async () => {
   let fail = true;
   const app = screen({ getAllTasks: async () => { if (fail) throw new Error('read failed'); return []; } });
-  await tick(); app.render(); assert.equal(app.find('AllTasks').length, 0);
+  await tick(); app.render(); assert.equal(app.find('TaskList').length, 0);
   const retry = app.find('TouchableOpacity').find(node => node.children.some(child => child?.children?.includes('Reintentar')));
   assert.ok(retry); fail = false; await retry.props.onPress(); app.render();
-  assert.equal(app.find('AllTasks')[0].props.tasks.length, 0); app.unmount();
+  assert.equal(app.find('TaskList')[0].props.tasks.length, 0); app.unmount();
 });
 
 test('failed refresh after visible tasks keeps the list visible', async () => {
   let fail = false;
   const app = screen({ getAllTasks: async () => { if (fail) throw new Error('temporary read failure'); return [task]; } });
-  await tick(); app.render(); assert.equal(app.find('AllTasks').length, 1);
+  await tick(); app.render(); assert.equal(app.find('TaskList').length, 1);
   fail = true; await app.emit(); app.render();
-  assert.equal(app.find('AllTasks').length, 1, 'cached tasks must not be replaced by the error view');
-  assert.equal(app.find('AllTasks')[0].props.tasks[0].id, '1'); app.unmount();
+  assert.equal(app.find('TaskList').length, 1, 'cached tasks must not be replaced by the error view');
+  assert.equal(app.find('TaskList')[0].props.tasks[0].id, '1'); app.unmount();
 });
 
 test('category read failure never looks like a genuinely empty day', async () => {
   const app = screen({ getAllCategories: async () => { throw new Error('category read failure'); } });
   await tick(); app.render();
-  assert.equal(app.find('AllTasks').length, 0);
+  assert.equal(app.find('TaskList').length, 0);
   assert.ok(app.find('Text').some(node => node.props.accessibilityRole === 'alert'));
   app.unmount();
 });
@@ -113,15 +113,15 @@ test('slow categories keep loading visible until the complete snapshot is ready'
   const cats = deferred(); const app = screen({ getAllCategories: () => cats.promise });
   await tick(); app.render(); assert.equal(app.find('ActivityIndicator').length, 1);
   cats.resolve([{ id: 'work', name: 'Trabajo' }]); await tick(); app.render();
-  assert.equal(app.find('AllTasks')[0].props.tasks.length, 1); app.unmount();
+  assert.equal(app.find('TaskList')[0].props.tasks.length, 1); app.unmount();
 });
 
 test('notification update reloads task completion without restarting the screen', async () => {
   let done = false;
   const app = screen({ getAllTasks: async () => [{ ...task, done }] });
-  await tick(); app.render(); assert.equal(app.find('AllTasks')[0].props.tasks[0].done, false);
+  await tick(); app.render(); assert.equal(app.find('TaskList')[0].props.tasks[0].done, false);
   done = true; await app.emit(); app.render();
-  assert.equal(app.find('AllTasks')[0].props.tasks[0].done, true); app.unmount();
+  assert.equal(app.find('TaskList')[0].props.tasks[0].done, true); app.unmount();
 });
 
 test('selected category survives refresh but resets to all if removed', async () => {
@@ -130,16 +130,16 @@ test('selected category survives refresh but resets to all if removed', async ()
   await tick(); app.render();
   const category = app.find('TouchableOpacity').find(node => node.children.some(child => child?.children?.includes('Trabajo')));
   category.props.onPress(); app.render();
-  await app.emit(); app.render(); assert.equal(app.find('AllTasks')[0].props.tasks.length, 1);
+  await app.emit(); app.render(); assert.equal(app.find('TaskList')[0].props.tasks.length, 1);
   cats = []; await app.emit(); app.render();
-  assert.equal(app.find('AllTasks')[0].props.tasks.length, 2); app.unmount();
+  assert.equal(app.find('TaskList')[0].props.tasks.length, 2); app.unmount();
 });
 
 test('failed post-notification refresh does not hide the first successful load', async () => {
   let reads = 0;
   const app = screen({ getAllTasks: async () => { if (++reads > 1) throw new Error('refresh failed'); return [task]; } });
   await tick(); app.render();
-  assert.equal(app.find('AllTasks')[0].props.tasks.length, 1);
+  assert.equal(app.find('TaskList')[0].props.tasks.length, 1);
   assert.ok(app.find('Text').some(node => node.props.accessibilityRole === 'alert'));
   app.unmount();
 });
@@ -159,7 +159,7 @@ test('retrying a failed refresh clears the alert and updates cached tasks', asyn
   await tick(); app.render(); fail = true; await app.emit(); app.render();
   const retry = app.find('TouchableOpacity').find(node => node.children.some(child => child?.children?.includes('Reintentar')));
   assert.ok(retry); fail = false; title = 'Updated'; await retry.props.onPress(); app.render();
-  assert.equal(app.find('AllTasks')[0].props.tasks[0].title, 'Updated');
+  assert.equal(app.find('TaskList')[0].props.tasks[0].title, 'Updated');
   assert.equal(app.find('Text').filter(node => node.props.accessibilityRole === 'alert').length, 0); app.unmount();
 });
 
@@ -196,7 +196,7 @@ test('editing submits one aggregate draft and preserves task identity', async ()
     updateTaskNotificationIds: async value => updates.push(value),
     scheduleTaskReminders: async () => ['new'],
   });
-  await tick(); app.render(); app.find('AllTasks')[0].props.startEditTask(original); app.render();
+  await tick(); app.render(); app.find('TaskList')[0].props.startEditTask(original); app.render();
   await app.find('TaskModal')[0].props.saveTask({ text: 'Edited', categoryId: 'work', subtasks: [{ id: 'a', text: 'After' }, { id: 'draft', isNew: true, text: 'New' }] });
   assert.equal(calls.length, 1); assert.equal(calls[0].id, original.id);
   assert.equal(calls[0].fields.title, 'Edited'); assert.equal(calls[0].fields.done, undefined);
@@ -214,7 +214,7 @@ test('recurring completion writes the selected occurrence and reschedules the re
     updateTask: async value => updated.push(value),
     updateTaskNotificationIds: async value => updated.push(value),
   });
-  await tick(); app.render(); app.find('AllTasks')[0].props.toggleTaskDone(task.id); await tick();
+  await tick(); app.render(); app.find('TaskList')[0].props.toggleTaskDone(task.id); await tick();
   assert.deepEqual(writes[0], [task.id, date, undefined]);
   assert.equal(updated[0].notification_ids[0], 'rescheduled'); app.unmount();
 });

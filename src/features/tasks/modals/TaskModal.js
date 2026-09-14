@@ -10,6 +10,7 @@ import {
   Animated,
   Easing,
 } from "react-native";
+import useTaskModalDraft from "../hooks/useTaskModalDraft";
 import TaskCategoryModal from "./SubModals/TaskCategoryModal";
 import SubtaskModal from "./SubtaskModal";
 
@@ -17,7 +18,11 @@ import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function TaskModal({
+export default function TaskModal(props) {
+  return props.visible ? <TaskModalSession key={props.taskToEdit?.id ?? "new"} {...props} /> : null;
+}
+
+function TaskModalSession({
   visible,
   isSaving = false,
   themeName,
@@ -50,14 +55,19 @@ export default function TaskModal({
   const slideAnim =
     useRef(new Animated.Value(30)).current;
 
-  const [taskText, setTaskText] =
-    useState("");
-
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const { taskText, setTaskText, selectedCategory, setSelectedCategory, draftSubtasks, setDraftSubtasks } = useTaskModalDraft(taskToEdit, selectedCategoryForTask);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [subtaskModalVisible, setSubtaskModalVisible] = useState(false);
-  const [draftSubtasks, setDraftSubtasks] = useState([]);
-
+  const [localSaving, setLocalSaving] = useState(false);
+  const busy = isSaving || localSaving;
+  const saving = useRef(false);
+  const closing = useRef(false);
+  const mounted = useRef(true);
+  const animation = useRef(null);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; animation.current?.stop(); };
+  }, []);
 
   // ======================================================
   // FUNCIONES AUXILIARES
@@ -87,10 +97,12 @@ export default function TaskModal({
   // ======================================================
 
   const animateOpen = () => {
+    if (closing.current) return;
     opacityAnim.setValue(0);
     slideAnim.setValue(30);
 
-    Animated.parallel([
+    animation.current?.stop();
+    animation.current = Animated.parallel([
       Animated.timing(opacityAnim, {
         toValue: 1,
         duration: 250,
@@ -104,11 +116,15 @@ export default function TaskModal({
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-    ]).start();
+    ]);
+    animation.current.start();
   };
 
   const animateClose = () => {
-    Animated.parallel([
+    if (closing.current || !mounted.current) return;
+    closing.current = true;
+    animation.current?.stop();
+    animation.current = Animated.parallel([
       Animated.timing(opacityAnim, {
         toValue: 0,
         duration: 150,
@@ -120,8 +136,9 @@ export default function TaskModal({
         duration: 150,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      closeModal();
+    ]);
+    animation.current.start(({ finished }) => {
+      if (finished && mounted.current) closeModal();
     });
   };
 
@@ -150,52 +167,20 @@ export default function TaskModal({
   };
 
   // ======================================================
-  // CARGAR DATOS
-  // ======================================================
-
-  useEffect(() => {
-    if (!visible) return;
-
-    if (taskToEdit) {
-      setTaskText(
-        taskToEdit.title || ""
-      );
-
-      setSelectedCategory(
-        taskToEdit.categoryId || null
-      );
-
-      setDraftSubtasks(
-        (taskToEdit.subtasks || []).map(
-          (subtask) => ({
-            ...subtask,
-            id: String(subtask.id),
-            isNew: false,
-          })
-        )
-      );
-
-      return;
-    }
-
-    setTaskText("");
-
-    setSelectedCategory(
-      selectedCategoryForTask || null
-    );
-
-    setDraftSubtasks([]);
-  }, [
-    visible,
-    taskToEdit,
-    selectedCategoryForTask,
-  ]);
-
-  // ======================================================
   // GUARDAR
   // ======================================================
 
+  const requestClose = () => {
+    if (saving.current || isSaving) return;
+    if (categoryModalVisible) setCategoryModalVisible(false);
+    else if (subtaskModalVisible) setSubtaskModalVisible(false);
+    else animateClose();
+  };
+
   const handleSave = async () => {
+    if (saving.current || isSaving || closing.current) return;
+    saving.current = true;
+    setLocalSaving(true);
     const finalText =
       taskText.trim() === ""
         ? "Nueva tarea"
@@ -203,10 +188,13 @@ export default function TaskModal({
 
     try {
       await saveTask({ text: finalText, categoryId: selectedCategory, subtasks: draftSubtasks });
-      animateClose();
+      if (mounted.current) animateClose();
     } catch (error) {
       console.error("No se pudo guardar la tarea", error);
-      Alert.alert("No se pudo guardar", "Revisa los datos e inténtalo de nuevo.");
+      if (mounted.current) Alert.alert("No se pudo guardar", "Revisa los datos e inténtalo de nuevo.");
+    } finally {
+      saving.current = false;
+      if (mounted.current) setLocalSaving(false);
     }
   };
 
@@ -267,9 +255,10 @@ export default function TaskModal({
         transparent
         animationType="none"
         onShow={animateOpen}
+        onRequestClose={requestClose}
       >
         <TouchableWithoutFeedback
-          onPress={animateClose}
+          onPress={requestClose}
         >
           <Animated.View
             style={[
@@ -315,6 +304,7 @@ export default function TaskModal({
                   placeholderTextColor={
                     styles.placeholder.color
                   }
+                  editable={!busy}
                   value={taskText}
                   onChangeText={setTaskText}
                 />
@@ -369,7 +359,7 @@ export default function TaskModal({
 
                     <TouchableOpacity
                       onPress={() =>
-                        setSelectedCategory(
+                        handleCategorySelected(
                           null
                         )
                       }
@@ -400,6 +390,7 @@ export default function TaskModal({
                 >
                   {/* Tiempo */}
                   <TouchableOpacity
+                    disabled={busy}
                     onPress={openTimeModal}
                     style={styles.iconButton}
                   >
@@ -420,6 +411,7 @@ export default function TaskModal({
 
                   {/* Categoría */}
                   <TouchableOpacity
+                    disabled={busy}
                     onPress={
                       openCategorySelector
                     }
@@ -446,6 +438,7 @@ export default function TaskModal({
 
                   {/* Subtareas */}
                   <TouchableOpacity
+                    disabled={busy}
                     onPress={() =>
                       setSubtaskModalVisible(true)
                     }
@@ -490,7 +483,7 @@ export default function TaskModal({
                   style={
                     styles.saveButton
                   }
-                  disabled={isSaving}
+                  disabled={busy}
                   onPress={handleSave}
                 >
                   <Text
@@ -506,7 +499,7 @@ export default function TaskModal({
 
                 {/* Cancelar */}
                 <TouchableOpacity
-                  onPress={animateClose}
+                  onPress={requestClose}
                   style={{
                     marginTop: 10,
                   }}

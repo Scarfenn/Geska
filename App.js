@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import useThemePreferences from "@/hooks/useThemePreferences";
 import { NavigationContainer } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -8,44 +8,12 @@ import TasksScreen from "@/features/tasks/TasksScreen";
 import CalendarScreen from "@/features/calendar/CalendarScreen";
 import CustomDrawer from "@/components/CustomDrawer";
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { themes } from "@/styles/themes";
 import { Ionicons } from "@expo/vector-icons";
 
 const Drawer = createDrawerNavigator();
 
 export default function App() {
-  const [themeName, setThemeName] = useState("basic");
-  const [mode, setMode] = useState("light");
-  const [isThemeLoaded, setIsThemeLoaded] = useState(false);
-
-  // Cargar tema desde AsyncStorage
-  useEffect(() => {
-    const loadTheme = async () => {
-      try {
-        const savedTheme = await AsyncStorage.getItem("themeName");
-        const savedMode = await AsyncStorage.getItem("mode");
-
-        if (savedTheme) setThemeName(savedTheme);
-        if (savedMode) setMode(savedMode);
-
-        setIsThemeLoaded(true);
-      } catch (e) {
-        console.log(e);
-      }
-    };
-    loadTheme();
-  }, []);
-
-  // Guardar tema
-  useEffect(() => {
-    if (isThemeLoaded) {
-      AsyncStorage.setItem("themeName", themeName);
-      AsyncStorage.setItem("mode", mode);
-    }
-  }, [themeName, mode, isThemeLoaded]);
-
-  const currentTheme = themes[themeName][mode];
+  const { themeName, mode, setThemeName, setMode, isThemeLoaded, currentTheme } = useThemePreferences();
 
   if (!isThemeLoaded) return null;
 
