@@ -11,7 +11,7 @@ import getModalStyles from "@/styles/modalStyles";
 import { themes } from "@/styles/themes";
 import { Ionicons } from "@expo/vector-icons";
 import RepeatModal from "@/features/tasks/modals/SubModals/RepeatModal";
-import DateSelectorModal from "@/features/tasks/modals/SubModals/DateSelectorModal";
+import DatePickerModal from "@/features/tasks/modals/SubModals/DatePickerModal";
 import HourModal from "@/features/tasks/modals/SubModals/HourModal";
 import ReminderModal from "@/features/tasks/modals/SubModals/ReminderModal";
 import { formatReminder } from "@/features/tasks/services/reminderModel";
@@ -29,7 +29,7 @@ function TimeModalSession(props) {
   const theme = themes[themeName][mode];
   const {
     draft, activeModal, setActiveModal,
-    draftDate, handleDateSelected, draftTime, handleSelectedTimeChange,
+    draftDate, minTaskDate, handleDateSelected, draftTime, handleSelectedTimeChange,
     draftRepeatMode, setDraftRepeatMode, draftRepeatDays, setDraftRepeatDays,
     draftRepeatInterval, setDraftRepeatInterval, draftReminder, setDraftReminder,
     draftEndDate, setDraftEndDate,
@@ -43,13 +43,15 @@ function TimeModalSession(props) {
   return (
     <>
       {/* Modal de Fecha */}
-      <DateSelectorModal
+      <DatePickerModal
         visible={activeModal === "date"}
         themeName={themeName}
         mode={mode}
-        selectedDate={draftDate}
-        onSelectDate={handleDateSelected}
-        closeModal={() => setActiveModal(null)}
+        title="Fecha de la tarea"
+        value={draftDate}
+        minDate={minTaskDate}
+        onSelect={handleDateSelected}
+        onClose={() => setActiveModal(null)}
       />
 
       {/* Modal de Repetición */}

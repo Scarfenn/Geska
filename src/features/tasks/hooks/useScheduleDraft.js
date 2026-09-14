@@ -1,5 +1,6 @@
 import { useReducer, useState } from "react";
 import { createScheduleDraft, scheduleDraftReducer } from "@/features/tasks/domain/scheduleDraft";
+import { canSelectTaskDate, getMinimumTaskDate } from "@/features/tasks/domain/taskDates";
 
 export default function useScheduleDraft(props) {
   // TimeModal mounts one session per opening. Parent renders must not erase edits.
@@ -8,7 +9,10 @@ export default function useScheduleDraft(props) {
   const setField = (field) => (value) => dispatch({ field, value });
   return {
     draft, activeModal, setActiveModal,
-    draftDate: draft.date, handleDateSelected: setField("date"),
+    draftDate: draft.date, minTaskDate: getMinimumTaskDate(),
+    handleDateSelected: (date) => {
+      if (canSelectTaskDate(date)) dispatch({ field: "date", value: date });
+    },
     draftTime: draft.time, handleSelectedTimeChange: setField("time"),
     draftRepeatMode: draft.repeatMode, setDraftRepeatMode: setField("repeatMode"),
     draftRepeatDays: draft.repeatDays, setDraftRepeatDays: setField("repeatDays"),

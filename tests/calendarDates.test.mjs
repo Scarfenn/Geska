@@ -38,3 +38,35 @@ test('editing and saving a repetition end date preserves its local day', () => {
   assert.equal(formatDateLocal(schedule.endDate), '2026-09-20');
   assert.equal(schedule.endDate.getHours(), 0);
 });
+
+test('task date selection allows today but rejects past local dates, including DST transitions', () => {
+  const { canSelectTaskDate, getMinimumTaskDate } = loadDatabase(null, { entry: '../../src/features/tasks/domain/taskDates.js' });
+  for (const now of [new Date(2026, 8, 6, 23), new Date(2026, 3, 5, 23)]) {
+    const today = getMinimumTaskDate(now);
+    assert.equal(canSelectTaskDate(today, now), true);
+    assert.equal(canSelectTaskDate(addCalendarDays(today, -1), now), false);
+    assert.equal(canSelectTaskDate(addCalendarDays(today, 1), now), true);
+    assert.equal(now.getHours(), 23);
+  }
+  assert.equal(canSelectTaskDate(null), false);
+  assert.equal(canSelectTaskDate(new Date(NaN)), false);
+});
+
+test('schedule date handler rejects past dates before dispatching any draft changes', () => {
+  const calls = [];
+  const { default: useScheduleDraft } = loadDatabase(null, {
+    entry: '../../src/features/tasks/hooks/useScheduleDraft.js',
+    stubs: { react: {
+      useReducer(reducer, props, create) { return [create(props), action => calls.push(action)]; },
+      useState(initial) { return [initial, () => {}]; },
+    } },
+  });
+  const original = new Date(2020, 0, 1);
+  const draft = useScheduleDraft({ selectedDate: original });
+  assert.equal(draft.draftDate.getTime(), original.getTime(), 'opening does not rewrite an existing past task');
+  draft.handleDateSelected(addCalendarDays(draft.minTaskDate, -1));
+  assert.equal(calls.length, 0);
+  draft.handleDateSelected(draft.minTaskDate);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].field, 'date');
+});

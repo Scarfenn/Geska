@@ -1,3 +1,14 @@
+export function getMinimumTaskDate(today = new Date()) {
+  const date = new Date(today);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+export function canSelectTaskDate(value, today = new Date()) {
+  return value instanceof Date && Number.isFinite(value.getTime())
+    && getMinimumTaskDate(value) >= getMinimumTaskDate(today);
+}
+
 export function formatDateLocal(date) {
   if (!date) return null;
   const d = new Date(date);
