@@ -6,7 +6,8 @@ export default function CategoryBar({
   setSelectedCategory,
   openEditCategoryModal,
   openAddCategoryModal,
-  styles
+  styles,
+  theme
 }) {
   return (
         <ScrollView
@@ -30,8 +31,8 @@ export default function CategoryBar({
                 style={{
                   ...styles.categoryContainer,
                   backgroundColor: activeCategory
-                    ? styles.categoryContainer.activeColor
-                    : styles.categoryContainer.inactiveColor,
+                    ? theme.primary
+                    : theme.inactiveCategory,
                 }}
               >
                 <Text
@@ -48,7 +49,7 @@ export default function CategoryBar({
           })}
 
           <TouchableOpacity onPress={openAddCategoryModal}>
-            <Ionicons name="add" size={20} color={styles.text.color} />
+            <Ionicons name="add" size={20} color={theme.text} />
           </TouchableOpacity>
         </ScrollView>
 

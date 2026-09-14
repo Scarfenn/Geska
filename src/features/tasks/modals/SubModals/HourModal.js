@@ -1,5 +1,5 @@
 import { Modal, View, Text, TouchableOpacity, TouchableWithoutFeedback, Animated, StyleSheet } from "react-native";
-import createStyles from "@/styles/styles";
+import getModalStyles from "@/styles/modalStyles";
 import { themes } from "@/styles/themes";
 import TimeWheel from "@/features/tasks/components/time/TimeWheel";
 import useHourDraft from "@/features/tasks/hooks/useHourDraft";
@@ -14,7 +14,7 @@ export default function HourModal(props) {
 }
 
 function HourModalSession({ visible, themeName, mode, selectedTime, setSelectedTime, closeModal }) {
-  const styles = createStyles(themeName, mode);
+  const styles = getModalStyles(themeName, mode);
   const theme = themes[themeName][mode];
   const { initial, hourRef, minuteRef, period, setPeriod, isMoving, setMoving, canApply, buildTime } = useHourDraft(selectedTime);
   const { opacityAnim, slideAnim, scaleAnim, handleShow, animateClose } = useHourModalAnimation(closeModal);

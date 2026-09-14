@@ -1,3 +1,4 @@
+import { themes } from "@/styles/themes";
 import React, { useRef, useEffect } from "react";
 import {
   Modal,
@@ -9,7 +10,7 @@ import {
   PanResponder,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import createStyles from "@/styles/styles";
+import getModalStyles from "@/styles/modalStyles";
 
 export default function CustomRepeatModal({
   visible,
@@ -19,7 +20,8 @@ export default function CustomRepeatModal({
   setRepeatData,
   closeModal,
 }) {
-  const styles = createStyles(themeName, mode);
+  const theme = themes[themeName][mode];
+  const styles = getModalStyles(themeName, mode);
   const slideAnim = useRef(new Animated.Value(600)).current;
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export default function CustomRepeatModal({
           style={{
             width: "100%",
             height: "90%",
-            backgroundColor: styles.modalBox.backgroundColor,
+            backgroundColor: theme.card,
             borderTopRightRadius: 18,
             borderTopLeftRadius: 18,
             transform: [{ translateY: slideAnim }],
@@ -72,7 +74,7 @@ export default function CustomRepeatModal({
             }}
           >
             <TouchableOpacity onPress={closeWithAnim}>
-              <Ionicons name="close" size={26} color={styles.text.color} />
+              <Ionicons name="close" size={26} color={theme.text} />
             </TouchableOpacity>
 
             <Text style={[styles.modalTitle, { fontSize: 20 }]}>
@@ -80,7 +82,7 @@ export default function CustomRepeatModal({
             </Text>
 
             <TouchableOpacity onPress={closeWithAnim}>
-              <Text style={{ color: styles.saveButton.backgroundColor }}>
+              <Text style={{ color: theme.primary }}>
                 Listo
               </Text>
             </TouchableOpacity>

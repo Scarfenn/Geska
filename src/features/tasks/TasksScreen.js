@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Text, View, TouchableOpacity, StatusBar, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import createStyles from "@/styles/styles";
+import getTaskScreenStyles from "@/features/tasks/styles/taskScreenStyles";
 import { themes } from "@/styles/themes";
 import TaskList from "@/features/tasks/components/TaskList";
 import DaySelector from "@/features/tasks/components/DaySelector";
@@ -42,22 +42,23 @@ export default function TasksScreen({
     setModalTaskId
   } = editor;
   const actions = useTaskActions(loadTasks);
-  const styles = createStyles(themeName, mode);
+  const theme = themes[themeName][mode];
+  const styles = getTaskScreenStyles(themeName, mode);
   const tasksForRender = selectTasksForDay(tasks, selectedDay, selectedCategory);
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: styles.container.backgroundColor }}
+      style={{ flex: 1, backgroundColor: theme.background }}
     >
       <View style={styles.container}>
         <StatusBar
           barStyle={mode === "light" ? "dark-content" : "light-content"}
-          backgroundColor={styles.container.backgroundColor}
+          backgroundColor={theme.background}
         />
 
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>
-            <Ionicons name="time-outline" size={22} color={styles.title.color} />{" "}
+            <Ionicons name="time-outline" size={22} color={theme.text} />{" "}
             Tu día
           </Text>
 
@@ -74,12 +75,13 @@ export default function TasksScreen({
         <DaySelector
           selectedDay={selectedDay}
           setSelectedDay={setSelectedDay}
-          theme={themes[themeName][mode]}
+          theme={theme}
           mode={mode}
         />
 
         {/* Barra de categorías */}
         <CategoryBar
+          theme={theme}
           categories={categories}
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
@@ -100,7 +102,7 @@ export default function TasksScreen({
         {/* Loading and failures are distinct from a genuinely empty day. */}
         {isLoading ? (
           <View style={styles.taskEmptyState}>
-            <ActivityIndicator color={styles.text.color} />
+            <ActivityIndicator color={theme.text} />
             <Text style={styles.taskEmptyDescription}>Cargando tareas…</Text>
           </View>
         ) : loadError && !hasLoadedTasks.current ? (
@@ -127,7 +129,7 @@ export default function TasksScreen({
 
         {/* Botón agregar tarea */}
         <TouchableOpacity style={styles.mainButton} onPress={openModalAdd}>
-          <Ionicons name="add" size={32} color={styles.saveButtonText.color} />
+          <Ionicons name="add" size={32} color={theme.onPrimary} />
         </TouchableOpacity>
 
         {/* Modales */}

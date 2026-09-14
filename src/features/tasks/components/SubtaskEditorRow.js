@@ -13,9 +13,9 @@ export default function SubtaskEditorRow({ subtask, drag, isActive, disabled, st
           <Ionicons name="reorder-three-outline" size={26} color={theme.primaryText} />
         </TouchableOpacity>
         <Ionicons name={subtask.done ? "checkmark-circle" : "ellipse-outline"} size={20}
-          color={subtask.done ? styles.doneCheck.color : styles.pendingCheck.color} style={{ marginRight: 8 }} />
+          color={subtask.done ? theme.doneCheck : theme.pendingCheck} style={{ marginRight: 8 }} />
         <TextInput ref={inputRef} style={[styles.input, { flex: 1, marginBottom: 0 }]}
-          placeholder="Escribe una subtarea..." placeholderTextColor={styles.placeholder.color}
+          placeholder="Escribe una subtarea..." placeholderTextColor={theme.pendingText}
           accessibilityLabel="Texto de la subtarea" editable={!disabled} value={subtask.text}
           onChangeText={text => updateText(subtask.id, text)} returnKeyType="next" blurOnSubmit={false}
           onSubmitEditing={() => handleSubmitEditing(subtask.id)} />

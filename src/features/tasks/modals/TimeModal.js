@@ -7,7 +7,7 @@ import {
   TouchableWithoutFeedback,
   Animated,
 } from "react-native";
-import createStyles from "@/styles/styles";
+import getModalStyles from "@/styles/modalStyles";
 import { themes } from "@/styles/themes";
 import { Ionicons } from "@expo/vector-icons";
 import RepeatModal from "@/features/tasks/modals/SubModals/RepeatModal";
@@ -25,7 +25,7 @@ export default function TimeModal(props) {
 
 function TimeModalSession(props) {
   const { visible, themeName, mode, onTimeSelected, closeModal } = props;
-  const styles = createStyles(themeName, mode);
+  const styles = getModalStyles(themeName, mode);
   const theme = themes[themeName][mode];
   const {
     draft, activeModal, setActiveModal,
@@ -150,7 +150,7 @@ function TimeModalSession(props) {
 
                 <Text
                   style={{
-                    color: styles.optionLabel.color,
+                    color: theme.text,
                     marginBottom: 4,
                   }}
                 >
@@ -172,7 +172,7 @@ function TimeModalSession(props) {
                     <Ionicons
                       name="calendar-outline"
                       size={20}
-                      color={styles.text.color}
+                      color={theme.text}
                     />
                     <Text
                       style={[
@@ -217,7 +217,7 @@ function TimeModalSession(props) {
                     <Ionicons
                       name="time-outline"
                       size={20}
-                      color={styles.text.color}
+                      color={theme.text}
                     />
                     <Text
                       style={[
@@ -235,7 +235,7 @@ function TimeModalSession(props) {
 
                 <Text
                   style={{
-                    color: styles.optionLabel.color,
+                    color: theme.text,
                     marginTop: 18,
                     marginBottom: 4,
                   }}
@@ -257,7 +257,7 @@ function TimeModalSession(props) {
                     <Ionicons
                       name="repeat-outline"
                       size={20}
-                      color={styles.text.color}
+                      color={theme.text}
                     />
                     <Text
                       style={[
@@ -293,7 +293,7 @@ function TimeModalSession(props) {
                     <Ionicons
                       name="notifications-outline"
                       size={20}
-                      color={styles.text.color}
+                      color={theme.text}
                     />
                     <Text
                       style={[

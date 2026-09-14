@@ -11,7 +11,7 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
-import createStyles from "@/styles/styles";
+import getModalStyles from "@/styles/modalStyles";
 import { themes } from "@/styles/themes";
 
 export default function TaskCategoryModal({
@@ -27,7 +27,7 @@ export default function TaskCategoryModal({
 
   closeModal,
 }) {
-  const styles = createStyles(themeName, mode);
+  const styles = getModalStyles(themeName, mode);
   const theme = themes[themeName][mode];
 
   const { opacityAnim, slideAnim, scaleAnim, animateOpen, animateClose, closing } = useModalAnimation(closeModal, { visible, distance: 15, scale: 0.97, openDuration: 190, closeDuration: 140 });
@@ -188,7 +188,7 @@ export default function TaskCategoryModal({
                     color={
                       active
                         ? theme.primaryText
-                        : styles.iconColor.color
+                        : theme.text
                     }
                   />
 

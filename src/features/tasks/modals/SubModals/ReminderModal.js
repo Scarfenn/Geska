@@ -11,7 +11,7 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
-import createStyles from "@/styles/styles";
+import getModalStyles from "@/styles/modalStyles";
 import { themes } from "@/styles/themes";
 
 import useReminderOptions from "@/features/tasks/hooks/useReminderOptions";
@@ -36,7 +36,7 @@ function ReminderModalSession({
   closeModal,
 }) {
   const styles =
-    createStyles(themeName, mode);
+    getModalStyles(themeName, mode);
 
   const theme =
     themes[themeName][mode];

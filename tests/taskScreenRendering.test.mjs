@@ -30,7 +30,7 @@ function loadModule(path, context, cache = new Map()) {
     if (spec === 'react-native') return { ...Object.fromEntries(['Text', 'View', 'TouchableOpacity', 'StatusBar', 'ActivityIndicator', 'ScrollView'].map(n => [n, n])), DeviceEventEmitter: context.DeviceEventEmitter, Alert: context.Alert };
     if (spec.includes('safe-area')) return { SafeAreaView: 'SafeAreaView' };
     if (spec.includes('vector-icons')) return { Ionicons: 'Ionicons' };
-    if (spec.endsWith('/styles')) return context.createStyles;
+    if (spec.endsWith('/styles') || spec.endsWith('Styles')) return context.createStyles;
     if (spec.endsWith('/themes')) return { themes: context.themes };
     if (spec.includes('/components/') || spec.includes('/modals/')) return spec.split('/').at(-1);
     return context;

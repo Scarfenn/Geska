@@ -15,7 +15,7 @@ import useTaskModalDraft from "@/features/tasks/hooks/useTaskModalDraft";
 import TaskCategoryModal from "@/features/tasks/modals/SubModals/TaskCategoryModal";
 import SubtaskModal from "@/features/tasks/modals/SubtaskModal";
 
-import createStyles from "@/styles/styles";
+import getTaskModalStyles from "@/features/tasks/styles/taskModalStyles";
 import { themes } from "@/styles/themes";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -47,7 +47,7 @@ function TaskModalSession({
   openTimeModal,
   openAddCategoryModal,
 }) {
-  const styles = createStyles(themeName, mode);
+  const styles = getTaskModalStyles(themeName, mode);
   const theme = themes[themeName][mode];
 
   const { taskText, setTaskText, selectedCategory, setSelectedCategory, draftSubtasks, setDraftSubtasks } = useTaskModalDraft(taskToEdit, selectedCategoryForTask);
@@ -245,7 +245,7 @@ function TaskModalSession({
                   style={styles.input}
                   placeholder="Escribe una tarea..."
                   placeholderTextColor={
-                    styles.placeholder.color
+                    theme.pendingText
                   }
                   editable={!busy}
                   value={taskText}
@@ -347,7 +347,7 @@ function TaskModalSession({
                       color={
                         hasCustomTimeConfig
                           ? theme.primaryText
-                          : styles.iconColor.color
+                          : theme.text
                       }
                     />
                   </TouchableOpacity>
@@ -372,9 +372,7 @@ function TaskModalSession({
                       color={
                         selectedCategory
                           ? theme.primary
-                          : styles
-                              .iconColor
-                              .color
+                          : theme.text
                       }
                     />
                   </TouchableOpacity>
@@ -397,7 +395,7 @@ function TaskModalSession({
                       color={
                         draftSubtasks.length > 0
                           ? theme.primary
-                          : styles.iconColor.color
+                          : theme.text
                       }
                     />
                   </TouchableOpacity>

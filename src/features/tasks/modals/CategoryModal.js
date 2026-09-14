@@ -9,7 +9,7 @@ import {
   TouchableWithoutFeedback,
   LayoutAnimation,
 } from "react-native";
-import createStyles from "@/styles/styles";
+import getModalStyles from "@/styles/modalStyles";
 
 export default function CategoryModal({
   visible,
@@ -23,7 +23,7 @@ export default function CategoryModal({
   selectedCategory,
   setSelectedCategory
 }) {
-  const styles = createStyles(themeName, mode);
+  const styles = getModalStyles(themeName, mode);
   const [categoryName, setCategoryName] = useState("");
 
 

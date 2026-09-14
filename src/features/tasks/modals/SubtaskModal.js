@@ -5,7 +5,7 @@ import { Alert, Modal, View, Text, TouchableOpacity, TouchableWithoutFeedback,
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { Ionicons } from "@expo/vector-icons";
-import createStyles from "@/styles/styles";
+import getModalStyles from "@/styles/modalStyles";
 import { themes } from "@/styles/themes";
 import useSubtaskDraft from "@/features/tasks/hooks/useSubtaskDraft";
 import SubtaskEditorRow from "@/features/tasks/components/SubtaskEditorRow";
@@ -16,7 +16,7 @@ export default function SubtaskModal(props) {
 }
 
 function SubtaskModalSession({ visible, isSaving = false, themeName, mode, subtasks = [], onSave, closeModal }) {
-  const styles = createStyles(themeName, mode);
+  const styles = getModalStyles(themeName, mode);
   const theme = themes[themeName][mode];
   const editor = useSubtaskDraft(subtasks);
   const { draftSubtasks, setDraftSubtasks, insertAfter } = editor;

@@ -1,3 +1,4 @@
+import { themes } from "@/styles/themes";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -8,7 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import createStyles from "@/styles/styles";
+import getTaskCardStyles from "@/features/tasks/styles/taskCardStyles";
 
 export default function TaskCard({
   task,
@@ -24,7 +25,8 @@ export default function TaskCard({
   startEditTask,
   setActiveModal,
 }) {
-  const styles = createStyles(themeName, mode);
+  const theme = themes[themeName][mode];
+  const styles = getTaskCardStyles(themeName, mode);
 
   const [collapsed, setCollapsed] = useState(false);
   const [menuMounted, setMenuMounted] = useState(isMenuOpen);
@@ -100,8 +102,8 @@ export default function TaskCard({
             size={24}
             color={
               task.done
-                ? styles.doneCheck.color
-                : styles.pendingCheck.color
+                ? theme.doneCheck
+                : theme.pendingCheck
             }
           />
 
@@ -112,8 +114,8 @@ export default function TaskCard({
               <View style={styles.fill}>
                 <Text
                   style={[styles.taskTitle, { color: task.done
-                      ? styles.doneText.color
-                      : styles.pendingText.color }]}
+                      ? theme.doneText
+                      : theme.pendingText }]}
                 >
                   {task.title}
                 </Text>
@@ -166,7 +168,7 @@ export default function TaskCard({
                           : "chevron-up"
                       }
                       size={18}
-                      color={styles.pendingText.color}
+                      color={theme.pendingText}
                     />
                   </TouchableOpacity>
                 </View>
@@ -200,15 +202,15 @@ export default function TaskCard({
                 size={20}
                 color={
                   subtask.done
-                    ? styles.doneCheck.color
-                    : styles.pendingCheck.color
+                    ? theme.doneCheck
+                    : theme.pendingCheck
                 }
               />
 
               <Text
                 style={[styles.subtaskLabel, { color: subtask.done
-                    ? styles.doneText.color
-                    : styles.pendingText.color }]}
+                    ? theme.doneText
+                    : theme.pendingText }]}
               >
                 {subtask.text}
               </Text>
@@ -243,7 +245,7 @@ export default function TaskCard({
             <Ionicons
               name="list-outline"
               size={18}
-              color={styles.text.color}
+              color={theme.text}
               style={styles.taskMenuIcon}
             />
             <Text
@@ -260,7 +262,7 @@ export default function TaskCard({
             <Ionicons
               name="create-outline"
               size={18}
-              color={styles.text.color}
+              color={theme.text}
               style={styles.taskMenuIcon}
             />
             <Text
@@ -277,7 +279,7 @@ export default function TaskCard({
             <Ionicons
               name="trash-outline"
               size={18}
-              color={styles.dangerText.color}
+              color={theme.danger}
               style={styles.taskMenuIcon}
             />
             <Text

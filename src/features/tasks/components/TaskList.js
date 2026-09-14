@@ -1,3 +1,4 @@
+import { themes } from "@/styles/themes";
 import {
   FlatList,
   Text,
@@ -6,7 +7,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import createStyles from "@/styles/styles";
+import getTaskListStyles from "@/features/tasks/styles/taskListStyles";
 import TaskCard from "@/features/tasks/components/TaskCard";
 
 function timeToMinutes(time) {
@@ -49,7 +50,8 @@ export default function TaskList({
   startEditTask,
   setActiveModal,
 }) {
-  const styles = createStyles(
+  const theme = themes[themeName][mode];
+  const styles = getTaskListStyles(
     themeName,
     mode
   );
@@ -65,8 +67,7 @@ export default function TaskList({
         name="document-text-outline"
         size={85}
         color={
-          styles.categoryContainer
-            .inactiveColor
+          theme.inactiveCategory
         }
         style={styles.taskEmptyIcon}
       />

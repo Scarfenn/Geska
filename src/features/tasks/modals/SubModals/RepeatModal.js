@@ -6,7 +6,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import createStyles from "@/styles/styles";
+import getRepeatModalStyles from "@/features/tasks/styles/repeatModalStyles";
 import {
   WEEK_DAYS, WEEK_DAY_NAMES, MONTH_DAYS, editorDays, toggleRepeatDay,
   parseInterval, repeatSummary,
@@ -25,7 +25,7 @@ export default function RepeatModal({
   repeatDays, setRepeatDays, repeatInterval, setRepeatInterval,
   endDate, setEndDate, closeModal,
 }) {
-  const styles = createStyles(themeName, mode);
+  const styles = getRepeatModalStyles(themeName, mode);
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [localMode, setLocalMode] = useState(repeatMode || "none");
