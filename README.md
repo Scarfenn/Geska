@@ -38,14 +38,15 @@ El repositorio refleja el proceso de construcción progresiva del sistema, inclu
 
 Este módulo constituye el **eje central de Geska**.
 
-### Módulo de cocina (experimental)
+### Rescate de cocina (referencia futura)
 
-El módulo de cocina fue incorporado de manera **experimental y temporal** durante una etapa temprana del proyecto.
+El módulo de cocina fue incorporado de manera **experimental y temporal** durante una etapa temprana del proyecto. Su interfaz fue retirada; el código aprovechable se conserva en `src/features/cocina/cocina.js`, sin conexión con la aplicación.
 
 * No forma parte del núcleo principal de Geska
 * No es un módulo permanente
-* Se basa en una estructura externa
-* Se realizaron adaptaciones de interfaz e integración
+* Conserva una plantilla para futuras recetas provenientes de APIs
+* Incluye funciones independientes de filtrado, recomendaciones, favoritos, paginación y creación de borradores de tareas
+* El catálogo hardcodeado y los estilos originales siguen disponibles en el historial de Git
 
 El desarrollo principal del proyecto se concentra en la gestión del tiempo y tareas. Otros módulos han sido exploratorios y no representan el enfoque definitivo de Geska.
 
