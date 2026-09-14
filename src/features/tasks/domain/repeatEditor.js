@@ -28,7 +28,7 @@ function joinDays(days) {
   return days.length < 2 ? days.join("") : `${days.slice(0, -1).join(", ")} y ${days.at(-1)}`;
 }
 
-export function repeatSummary(mode, interval, days) {
+function repeatFrequencySummary(mode, interval, days) {
   if (mode === "none") return "Esta tarea no se repite.";
   if (!interval) return "Introduce un intervalo para ver la repetición.";
   if (mode === "daily") return interval === 1 ? "Todos los días." : `Cada ${interval} días.`;
@@ -38,4 +38,16 @@ export function repeatSummary(mode, interval, days) {
   }
   const sorted = [...days].map(Number).sort((a, b) => a - b);
   return `${interval === 1 ? "Cada mes" : `Cada ${interval} meses`}, ${sorted.length === 31 ? "todos los días" : `${sorted.length === 1 ? "el día" : "los días"} ${joinDays(sorted)}`}.`;
+}
+
+export function repeatSummary(mode, interval, days, endDate = null) {
+  const frequency = repeatFrequencySummary(mode, interval, days);
+  if (mode === "none" || !interval) return frequency;
+  if (endDate != null && (!(endDate instanceof Date) || !Number.isFinite(endDate.getTime()))) {
+    return "Revisa la fecha de término.";
+  }
+  const ending = endDate == null ? "sin fecha de término" : `hasta el ${endDate.toLocaleDateString("es-CL", {
+    day: "numeric", month: "long", year: "numeric",
+  })}`;
+  return `${frequency.slice(0, -1)}, ${ending}.`;
 }

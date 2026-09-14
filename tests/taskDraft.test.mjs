@@ -38,3 +38,34 @@ test('invalid titles, dates, intervals, repetition and reminders are rejected be
   assert.equal(occurrenceDate(new Date(2026, 8, 9, 23)), '2026-09-09');
   assert.throws(() => occurrenceDate('2026-02-30'), /inválida/);
 });
+
+test('saving revalidates the end against the actual first occurrence', () => {
+  const value = draft();
+  value.schedule.repeatDays = ['L'];
+  value.schedule.repeatInterval = 2;
+  value.schedule.endDate = new Date(2026, 8, 20);
+  assert.throws(() => prepareTaskDraft(value), error => error.code === 'INVALID_TASK_DRAFT' && /primera repetición/.test(error.message));
+  value.schedule.endDate = new Date(2026, 8, 21);
+  assert.equal(prepareTaskDraft(value).fields.repeat_end, '2026-09-21');
+  value.schedule.selectedDate = new Date(2026, 8, 22);
+  assert.throws(() => prepareTaskDraft(value), /primera repetición/);
+  value.schedule.endDate = null;
+  assert.equal(prepareTaskDraft(value).fields.repeat_end, null);
+});
+
+test('saving rejects a recurrence with no possible dates before persistence', () => {
+  const value = draft();
+  Object.assign(value.schedule, { selectedDate: new Date(2026, 1, 1), repeatMode: 'monthly', repeatDays: ['31'], repeatInterval: 12 });
+  assert.throws(() => prepareTaskDraft(value), error => error.code === 'INVALID_TASK_DRAFT' && /ninguna ocurrencia/.test(error.message));
+});
+
+test('monthly December 15 draft requires an end on or after January 15 at save time', () => {
+  const value = draft();
+  Object.assign(value.schedule, { selectedDate: new Date(2026, 11, 15), repeatMode: 'monthly', repeatDays: ['15'], repeatInterval: 1 });
+  for (const end of [new Date(2026, 11, 15), new Date(2027, 0, 14)]) {
+    value.schedule.endDate = end;
+    assert.throws(() => prepareTaskDraft(value), /primera repetición/);
+  }
+  value.schedule.endDate = new Date(2027, 0, 15);
+  assert.equal(prepareTaskDraft(value).fields.repeat_end, '2027-01-15');
+});

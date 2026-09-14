@@ -2,12 +2,14 @@ import useModalAnimation from "@/hooks/useModalAnimation";
 import { useEffect, useRef, useState } from "react";
 import {
   Modal, View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
-  Animated, StyleSheet, KeyboardAvoidingView, Platform,
+  Animated, StyleSheet, Keyboard, KeyboardAvoidingView, Platform,
   useWindowDimensions,
 } from "react-native";
 import Reanimated, { LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import getRepeatModalStyles from "@/features/tasks/styles/repeatModalStyles";
+import DatePickerModal from "@/features/tasks/modals/SubModals/DatePickerModal";
+import { getRepeatEndState, canSelectRepeatEndDate } from "@/features/tasks/domain/repeatEnd";
 import {
   WEEK_DAYS, WEEK_DAY_NAMES, MONTH_DAYS, editorDays, toggleRepeatDay,
   parseInterval, repeatSummary,
@@ -35,13 +37,17 @@ export default function RepeatModal({
   const [localMonthDays, setLocalMonthDays] = useState([]);
   const [intervalDrafts, setIntervalDrafts] = useState({ daily: "1", weekly: "1", monthly: "1" });
   const [localEndDate, setLocalEndDate] = useState(endDate);
+  const [endDatePickerOpen, setEndDatePickerOpen] = useState(false);
   const { opacityAnim, slideAnim, animateOpen, animateClose, closing } = useModalAnimation(closeModal, { visible, scale: null, opacityEasing: null, closeEasing: null });
   const wasVisible = useRef(false);
   const intervalText = intervalDrafts[localMode] ?? "1";
   const setIntervalText = (text) => setIntervalDrafts((drafts) => ({ ...drafts, [localMode]: text }));
   const interval = parseInterval(intervalText);
-  const canApply = localMode === "none" || interval !== null;
   const selectedDays = localMode === "weekly" ? localWeekDays : localMonthDays;
+  const repeatDraft = { date: selectedDate, repeatMode: localMode,
+    repeatDays: selectedDays, repeatInterval: interval, endDate: localEndDate };
+  const { minimum: minimumEndDate, error: repeatEndError } = getRepeatEndState(repeatDraft);
+  const canApply = localMode === "none" || (interval !== null && !repeatEndError);
   // Derive the cap from current dimensions, never from the keyboard-constrained
   // overlay. Flex shrink handles any smaller space supplied by the native Modal.
   const maxHeight = Math.max(0, (height - insets.top - insets.bottom) * 0.90);
@@ -55,7 +61,8 @@ export default function RepeatModal({
       setLocalMonthDays(editorDays("monthly", nextMode === "monthly" ? repeatDays : [], selectedDate));
       setIntervalDrafts({ daily: "1", weekly: "1", monthly: "1",
         ...(nextMode !== "none" ? { [nextMode]: String(parseInterval(repeatInterval) || 1) } : {}) });
-      setLocalEndDate(endDate);
+      setLocalEndDate(endDate ? new Date(endDate) : null);
+      setEndDatePickerOpen(false);
     }
     wasVisible.current = visible;
   }, [visible, repeatMode, repeatDays, selectedDate, repeatInterval, endDate]);
@@ -71,13 +78,17 @@ export default function RepeatModal({
     setRepeatMode(localMode);
     setRepeatDays(localMode === "weekly" || localMode === "monthly" ? [...selectedDays] : []);
     setRepeatInterval(localMode === "none" ? 1 : interval);
-    setEndDate(localEndDate);
+    setEndDate(localMode === "none" ? null : localEndDate);
     animateClose();
   };
 
   const changeInterval = (amount) => {
     const next = (interval || 1) + amount;
     if (Number.isSafeInteger(next) && next >= 1) setIntervalText(String(next));
+  };
+
+  const selectEndDate = (date) => {
+    if (canSelectRepeatEndDate(date, repeatDraft)) setLocalEndDate(new Date(date));
   };
 
   const renderDay = (day, index) => {
@@ -174,13 +185,26 @@ export default function RepeatModal({
                     </View>
                     <View style={styles.repeatSection}>
                       <Text style={styles.repeatSectionLabel}>Fecha de término</Text>
-                      <TouchableOpacity activeOpacity={0.75} style={styles.repeatEndDate}>
+                      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Elegir fecha de término"
+                        disabled={!minimumEndDate} accessibilityState={{ disabled: !minimumEndDate }}
+                        onPress={() => { if (minimumEndDate) { Keyboard.dismiss(); setEndDatePickerOpen(true); } }}
+                        activeOpacity={0.75} style={[styles.repeatEndDate, !minimumEndDate && styles.repeatDisabled]}>
                         <Text style={styles.repeatBodyText}>{localEndDate ? localEndDate.toLocaleDateString("es-CL") : "Nunca"}</Text>
                       </TouchableOpacity>
+                      {localEndDate != null && <TouchableOpacity accessibilityRole="button"
+                        onPress={() => setLocalEndDate(null)} style={styles.repeatClearEndDate}>
+                        <Text style={styles.repeatClearEndDateText}>Sin fecha de término</Text>
+                      </TouchableOpacity>}
+                      {interval !== null && repeatEndError && <Text accessibilityLiveRegion="polite" style={styles.repeatError}>
+                        {repeatEndError}
+                      </Text>}
                     </View>
                   </>
                 )}
-                <Text style={styles.repeatSummary}>{repeatSummary(localMode, interval, selectedDays)}</Text>
+                <Text accessibilityLiveRegion="polite" style={styles.repeatSummary}>
+                  {localMode !== "none" && repeatEndError ? repeatEndError
+                    : repeatSummary(localMode, interval, selectedDays, localEndDate)}
+                </Text>
               </Reanimated.ScrollView>
               <Reanimated.View layout={modalLayoutTransition} style={styles.repeatFixedSection}>
                 <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: !canApply }} disabled={!canApply}
@@ -196,6 +220,17 @@ export default function RepeatModal({
           </Reanimated.View>
         </Animated.View>
       </KeyboardAvoidingView>
+      <DatePickerModal
+        visible={visible && endDatePickerOpen && minimumEndDate != null}
+        themeName={themeName}
+        mode={mode}
+        title="Fin de repetición"
+        value={localEndDate}
+        initialDate={minimumEndDate}
+        minDate={minimumEndDate}
+        onSelect={selectEndDate}
+        onClose={() => setEndDatePickerOpen(false)}
+      />
     </Modal>
   );
 }

@@ -32,7 +32,7 @@ function TimeModalSession(props) {
     draftDate, minTaskDate, handleDateSelected, draftTime, handleSelectedTimeChange,
     draftRepeatMode, setDraftRepeatMode, draftRepeatDays, setDraftRepeatDays,
     draftRepeatInterval, setDraftRepeatInterval, draftReminder, setDraftReminder,
-    draftEndDate, setDraftEndDate,
+    draftEndDate, setDraftEndDate, repeatEndError,
   } = useScheduleDraft(props);
 
   // -------------------------------------------------
@@ -330,9 +330,13 @@ function TimeModalSession(props) {
                 </TouchableOpacity>
 
                 {/* BOTÓN APLICAR */}
+                {repeatEndError && <Text accessibilityRole="alert" style={[styles.optionLabel, { color: theme.danger, marginTop: 14 }]}>
+                  {repeatEndError}
+                </Text>}
                 <TouchableOpacity
-                  style={[styles.saveButton, { marginTop: 22 }]}
-                  onPress={() => animateClose(() => onTimeSelected(draft))}
+                  accessibilityRole="button" accessibilityState={{ disabled: !!repeatEndError }} disabled={!!repeatEndError}
+                  style={[styles.saveButton, { marginTop: 22 }, repeatEndError && { opacity: 0.4 }]}
+                  onPress={() => { if (!repeatEndError) animateClose(() => onTimeSelected(draft)); }}
                 >
                   <Text style={styles.saveButtonText}>Aplicar</Text>
                 </TouchableOpacity>

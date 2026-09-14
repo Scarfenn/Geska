@@ -1,5 +1,6 @@
 import { formatDateLocal, formatTime } from "@/features/tasks/domain/taskDates";
 import { parseLocalDate } from "@/features/tasks/domain/recurrence";
+import { getRepeatEndState } from "@/features/tasks/domain/repeatEnd";
 import { applyReminderToTask } from "@/features/tasks/services/reminderModel";
 
 function invalid(message) {
@@ -68,12 +69,19 @@ export function prepareTaskDraft({ text, categoryId, subtasks = [], schedule } =
   if (categoryId != null && typeof categoryId !== "string") invalid("Categoría inválida");
   validateReminder(schedule.reminder, schedule.selectedTime);
   if (schedule.selectedTime != null) dateValue(schedule.selectedTime);
+  const date = dateValue(schedule.selectedDate);
+  const endDate = dateValue(schedule.endDate, true);
+  const { error: repeatEndError } = getRepeatEndState({
+    date: schedule.selectedDate, repeatMode: mode, repeatDays: days,
+    repeatInterval: interval, endDate: schedule.endDate,
+  });
+  if (repeatEndError) invalid(repeatEndError);
   return {
     fields: applyReminderToTask({
       title: text.trim(), categoryId: categoryId ?? null,
-      date: dateValue(schedule.selectedDate), time: formatTime(schedule.selectedTime),
+      date, time: formatTime(schedule.selectedTime),
       repeat_mode: mode, repeat_days: days.join(","), repeat_interval: interval,
-      repeat_end: dateValue(schedule.endDate, true),
+      repeat_end: endDate,
     }, schedule.reminder),
     subtasks: normalizeSubtaskDraft(subtasks),
   };

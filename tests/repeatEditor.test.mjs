@@ -27,7 +27,23 @@ test('last selected day stays selected without mutating the draft', () => {
 
 test('summaries describe the actual interval and sort the selected days', () => {
   assert.equal(repeatSummary('none', null, []), 'Esta tarea no se repite.');
-  assert.equal(repeatSummary('daily', 3, []), 'Cada 3 días.');
-  assert.equal(repeatSummary('weekly', 2, ['J', 'L']), 'Cada 2 semanas, lunes y jueves.');
-  assert.equal(repeatSummary('monthly', 1, ['31', '15']), 'Cada mes, los días 15 y 31.');
+  assert.equal(repeatSummary('daily', 3, []), 'Cada 3 días, sin fecha de término.');
+  assert.equal(repeatSummary('weekly', 2, ['J', 'L']), 'Cada 2 semanas, lunes y jueves, sin fecha de término.');
+  assert.equal(repeatSummary('monthly', 1, ['31', '15']), 'Cada mes, los días 15 y 31, sin fecha de término.');
+});
+
+
+test('summaries include the inclusive local end date for every repetition frequency', () => {
+  const end = new Date(2026, 10, 30, 23, 30);
+  const original = end.getTime();
+  assert.equal(repeatSummary('daily', 1, [], end), 'Todos los días, hasta el 30 de noviembre de 2026.');
+  assert.equal(repeatSummary('weekly', 2, ['J', 'L'], end), 'Cada 2 semanas, lunes y jueves, hasta el 30 de noviembre de 2026.');
+  assert.equal(repeatSummary('monthly', 1, ['15', '31'], end), 'Cada mes, los días 15 y 31, hasta el 30 de noviembre de 2026.');
+  assert.equal(end.getTime(), original);
+});
+
+test('summary keeps validation and no-repetition messages instead of describing an invalid schedule', () => {
+  assert.equal(repeatSummary('none', 1, [], new Date()), 'Esta tarea no se repite.');
+  assert.equal(repeatSummary('daily', null, [], new Date()), 'Introduce un intervalo para ver la repetición.');
+  assert.equal(repeatSummary('daily', 1, [], new Date(NaN)), 'Revisa la fecha de término.');
 });

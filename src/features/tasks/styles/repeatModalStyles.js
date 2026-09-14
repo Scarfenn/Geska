@@ -177,6 +177,15 @@ export default createThemedStyles((theme, mode, themeName) => ({
     borderColor: theme.border,
     backgroundColor: theme.card
   },
+  repeatClearEndDate: {
+    minHeight: 44,
+    justifyContent: "center",
+    alignSelf: "flex-start"
+  },
+  repeatClearEndDateText: {
+    color: theme.primaryText,
+    fontSize: 14
+  },
   repeatSummary: {
     color: theme.pendingText,
     fontSize: 13,

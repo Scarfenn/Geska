@@ -8,7 +8,7 @@ const babel = require('@babel/core');
 const root = new URL('../src/features/tasks/', import.meta.url);
 const modulePaths = [
   'TasksScreen.js', 'hooks/useTasksData.js', 'hooks/useTaskEditor.js', 'hooks/useTaskActions.js',
-  'domain/taskDates.js', 'domain/taskSelectors.js', 'domain/recurrence.js',
+  'domain/taskDates.js', 'domain/taskSelectors.js', 'domain/recurrence.js', 'domain/repeatEnd.js',
   'services/taskMutations.js', 'services/subtaskMutations.js', 'services/taskCommands.js', 'domain/taskDraft.js', 'services/reminderModel.js',
   'components/CategoryBar.js', 'components/TasksModals.js',
 ];

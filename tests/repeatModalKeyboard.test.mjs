@@ -45,6 +45,7 @@ function modal(platform, overrides = {}) {
   const native = {
     ...Object.fromEntries(['Modal', 'View', 'Text', 'TextInput', 'TouchableOpacity', 'TouchableWithoutFeedback', 'KeyboardAvoidingView'].map(name => [name, name])),
     Animated: { View: 'Animated.View' }, StyleSheet: { absoluteFillObject: {} },
+    Keyboard: { dismiss() {} },
     Platform: { OS: platform }, useWindowDimensions: () => ({ height: windowHeight }),
   };
   const module = { exports: {} };
@@ -59,6 +60,8 @@ function modal(platform, overrides = {}) {
         LinearTransition: { duration: milliseconds => ({ milliseconds }) },
       };
       if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ top: 24, bottom: 16 }) };
+      if (name.endsWith('/DatePickerModal')) return 'DatePickerModal';
+      if (name.endsWith('/repeatEnd')) return loadDatabase(null, { entry: '../../src/features/tasks/domain/repeatEnd.js' });
       if (name.endsWith('/repeatEditor')) return domain.exports;
       if (name.endsWith('/repeatModalStyles')) return () => styles;
       if (name.endsWith('/useModalAnimation')) return () => ({ animateOpen() {}, animateClose() { closes++; }, closing: { current: false } });
@@ -85,6 +88,7 @@ function modal(platform, overrides = {}) {
   render(); render();
   return {
     find, saved,
+    picker: () => find('DatePickerModal')[0].props,
     closes: () => closes,
     update(next) { Object.assign(props, next); render(); render(); },
     type(text) { find('TextInput')[0].props.onChangeText(text); render(); },
@@ -244,4 +248,133 @@ test('step buttons preserve validation limits and affect only the current freque
   assert.equal(app.saved.mode, 'none');
   assert.equal(app.saved.interval, 1);
   assert.deepEqual(app.saved.days, []);
+});
+
+
+const futureTaskDate = () => { const date = new Date(); date.setDate(date.getDate() + 10); return date; };
+
+test('repeat end picker shares the calendar and task-date minimum, rejecting earlier dates in the handler', () => {
+  const start = futureTaskDate();
+  const firstRepeat = new Date(start); firstRepeat.setDate(firstRepeat.getDate() + 3);
+  const before = new Date(start); before.setDate(before.getDate() - 1);
+  const app = modal('android', { selectedDate: start, endDate: null, repeatMode: 'daily' });
+  app.type('3');
+  app.press('Elegir fecha de término');
+  assert.equal(app.picker().visible, true);
+  assert.equal(app.picker().title, 'Fin de repetición');
+  assert.equal(app.picker().minDate.toDateString(), firstRepeat.toDateString());
+  assert.equal(app.picker().initialDate.toDateString(), firstRepeat.toDateString());
+  app.picker().onSelect(before); app.update({});
+  assert.equal(app.picker().value, null);
+  app.picker().onClose(); app.picker().onSelect(firstRepeat); app.update({});
+  assert.equal(app.picker().visible, false);
+  assert.notEqual(app.picker().value, firstRepeat);
+  assert.equal(app.picker().value.toDateString(), firstRepeat.toDateString());
+  assert.equal(app.input().props.value, '3');
+  assert.deepEqual(app.saved, {}, 'selection stays inside the repetition draft');
+  app.press('Aplicar');
+  assert.equal(app.saved.endDate.toDateString(), firstRepeat.toDateString());
+  assert.equal(app.saved.interval, 3);
+});
+
+test('closing the calendar preserves the repeat draft; cancelling repeat discards the chosen end date', () => {
+  const start = futureTaskDate();
+  const original = new Date(start); original.setDate(original.getDate() + 5);
+  const chosen = new Date(start); chosen.setDate(chosen.getDate() + 8);
+  const app = modal('ios', { selectedDate: start, endDate: original, repeatMode: 'daily' });
+  app.type('4');
+  app.press('Elegir fecha de término');
+  app.picker().onClose(); app.update({});
+  assert.equal(app.picker().value.getTime(), original.getTime());
+  assert.equal(app.input().props.value, '4');
+  app.press('Elegir fecha de término');
+  app.picker().onClose(); app.picker().onSelect(chosen); app.update({});
+  app.press('Cancelar');
+  assert.deepEqual(app.saved, {});
+  app.update({ visible: false }); app.update({ visible: true });
+  assert.equal(app.picker().value.getTime(), original.getTime());
+  assert.equal(app.picker().visible, false);
+});
+
+test('an end before a changed start blocks applying and can be removed or corrected', () => {
+  const start = futureTaskDate();
+  const end = new Date(start); end.setDate(end.getDate() + 1);
+  const laterStart = new Date(start); laterStart.setDate(laterStart.getDate() + 2);
+  const nextRepeat = new Date(laterStart); nextRepeat.setDate(nextRepeat.getDate() + 1);
+  const app = modal('android', { selectedDate: start, endDate: end, repeatMode: 'daily' });
+  app.update({ selectedDate: laterStart });
+  app.press('Aplicar');
+  assert.deepEqual(app.saved, {});
+  assert.equal(app.picker().minDate.toDateString(), nextRepeat.toDateString());
+  app.press('Sin fecha de término');
+  app.press('Aplicar');
+  assert.equal(app.saved.endDate, null);
+});
+
+
+test('summary follows the selected end-date draft and clearing it, before applying', () => {
+  const start = futureTaskDate();
+  const firstRepeat = new Date(start); firstRepeat.setDate(firstRepeat.getDate() + 1);
+  const app = modal('android', { selectedDate: start, endDate: null, repeatMode: 'daily' });
+  const summary = () => app.find('Text').find(node => node.props.style === styles.repeatSummary).children.join('');
+  assert.equal(summary(), 'Todos los días, sin fecha de término.');
+  app.press('Elegir fecha de término');
+  app.picker().onClose(); app.picker().onSelect(firstRepeat); app.update({});
+  const formatted = firstRepeat.toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
+  assert.equal(summary(), `Todos los días, hasta el ${formatted}.`);
+  assert.deepEqual(app.saved, {});
+  app.press('Sin fecha de término');
+  assert.equal(summary(), 'Todos los días, sin fecha de término.');
+});
+
+test('weekly day and interval edits recompute the first occurrence and block an earlier end', () => {
+  const start = futureTaskDate();
+  start.setDate(start.getDate() + (2 - start.getDay() + 7) % 7); // Tuesday.
+  const friday = new Date(start); friday.setDate(friday.getDate() + 3);
+  const monday = new Date(start); monday.setDate(monday.getDate() + 13); // Next eligible fortnight.
+  const app = modal('android', { selectedDate: start, repeatMode: 'weekly', repeatDays: ['V'], repeatInterval: 1, endDate: friday });
+  assert.equal(app.picker().minDate.toDateString(), friday.toDateString());
+  app.press('lunes'); app.press('viernes');
+  app.type('2');
+  assert.equal(app.picker().minDate.toDateString(), monday.toDateString());
+  assert.equal(app.picker().value.getTime(), friday.getTime(), 'keep the invalid date visible rather than silently moving it');
+  app.press('Aplicar');
+  assert.deepEqual(app.saved, {});
+  app.press('Elegir fecha de término');
+  app.picker().onClose(); app.picker().onSelect(monday); app.update({});
+  app.press('Aplicar');
+  assert.equal(app.saved.endDate.toDateString(), monday.toDateString());
+  assert.deepEqual(app.saved.days, ['L']);
+  assert.equal(app.saved.interval, 2);
+});
+
+test('impossible monthly recurrence disables date selection and apply until corrected', () => {
+  const app = modal('android', { selectedDate: new Date(2030, 1, 1), repeatMode: 'monthly', repeatDays: ['31'], repeatInterval: 12, endDate: null });
+  assert.equal(app.picker().minDate, null);
+  app.press('Elegir fecha de término');
+  assert.equal(app.picker().visible, false);
+  app.press('Aplicar');
+  assert.deepEqual(app.saved, {});
+  app.type('1');
+  assert.equal(app.picker().minDate.getMonth(), 2);
+  assert.equal(app.picker().minDate.getDate(), 31);
+  app.press('Aplicar');
+  assert.equal(app.saved.interval, 1);
+});
+
+test('December 15 monthly task cannot end before its first repetition on January 15', () => {
+  const start = new Date(2026, 11, 15);
+  const firstRepeat = new Date(2027, 0, 15);
+  const app = modal('android', { selectedDate: start, repeatMode: 'monthly', repeatDays: ['15'], repeatInterval: 1, endDate: start });
+  assert.equal(app.picker().minDate.toDateString(), firstRepeat.toDateString());
+  app.press('Aplicar');
+  assert.deepEqual(app.saved, {});
+  app.press('Elegir fecha de término');
+  app.picker().onSelect(start); app.update({});
+  assert.equal(app.picker().value.toDateString(), start.toDateString());
+  app.picker().onSelect(new Date(2027, 0, 14)); app.update({});
+  assert.equal(app.picker().value.toDateString(), start.toDateString());
+  app.picker().onClose(); app.picker().onSelect(firstRepeat); app.update({});
+  app.press('Aplicar');
+  assert.equal(app.saved.endDate.toDateString(), firstRepeat.toDateString());
 });
