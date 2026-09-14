@@ -1,8 +1,8 @@
-import { planTaskReminders } from "./reminderPlanner";
+import { planTaskReminders } from "@/features/tasks/services/notifications/reminderPlanner";
 import {
   buildContent, cancelNotifications, getScheduledTaskReminders,
   initNotifications, normalizeIds, scheduleBatch, NotificationOperationError,
-} from "./notificationClient";
+} from "@/features/tasks/services/notifications/notificationClient";
 
 let pending = Promise.resolve();
 // Serialize reconciliation and cancellation in this JS runtime. Internal helpers

@@ -9,9 +9,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons as MCI } from '@expo/vector-icons';
-import createStylesC from './stylesC';
-import { obtenerRecomendacionesAleatorias, obtenerRecomendacionesPersonalizadas } from './recomendaciones';
-import { CATEGORIAS } from './CategoriasC';
+import createStylesC from '@/features/cocina/stylesC';
+import { obtenerRecomendacionesAleatorias, obtenerRecomendacionesPersonalizadas } from '@/features/cocina/recomendaciones';
+import { CATEGORIAS } from '@/features/cocina/CategoriasC';
 
 /* =========================
         MODAL

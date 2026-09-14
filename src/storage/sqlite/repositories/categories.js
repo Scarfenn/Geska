@@ -1,4 +1,4 @@
-import { withDatabase } from "../initialize";
+import { withDatabase } from "@/storage/sqlite/initialize";
 export async function getAllCategories() {
   return withDatabase(async db => {
     return await db.getAllAsync("SELECT id, name FROM categories");

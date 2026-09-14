@@ -56,15 +56,16 @@ const { createRequire } = await import('node:module');
 const { default: vm } = await import('node:vm');
 const require = createRequire(import.meta.url);
 const animationSource = require('@babel/core').transformSync(
-  await readFile(new URL('../src/features/tasks/hooks/useHourModalAnimation.js', import.meta.url), 'utf8'),
+  await readFile(new URL('../src/hooks/useModalAnimation.js', import.meta.url), 'utf8'),
   { configFile: false, babelrc: false, plugins: ['@babel/plugin-transform-modules-commonjs'] },
 ).code;
 function animationHarness() {
-  let cleanup;
+  let cursor = 0;
+  const slots = [], effects = [], cleanups = [];
   const animations = [];
   const module = { exports: {} };
   const Animated = {
-    Value: class { constructor(value) { this.value = value; } },
+    Value: class { constructor(value) { this.value = value; } setValue(value) { this.value = value; } },
     timing: () => ({}),
     parallel: () => {
       const animation = { start(callback) { this.callback = callback; }, stop() { this.callback?.({ finished: false }); } };
@@ -75,12 +76,26 @@ function animationHarness() {
   vm.runInNewContext(animationSource, {
     module, exports: module.exports,
     require: name => name === 'react'
-      ? { useRef: current => ({ current }), useEffect: fn => { cleanup = fn(); } }
+      ? {
+        useRef(current) { const i = cursor++; return slots[i] ||= { current }; },
+        useEffect(fn, deps) {
+          const i = cursor++;
+          if (!slots[i] || deps.some((value, index) => value !== slots[i][index])) {
+            slots[i] = deps;
+            effects.push(() => { cleanups[i]?.(); cleanups[i] = fn(); });
+          }
+        },
+      }
       : { Animated, Easing: { out: x => x, in: x => x, cubic: 1, ease: 2 } },
   });
   const events = [];
-  const hook = module.exports.default(() => events.push('close'));
-  return { hook, animations, events, unmount: () => cleanup() };
+  const render = (visible = true) => {
+    cursor = 0;
+    const hook = module.exports.default(() => events.push('close'), { visible });
+    effects.splice(0).forEach(fn => fn());
+    return hook;
+  };
+  return { hook: render(), render, animations, events, unmount: () => cleanups.forEach(fn => fn?.()) };
 }
 
 test('double close commits once, only after the exit finishes', () => {
@@ -100,4 +115,22 @@ test('unmount or interrupted animation cannot commit a stale selection', () => {
   unmount();
   animations.at(-1).callback({ finished: true });
   assert.deepEqual(events, []);
+});
+
+test('hiding and reopening invalidates the old close callback', () => {
+  const { hook, render, animations, events } = animationHarness();
+  hook.handleShow();
+  hook.animateClose(() => events.push('stale'));
+  const previous = animations.at(-1);
+  render(false);
+  const reopened = render(true);
+  reopened.handleShow();
+  previous.callback({ finished: true });
+  assert.deepEqual(events, []);
+  animations.at(-1).callback({ finished: true });
+  reopened.animateClose(() => events.push('current'));
+  const close = animations.at(-1);
+  close.callback({ finished: true });
+  close.callback({ finished: true });
+  assert.deepEqual(events, ['close', 'current']);
 });

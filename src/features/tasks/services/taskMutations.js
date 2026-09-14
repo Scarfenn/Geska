@@ -1,4 +1,4 @@
-import * as commands from "./taskCommands";
+import * as commands from "@/features/tasks/services/taskCommands";
 
 // Compatibility names for existing modal props. No React state or task snapshot
 // is captured here; all commands read current state within their transaction.

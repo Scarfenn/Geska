@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
-import { createTaskActions } from "../services/taskMutations";
+import { createTaskActions } from "@/features/tasks/services/taskMutations";
 
 const commands = createTaskActions();
 

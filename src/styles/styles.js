@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import { themes } from "./themes";
+import { themes } from "@/styles/themes";
 
 export default function createStyles(themeName = "basic", mode = "light") {
   const theme = themes[themeName][mode];

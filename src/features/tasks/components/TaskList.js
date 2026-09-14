@@ -7,7 +7,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import createStyles from "@/styles/styles";
-import TaskCard from "./TaskCard";
+import TaskCard from "@/features/tasks/components/TaskCard";
 
 function timeToMinutes(time) {
   if (!time) return null;

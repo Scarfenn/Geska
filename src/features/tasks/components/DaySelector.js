@@ -1,17 +1,15 @@
+import useWeekNavigation from "@/features/tasks/hooks/useWeekNavigation";
+import { generateWeek, isSameDay } from "@/features/tasks/domain/calendarDates";
 import {
   View,
   Text,
   TouchableOpacity,
   Animated,
-  Easing,
   useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
-import { useRef, useState } from "react";
 import {
   PanGestureHandler,
-  State,
 } from "react-native-gesture-handler";
 
 export default function DaySelector({
@@ -21,224 +19,10 @@ export default function DaySelector({
 }) {
   const { width } = useWindowDimensions();
 
-  const slideAnim =
-    useRef(new Animated.Value(0)).current;
-
-  const [isAnimating, setIsAnimating] =
-    useState(false);
-
-  const pageDistance = width;
-
-  // ======================================================
-  // FECHAS
-  // ======================================================
-
-  const isSameDay = (a, b) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-
-  const getWeekStart = (date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-
-    d.setDate(d.getDate() + diff);
-    d.setHours(0, 0, 0, 0);
-
-    return d;
-  };
-
-  const isSameWeek = (a, b) =>
-    isSameDay(
-      getWeekStart(a),
-      getWeekStart(b)
-    );
-
-  const generateWeek = (date) => {
-    const days = [];
-    const weekStart = getWeekStart(date);
-
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(weekStart);
-      d.setDate(weekStart.getDate() + i);
-      days.push(d);
-    }
-
-    return days;
-  };
-
+  const { slideAnim, isAnimating, selectDay, goToday, goPrevWeek, goNextWeek, onGestureEvent, onHandlerStateChange } = useWeekNavigation(selectedDay, setSelectedDay, width);
   const week = generateWeek(selectedDay);
   const todayDate = new Date();
-  const isTodaySelected =
-    isSameDay(selectedDay, todayDate);
-
-  // ======================================================
-  // TRANSICIÓN DE SEMANA
-  // ======================================================
-
-  const animateToDate = (
-    targetDate,
-    direction
-  ) => {
-    if (isAnimating) return;
-
-    setIsAnimating(true);
-    Haptics.selectionAsync();
-
-    const exitX =
-      direction > 0
-        ? -pageDistance
-        : pageDistance;
-
-    const enterX =
-      direction > 0
-        ? pageDistance
-        : -pageDistance;
-
-    Animated.timing(slideAnim, {
-      toValue: exitX,
-      duration: 150,
-      easing: Easing.in(Easing.cubic),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (!finished) {
-        setIsAnimating(false);
-        return;
-      }
-
-      // La semana vieja ya salió por completo.
-      // Colocamos la nueva fuera del lado contrario
-      // antes de actualizar la fecha visible.
-      slideAnim.setValue(enterX);
-      setSelectedDay(new Date(targetDate));
-
-      requestAnimationFrame(() => {
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 220,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }).start(() => {
-          setIsAnimating(false);
-        });
-      });
-    });
-  };
-
-  const changeWeek = (offset) => {
-    if (isAnimating) return;
-
-    const targetDate =
-      new Date(selectedDay);
-
-    targetDate.setDate(
-      targetDate.getDate() + offset * 7
-    );
-
-    animateToDate(
-      targetDate,
-      offset > 0 ? 1 : -1
-    );
-  };
-
-  const goPrevWeek = () => {
-    changeWeek(-1);
-  };
-
-  const goNextWeek = () => {
-    changeWeek(1);
-  };
-
-  const goToday = () => {
-    if (isAnimating) return;
-
-    const today = new Date();
-
-    // Si hoy ya está dentro de la semana visible,
-    // solo cambia la selección: no hay página que mover.
-    if (isSameWeek(selectedDay, today)) {
-      Haptics.selectionAsync();
-      setSelectedDay(today);
-      return;
-    }
-
-    animateToDate(
-      today,
-      today > selectedDay ? 1 : -1
-    );
-  };
-
-  // ======================================================
-  // GESTO
-  // ======================================================
-
-  const onGestureEvent = Animated.event(
-    [
-      {
-        nativeEvent: {
-          translationX: slideAnim,
-        },
-      },
-    ],
-    { useNativeDriver: true }
-  );
-
-  const returnToCenter = () => {
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      speed: 18,
-      bounciness: 2,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const onHandlerStateChange = (event) => {
-    const {
-      state,
-      translationX,
-      velocityX,
-    } = event.nativeEvent;
-
-    if (
-      state === State.CANCELLED ||
-      state === State.FAILED
-    ) {
-      returnToCenter();
-      return;
-    }
-
-    if (state !== State.END) return;
-
-    const distanceThreshold =
-      Math.min(80, width * 0.2);
-
-    const velocityThreshold = 700;
-
-    const shouldGoPrev =
-      translationX > distanceThreshold ||
-      velocityX > velocityThreshold;
-
-    const shouldGoNext =
-      translationX < -distanceThreshold ||
-      velocityX < -velocityThreshold;
-
-    if (shouldGoPrev) {
-      changeWeek(-1);
-      return;
-    }
-
-    if (shouldGoNext) {
-      changeWeek(1);
-      return;
-    }
-
-    returnToCenter();
-  };
-
-  // ======================================================
-  // RENDER
-  // ======================================================
+  const isTodaySelected = isSameDay(selectedDay, todayDate);
 
   return (
     <>
@@ -340,12 +124,7 @@ export default function DaySelector({
                 <TouchableOpacity
                   key={d.toISOString()}
                   disabled={isAnimating}
-                  onPress={() => {
-                    setSelectedDay(
-                      new Date(d)
-                    );
-                    Haptics.selectionAsync();
-                  }}
+                  onPress={() => selectDay(d)}
                   style={{
                     width: 42,
                     height: 52,

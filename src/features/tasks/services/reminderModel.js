@@ -16,24 +16,8 @@ export const DAY_MS = 24 * HOUR_MS;
 export const ALL_DAY_REMINDER_HOUR = 9;
 export const PERSISTENT_REMINDER_HOURS = [9, 13, 17, 21];
 
-export function isSameDay(a, b) {
-  if (!a || !b) return false;
-
-  const dateA = new Date(a);
-  const dateB = new Date(b);
-
-  return (
-    dateA.getFullYear() === dateB.getFullYear() &&
-    dateA.getMonth() === dateB.getMonth() &&
-    dateA.getDate() === dateB.getDate()
-  );
-}
-
-export function startOfDay(date) {
-  const result = new Date(date);
-  result.setHours(0, 0, 0, 0);
-  return result;
-}
+export { isSameDay, startOfDay } from "@/features/tasks/domain/calendarDates";
+import { isSameDay } from "@/features/tasks/domain/calendarDates";
 
 export function endOfDay(date) {
   const result = new Date(date);

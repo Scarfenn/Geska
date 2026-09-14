@@ -20,6 +20,7 @@ export function loadDatabase(db, { entry = "../../src/storage/database.js", stub
       require(spec) {
         if (spec in stubs) return stubs[spec];
         if (spec === 'expo-sqlite') return { openDatabaseSync: () => db };
+        if (spec.startsWith('@/')) return load(new URL('../../src/' + spec.slice(2) + '.js', import.meta.url));
         if (!spec.startsWith('.')) throw new Error(`Unexpected dependency: ${spec}`);
         return load(new URL(spec + '.js', url));
       },

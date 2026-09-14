@@ -1,5 +1,5 @@
 import { TODAS_LAS_RECETAS as recetas } from "@/storage/recetas";
-import { CATEGORIAS } from "./CategoriasC";
+import { CATEGORIAS } from "@/features/cocina/CategoriasC";
 
 
 

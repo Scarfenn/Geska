@@ -1,5 +1,5 @@
-import { execute } from "./connection";
-import { migrateDatabase } from "./migrations";
+import { execute } from "@/storage/sqlite/connection";
+import { migrateDatabase } from "@/storage/sqlite/migrations";
 let initializationPromise = null;
 export function initDB() {
   if (!initializationPromise) {

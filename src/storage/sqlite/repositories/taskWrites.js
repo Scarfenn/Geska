@@ -1,5 +1,5 @@
-import { withDatabase } from "../initialize";
-import { insertTaskRow, updateTaskRow, deleteTaskRows, readTask } from "./taskRows";
+import { withDatabase } from "@/storage/sqlite/initialize";
+import { insertTaskRow, updateTaskRow, deleteTaskRows, readTask } from "@/storage/sqlite/repositories/taskRows";
 
 let sequence = 0;
 export function newTaskId() {

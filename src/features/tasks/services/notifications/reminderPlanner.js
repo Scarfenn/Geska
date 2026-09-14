@@ -1,10 +1,10 @@
-import { occursOnDate, parseLocalDate } from "../../domain/recurrence";
-import { formatDateLocal } from "../../domain/taskDates";
+import { occursOnDate, parseLocalDate } from "@/features/tasks/domain/recurrence";
+import { formatDateLocal } from "@/features/tasks/domain/taskDates";
 import {
   MINUTE_MS, HOUR_MS, startOfDay, reminderFromTask,
   getAllDayReminderDate, getPersistentDatesForDay,
-} from "../reminderModel";
-import { MAX_OCCURRENCE_SEARCH_DAYS, MAX_QUEUED_REMINDERS } from "./constants";
+} from "@/features/tasks/services/reminderModel";
+import { MAX_OCCURRENCE_SEARCH_DAYS, MAX_QUEUED_REMINDERS } from "@/features/tasks/services/notifications/constants";
 
 function parseTime(value) {
   if (typeof value !== "string" || !/^\d{1,2}:\d{2}$/.test(value)) return null;

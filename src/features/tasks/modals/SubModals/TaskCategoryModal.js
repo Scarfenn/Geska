@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import useModalAnimation from "@/hooks/useModalAnimation";
 import {
   Modal,
   View,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Animated,
-  Easing,
   StyleSheet,
 } from "react-native";
 
@@ -31,76 +30,10 @@ export default function TaskCategoryModal({
   const styles = createStyles(themeName, mode);
   const theme = themes[themeName][mode];
 
-  const opacityAnim = useRef(
-    new Animated.Value(0)
-  ).current;
-
-  const slideAnim = useRef(
-    new Animated.Value(15)
-  ).current;
-
-  const scaleAnim = useRef(
-    new Animated.Value(0.97)
-  ).current;
-
-  const animateOpen = () => {
-    opacityAnim.setValue(0);
-    slideAnim.setValue(15);
-    scaleAnim.setValue(0.97);
-
-    Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 190,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 190,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 190,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const animateClose = (callback) => {
-    Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 140,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(slideAnim, {
-        toValue: 15,
-        duration: 140,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(scaleAnim, {
-        toValue: 0.97,
-        duration: 140,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      closeModal();
-      callback?.();
-    });
-  };
+  const { opacityAnim, slideAnim, scaleAnim, animateOpen, animateClose, closing } = useModalAnimation(closeModal, { visible, distance: 15, scale: 0.97, openDuration: 190, closeDuration: 140 });
 
   const handleSelect = (categoryId) => {
+    if (closing.current) return;
     onSelectCategory(categoryId);
     animateClose();
   };
@@ -117,6 +50,7 @@ export default function TaskCategoryModal({
       transparent
       animationType="none"
       onShow={animateOpen}
+      onRequestClose={() => animateClose()}
     >
       <Animated.View
         style={[

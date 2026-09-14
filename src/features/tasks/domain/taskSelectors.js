@@ -1,5 +1,5 @@
-import { occursOnDate } from "./recurrence";
-import { formatDateLocal } from "./taskDates";
+import { occursOnDate } from "@/features/tasks/domain/recurrence";
+import { formatDateLocal } from "@/features/tasks/domain/taskDates";
 function getTaskDoneForDate(task, selectedDay) {
   if (task.repeat_mode === "none") {
     return task.done;

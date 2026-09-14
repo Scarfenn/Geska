@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import useModalAnimation from "@/hooks/useModalAnimation";
 import {
   Modal,
   View,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Animated,
-  Easing,
   StyleSheet,
 } from "react-native";
 
@@ -15,8 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
 
-import useReminderOptions from "../../hooks/useReminderOptions";
-import { isOptionActive, optionKey } from "../../domain/reminderOptions";
+import useReminderOptions from "@/features/tasks/hooks/useReminderOptions";
+import { isOptionActive, optionKey } from "@/features/tasks/domain/reminderOptions";
 
 export default function ReminderModal(props) {
   return props.visible ? <ReminderModalSession {...props} /> : null;
@@ -42,97 +41,10 @@ function ReminderModalSession({
   const theme =
     themes[themeName][mode];
 
-  const opacityAnim = useRef(
-    new Animated.Value(0)
-  ).current;
-
-  const slideAnim = useRef(
-    new Animated.Value(20)
-  ).current;
-
-  const scaleAnim = useRef(
-    new Animated.Value(0.95)
-  ).current;
-
   const { options, subtitle, persistentText, select, notice } = useReminderOptions({
     selectedDate, selectedTime, repeatMode,
   });
-  const animation = useRef(null);
-  const closing = useRef(false);
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; animation.current?.stop(); };
-  }, []);
-
-  const animateOpen = () => {
-    if (closing.current) return;
-    opacityAnim.setValue(0);
-    slideAnim.setValue(20);
-    scaleAnim.setValue(0.95);
-
-    animation.current?.stop();
-    animation.current = Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 200,
-        easing:
-          Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 200,
-        easing:
-          Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 200,
-        easing:
-          Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]);
-    animation.current.start();
-  };
-
-  const animateClose = () => {
-    if (closing.current || !mounted.current) return;
-    closing.current = true;
-    animation.current?.stop();
-    animation.current = Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 160,
-        easing:
-          Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(slideAnim, {
-        toValue: 20,
-        duration: 160,
-        easing:
-          Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 160,
-        easing:
-          Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]);
-    animation.current.start(({ finished }) => {
-      if (finished && mounted.current) closeModal();
-    });
-  };
+  const { opacityAnim, slideAnim, scaleAnim, animateOpen, animateClose, mounted, closing } = useModalAnimation(closeModal, { visible, openDuration: 200 });
 
   const selectOption = (option) => {
     if (closing.current || !mounted.current) return;

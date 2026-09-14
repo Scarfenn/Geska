@@ -19,7 +19,7 @@ function setup(t) {
   };
   const commands = loadDatabase(h.db, {
     entry: '../../src/features/tasks/services/taskCommands.js',
-    stubs: { '@/storage/database': h.api, './notifications': native },
+    stubs: { '@/storage/database': h.api, '@/features/tasks/services/notifications': native },
   });
   return { ...h, commands, reminders, cancellations, native };
 }
@@ -142,7 +142,7 @@ test('notification adapter uses idempotent completion and emits updates after sa
   const events = [];
   const adapter = loadDatabase(h.db, {
     entry: '../../src/features/tasks/services/taskCompletion.js',
-    stubs: { './taskCommands': h.commands, 'react-native': { DeviceEventEmitter: { emit: name => events.push(name) } } },
+    stubs: { '@/features/tasks/services/taskCommands': h.commands, 'react-native': { DeviceEventEmitter: { emit: name => events.push(name) } } },
   });
   assert.equal(await adapter.completeTask(task.id), true);
   assert.equal(await adapter.completeTask(task.id), true);

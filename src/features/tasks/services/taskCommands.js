@@ -3,8 +3,8 @@ import {
   changeTaskCompletion, removeTaskWithSnapshot, updateTaskNotificationIds,
   addCategory, updateCategory, deleteCategory,
 } from "@/storage/database";
-import { prepareTaskDraft, normalizeSubtaskDraft, occurrenceDate } from "../domain/taskDraft";
-import { reconcileTaskReminders, cancelTaskReminders } from "./notifications";
+import { prepareTaskDraft, normalizeSubtaskDraft, occurrenceDate } from "@/features/tasks/domain/taskDraft";
+import { reconcileTaskReminders, cancelTaskReminders } from "@/features/tasks/services/notifications";
 
 const pending = new Map();
 // Keep each task's commit and subsequent reminder reconciliation in order.

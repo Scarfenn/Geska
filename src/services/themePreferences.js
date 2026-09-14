@@ -1,4 +1,4 @@
-import { themes } from "../styles/themes";
+import { themes } from "@/styles/themes";
 
 export function validateThemePreferences(themeName, mode) {
   const validTheme = typeof themeName === "string" && Object.hasOwn(themes, themeName) ? themeName : "basic";

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { parseLocalDate } from "../domain/recurrence";
-import { parseTimeString } from "../domain/taskDates";
-import { reminderFromTask } from "../services/reminderModel";
+import { parseLocalDate } from "@/features/tasks/domain/recurrence";
+import { parseTimeString } from "@/features/tasks/domain/taskDates";
+import { reminderFromTask } from "@/features/tasks/services/reminderModel";
 export default function useTaskEditor(selectedCategory) {
   const [selectedCategoryForTask, setSelectedCategoryForTask] = useState(null);
   const [activeModal, setActiveModal] = useState(null);
@@ -65,7 +65,7 @@ export default function useTaskEditor(selectedCategory) {
       repeatDays: task.repeat_days ? task.repeat_days.split(",") : [],
       repeatInterval: task.repeat_interval || 1,
       reminder: reminderFromTask(task),
-      endDate: task.repeat_end ? new Date(task.repeat_end) : null
+      endDate: task.repeat_end ? parseLocalDate(task.repeat_end) : null
     });
     setTaskModalVisible(true);
   };

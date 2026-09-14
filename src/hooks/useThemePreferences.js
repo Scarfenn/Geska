@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { themes } from "../styles/themes";
-import { createThemePreferencesStore, validateThemePreferences } from "../services/themePreferences";
+import { themes } from "@/styles/themes";
+import { createThemePreferencesStore, validateThemePreferences } from "@/services/themePreferences";
 
 const store = createThemePreferencesStore(AsyncStorage);
 

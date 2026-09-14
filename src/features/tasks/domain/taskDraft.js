@@ -1,6 +1,6 @@
-import { formatDateLocal, formatTime } from "./taskDates";
-import { parseLocalDate } from "./recurrence";
-import { applyReminderToTask } from "../services/reminderModel";
+import { formatDateLocal, formatTime } from "@/features/tasks/domain/taskDates";
+import { parseLocalDate } from "@/features/tasks/domain/recurrence";
+import { applyReminderToTask } from "@/features/tasks/services/reminderModel";
 
 function invalid(message) {
   const error = new Error(message);

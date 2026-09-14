@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
-import { getAvailableOptions, getSubtitle, persistentDescription, resolveReminderOption } from "../domain/reminderOptions";
+import { getAvailableOptions, getSubtitle, persistentDescription, resolveReminderOption } from "@/features/tasks/domain/reminderOptions";
 
 export default function useReminderOptions(context) {
   const [now, setNow] = useState(() => new Date());

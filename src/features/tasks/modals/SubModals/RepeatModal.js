@@ -1,3 +1,4 @@
+import useModalAnimation from "@/hooks/useModalAnimation";
 import { useEffect, useRef, useState } from "react";
 import {
   Modal, View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
@@ -32,10 +33,8 @@ export default function RepeatModal({
   const [localMonthDays, setLocalMonthDays] = useState([]);
   const [intervalText, setIntervalText] = useState("1");
   const [localEndDate, setLocalEndDate] = useState(endDate);
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
+  const { opacityAnim, slideAnim, animateOpen, animateClose, closing } = useModalAnimation(closeModal, { visible, scale: null, opacityEasing: null, closeEasing: null });
   const modalHeight = useRef(new Animated.Value(290)).current;
-  const closing = useRef(false);
   const wasVisible = useRef(false);
   const interval = parseInterval(intervalText);
   const canApply = localMode === "none" || interval !== null;
@@ -51,7 +50,6 @@ export default function RepeatModal({
       setLocalMonthDays(editorDays("monthly", nextMode === "monthly" ? repeatDays : [], selectedDate));
       setIntervalText(String(parseInterval(repeatInterval) || 1));
       setLocalEndDate(endDate);
-      closing.current = false;
       modalHeight.setValue(Math.min(MODAL_HEIGHTS[nextMode], maxHeight));
     }
     wasVisible.current = visible;
@@ -66,27 +64,6 @@ export default function RepeatModal({
     animation.start();
     return () => animation.stop();
   }, [localMode, maxHeight, visible, modalHeight]);
-
-  const animateOpen = () => {
-    opacityAnim.setValue(0);
-    slideAnim.setValue(20);
-    Animated.parallel([
-      Animated.timing(opacityAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-  };
-
-  const animateClose = () => {
-    if (closing.current) return;
-    closing.current = true;
-    Animated.parallel([
-      Animated.timing(opacityAnim, { toValue: 0, duration: 160, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 20, duration: 160, useNativeDriver: true }),
-    ]).start(({ finished }) => {
-      if (finished) closeModal();
-      else closing.current = false;
-    });
-  };
 
   const selectMode = (nextMode) => {
     if (nextMode === localMode) return;

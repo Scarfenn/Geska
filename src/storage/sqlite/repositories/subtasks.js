@@ -1,4 +1,4 @@
-import { withDatabase } from "../initialize";
+import { withDatabase } from "@/storage/sqlite/initialize";
 export async function addSubtask(taskId, text, sortOrder = null) {
   return withDatabase(async db => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

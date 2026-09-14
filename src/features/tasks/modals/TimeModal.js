@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import useModalAnimation from "@/hooks/useModalAnimation";
 import {
   Modal,
   View,
@@ -6,19 +6,18 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Animated,
-  Easing,
 } from "react-native";
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
 import { Ionicons } from "@expo/vector-icons";
-import RepeatModal from "./SubModals/RepeatModal";
-import DateSelectorModal from "./SubModals/DateSelectorModal";
-import HourModal from "./SubModals/HourModal";
-import ReminderModal from "./SubModals/ReminderModal";
+import RepeatModal from "@/features/tasks/modals/SubModals/RepeatModal";
+import DateSelectorModal from "@/features/tasks/modals/SubModals/DateSelectorModal";
+import HourModal from "@/features/tasks/modals/SubModals/HourModal";
+import ReminderModal from "@/features/tasks/modals/SubModals/ReminderModal";
 import { formatReminder } from "@/features/tasks/services/reminderModel";
 
-import useScheduleDraft from "../hooks/useScheduleDraft";
-import { formatHumanDate, formatHumanTime, formatRepeatLabel } from "../domain/scheduleLabels";
+import useScheduleDraft from "@/features/tasks/hooks/useScheduleDraft";
+import { formatHumanDate, formatHumanTime, formatRepeatLabel } from "@/features/tasks/domain/scheduleLabels";
 
 export default function TimeModal(props) {
   return props.visible ? <TimeModalSession {...props} /> : null;
@@ -39,78 +38,7 @@ function TimeModalSession(props) {
   // -------------------------------------------------
   // Animaciones principales del modal
   // -------------------------------------------------
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
-
-  const animation = useRef(null);
-  const closing = useRef(false);
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; animation.current?.stop(); };
-  }, []);
-
-  const animateOpen = () => {
-    if (closing.current) return;
-    animation.current?.stop();
-    opacityAnim.setValue(0);
-    slideAnim.setValue(20);
-    scaleAnim.setValue(0.95);
-
-    animation.current = Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 260,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 260,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 260,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]);
-    animation.current.start();
-  };
-
-  const animateClose = (commit) => {
-    if (closing.current || !mounted.current) return;
-    closing.current = true;
-    animation.current?.stop();
-    animation.current = Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 200,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 20,
-        duration: 200,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 200,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]);
-    animation.current.start(({ finished }) => {
-      if (!finished || !mounted.current) return;
-      closeModal();
-      commit?.();
-    });
-  };
+  const { opacityAnim, slideAnim, scaleAnim, animateOpen, animateClose } = useModalAnimation(closeModal, { visible, openDuration: 260, closeDuration: 200 });
 
   return (
     <>

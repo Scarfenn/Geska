@@ -1,4 +1,4 @@
-import { withDatabase } from "../initialize";
+import { withDatabase } from "@/storage/sqlite/initialize";
 export async function getOccurrence(taskId, date) {
   return withDatabase(async db => {
     return await db.getFirstAsync("SELECT * FROM task_occurrences WHERE task_id=? AND date=?", [taskId, date]);

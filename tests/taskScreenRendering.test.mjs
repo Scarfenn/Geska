@@ -23,7 +23,8 @@ function loadModule(path, context, cache = new Map()) {
   if (cache.has(path)) return cache.get(path).exports;
   const module = { exports: {} }; cache.set(path, module);
   const localRequire = spec => {
-    const resolved = spec.startsWith('.') ? new URL(spec + '.js', 'file://' + path).pathname : '';
+    const resolved = spec.startsWith('@/') ? new URL('../src/' + spec.slice(2) + '.js', import.meta.url).pathname
+      : spec.startsWith('.') ? new URL(spec + '.js', 'file://' + path).pathname : '';
     if (modules.has(resolved)) return loadModule(resolved, context, cache);
     if (spec === 'react') return context;
     if (spec === 'react-native') return { ...Object.fromEntries(['Text', 'View', 'TouchableOpacity', 'StatusBar', 'ActivityIndicator', 'ScrollView'].map(n => [n, n])), DeviceEventEmitter: context.DeviceEventEmitter, Alert: context.Alert };

@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import useModalAnimation from "@/hooks/useModalAnimation";
+import { useRef, useState } from "react";
 import { Alert, Modal, View, Text, TouchableOpacity, TouchableWithoutFeedback,
-  Animated, Easing, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
+  Animated, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { Ionicons } from "@expo/vector-icons";
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
-import useSubtaskDraft from "../hooks/useSubtaskDraft";
-import SubtaskEditorRow from "../components/SubtaskEditorRow";
-import { normalizeSubtaskDraft } from "../domain/taskDraft";
+import useSubtaskDraft from "@/features/tasks/hooks/useSubtaskDraft";
+import SubtaskEditorRow from "@/features/tasks/components/SubtaskEditorRow";
+import { normalizeSubtaskDraft } from "@/features/tasks/domain/taskDraft";
 
 export default function SubtaskModal(props) {
   return props.visible ? <SubtaskModalSession key={props.modalTaskId ?? "draft"} {...props} /> : null;
@@ -22,124 +23,7 @@ function SubtaskModalSession({ visible, isSaving = false, themeName, mode, subta
   const saving = useRef(false);
   const [localSaving, setLocalSaving] = useState(false);
   const busy = isSaving || localSaving;
-  const mounted = useRef(true);
-  const closing = useRef(false);
-  const animation = useRef(null);
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; animation.current?.stop(); };
-  }, []);
-  const opacityAnim =
-    useRef(
-      new Animated.Value(0)
-    ).current;
-
-  const slideAnim =
-    useRef(
-      new Animated.Value(20)
-    ).current;
-
-  const scaleAnim =
-    useRef(
-      new Animated.Value(0.96)
-    ).current;
-
-  const animateOpen = () => {
-    if (closing.current) return;
-    opacityAnim.setValue(0);
-    slideAnim.setValue(20);
-    scaleAnim.setValue(0.96);
-
-    animation.current?.stop();
-    animation.current = Animated.parallel([
-      Animated.timing(
-        opacityAnim,
-        {
-          toValue: 1,
-          duration: 220,
-          easing:
-            Easing.out(
-              Easing.cubic
-            ),
-          useNativeDriver: true,
-        }
-      ),
-
-      Animated.timing(
-        slideAnim,
-        {
-          toValue: 0,
-          duration: 220,
-          easing:
-            Easing.out(
-              Easing.cubic
-            ),
-          useNativeDriver: true,
-        }
-      ),
-
-      Animated.timing(
-        scaleAnim,
-        {
-          toValue: 1,
-          duration: 220,
-          easing:
-            Easing.out(
-              Easing.ease
-            ),
-          useNativeDriver: true,
-        }
-      ),
-    ]);
-    animation.current.start();
-  };
-
-  const animateClose = () => {
-    if (closing.current || !mounted.current) return;
-    closing.current = true;
-    animation.current?.stop();
-    animation.current = Animated.parallel([
-      Animated.timing(
-        opacityAnim,
-        {
-          toValue: 0,
-          duration: 160,
-          easing:
-            Easing.in(
-              Easing.ease
-            ),
-          useNativeDriver: true,
-        }
-      ),
-
-      Animated.timing(
-        slideAnim,
-        {
-          toValue: 20,
-          duration: 160,
-          easing:
-            Easing.in(
-              Easing.ease
-            ),
-          useNativeDriver: true,
-        }
-      ),
-
-      Animated.timing(
-        scaleAnim,
-        {
-          toValue: 0.96,
-          duration: 160,
-          easing:
-            Easing.in(
-              Easing.ease
-            ),
-          useNativeDriver: true,
-        }
-      ),
-    ]);
-    animation.current.start(({ finished }) => { if (finished && mounted.current) closeModal(); });
-  };
+  const { opacityAnim, slideAnim, scaleAnim, animateOpen, animateClose, mounted, closing } = useModalAnimation(closeModal, { visible, scale: 0.96 });
 
   const requestClose = () => {
     if (!saving.current && !isSaving) animateClose();

@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import useModalAnimation from "@/hooks/useModalAnimation";
+import { useState, useRef } from "react";
 import {
   Alert,
   Modal,
@@ -10,9 +11,9 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import useTaskModalDraft from "../hooks/useTaskModalDraft";
-import TaskCategoryModal from "./SubModals/TaskCategoryModal";
-import SubtaskModal from "./SubtaskModal";
+import useTaskModalDraft from "@/features/tasks/hooks/useTaskModalDraft";
+import TaskCategoryModal from "@/features/tasks/modals/SubModals/TaskCategoryModal";
+import SubtaskModal from "@/features/tasks/modals/SubtaskModal";
 
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
@@ -49,25 +50,13 @@ function TaskModalSession({
   const styles = createStyles(themeName, mode);
   const theme = themes[themeName][mode];
 
-  const opacityAnim =
-    useRef(new Animated.Value(0)).current;
-
-  const slideAnim =
-    useRef(new Animated.Value(30)).current;
-
   const { taskText, setTaskText, selectedCategory, setSelectedCategory, draftSubtasks, setDraftSubtasks } = useTaskModalDraft(taskToEdit, selectedCategoryForTask);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [subtaskModalVisible, setSubtaskModalVisible] = useState(false);
   const [localSaving, setLocalSaving] = useState(false);
   const busy = isSaving || localSaving;
   const saving = useRef(false);
-  const closing = useRef(false);
-  const mounted = useRef(true);
-  const animation = useRef(null);
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; animation.current?.stop(); };
-  }, []);
+  const { opacityAnim, slideAnim, animateOpen, animateClose, mounted, closing } = useModalAnimation(closeModal, { visible, distance: 30, scale: null, openDuration: 250, closeDuration: 150, openEasing: Easing.out(Easing.ease), closeEasing: null });
 
   // ======================================================
   // FUNCIONES AUXILIARES
@@ -95,52 +84,6 @@ function TaskModalSession({
   // ======================================================
   // MODAL PRINCIPAL
   // ======================================================
-
-  const animateOpen = () => {
-    if (closing.current) return;
-    opacityAnim.setValue(0);
-    slideAnim.setValue(30);
-
-    animation.current?.stop();
-    animation.current = Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 250,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 250,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]);
-    animation.current.start();
-  };
-
-  const animateClose = () => {
-    if (closing.current || !mounted.current) return;
-    closing.current = true;
-    animation.current?.stop();
-    animation.current = Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(slideAnim, {
-        toValue: 30,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]);
-    animation.current.start(({ finished }) => {
-      if (finished && mounted.current) closeModal();
-    });
-  };
 
   // ======================================================
   // CATEGORÍAS

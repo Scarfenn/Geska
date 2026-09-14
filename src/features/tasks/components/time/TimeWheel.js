@@ -20,7 +20,7 @@ import {
   getMiddleIndex,
   getIndexFromOffset,
   getSettledIndex,
-} from "../../domain/hourPickerModel";
+} from "@/features/tasks/domain/hourPickerModel";
 
 const DRAG_SETTLE_DELAY = 80;
 const SNAP_FINISH_DELAY = 220;

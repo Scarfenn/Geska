@@ -2,12 +2,12 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import * as Application from "expo-application";
 import * as IntentLauncher from "expo-intent-launcher";
-import { reminderFromTask } from "../reminderModel";
-import { reminderKey } from "./reminderPlanner";
+import { reminderFromTask } from "@/features/tasks/services/reminderModel";
+import { reminderKey } from "@/features/tasks/services/notifications/reminderPlanner";
 import {
   NOTIFICATION_TYPE, TASK_REMINDER_CHANNEL_ID,
   TASK_REMINDER_CATEGORY_ID, COMPLETE_TASK_ACTION_ID,
-} from "./constants";
+} from "@/features/tasks/services/notifications/constants";
 
 export class NotificationOperationError extends Error {
   constructor(message, { cause, createdIds = [], pendingCancellationIds = [], failures = [] } = {}) {

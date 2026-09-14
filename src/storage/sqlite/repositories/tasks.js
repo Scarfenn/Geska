@@ -1,6 +1,6 @@
-import { insertTaskRow, updateTaskRow, deleteTaskRows } from "./taskRows";
-import { withDatabase } from "../initialize";
-import { groupBy, mapTask, mapOccurrence } from "../taskMappers";
+import { insertTaskRow, updateTaskRow, deleteTaskRows } from "@/storage/sqlite/repositories/taskRows";
+import { withDatabase } from "@/storage/sqlite/initialize";
+import { groupBy, mapTask, mapOccurrence } from "@/storage/sqlite/taskMappers";
 export async function getAllTasks() {
   return withDatabase(async db => {
     // Await every read before leaving the transaction, including on failure.

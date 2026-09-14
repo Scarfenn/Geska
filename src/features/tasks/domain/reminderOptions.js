@@ -9,7 +9,7 @@ import {
   getAllDayReminderDate,
   getPersistentDatesForDay,
   remindersEqual,
-} from "../services/reminderModel";
+} from "@/features/tasks/services/reminderModel";
 
 const TIMED_OPTIONS = [
   {

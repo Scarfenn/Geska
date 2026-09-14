@@ -1,4 +1,4 @@
-import { saveTaskSubtasks, toggleSubtaskDone as toggle } from "./taskCommands";
+import { saveTaskSubtasks, toggleSubtaskDone as toggle } from "@/features/tasks/services/taskCommands";
 
 // Compatibility adapters; persistence is owned by the aggregate commands.
 export function saveSubtasks(task, drafts) {

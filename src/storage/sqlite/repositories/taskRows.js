@@ -1,4 +1,4 @@
-import { taskWriteValues, mapTask, mapOccurrence } from "../taskMappers";
+import { taskWriteValues, mapTask, mapOccurrence } from "@/storage/sqlite/taskMappers";
 
 export async function insertTaskRow(db, task) {
   await db.runAsync(`INSERT INTO tasks (

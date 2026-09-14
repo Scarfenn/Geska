@@ -4,15 +4,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
-import TaskList from "./components/TaskList";
-import DaySelector from "./components/DaySelector";
+import TaskList from "@/features/tasks/components/TaskList";
+import DaySelector from "@/features/tasks/components/DaySelector";
 import ThemeSelector from "@/components/ThemeSelector";
-import CategoryBar from "./components/CategoryBar";
-import TasksModals from "./components/TasksModals";
-import useTasksData from "./hooks/useTasksData";
-import useTaskEditor from "./hooks/useTaskEditor";
-import { selectTasksForDay } from "./domain/taskSelectors";
-import useTaskActions from "./hooks/useTaskActions";
+import CategoryBar from "@/features/tasks/components/CategoryBar";
+import TasksModals from "@/features/tasks/components/TasksModals";
+import useTasksData from "@/features/tasks/hooks/useTasksData";
+import useTaskEditor from "@/features/tasks/hooks/useTaskEditor";
+import { selectTasksForDay } from "@/features/tasks/domain/taskSelectors";
+import useTaskActions from "@/features/tasks/hooks/useTaskActions";
 export default function TasksScreen({
   themeName,
   mode,

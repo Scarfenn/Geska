@@ -1,5 +1,5 @@
 import { DeviceEventEmitter } from "react-native";
-import { setTaskDone } from "./taskCommands";
+import { setTaskDone } from "@/features/tasks/services/taskCommands";
 
 // Notification adapter: repeated delivery always requests done=true, never toggle.
 export async function completeTask(taskId, occurrenceDate = null) {

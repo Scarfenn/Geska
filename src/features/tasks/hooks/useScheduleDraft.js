@@ -1,5 +1,5 @@
 import { useReducer, useState } from "react";
-import { createScheduleDraft, scheduleDraftReducer } from "../domain/scheduleDraft";
+import { createScheduleDraft, scheduleDraftReducer } from "@/features/tasks/domain/scheduleDraft";
 
 export default function useScheduleDraft(props) {
   // TimeModal mounts one session per opening. Parent renders must not erase edits.

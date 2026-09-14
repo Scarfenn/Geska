@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeviceEventEmitter } from "react-native";
 import { initDB, getAllTasks, getAllCategories, updateTaskNotificationIds } from "@/storage/database";
-import { syncTaskReminders } from "../services/notifications";
+import { syncTaskReminders } from "@/features/tasks/services/notifications";
 export default function useTasksData(tasksVersion) {
   const [tasks, setTasks] = useState([]);
   const [categories, setCategories] = useState([]);

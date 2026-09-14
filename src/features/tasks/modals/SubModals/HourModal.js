@@ -1,10 +1,10 @@
 import { Modal, View, Text, TouchableOpacity, TouchableWithoutFeedback, Animated, StyleSheet } from "react-native";
 import createStyles from "@/styles/styles";
 import { themes } from "@/styles/themes";
-import TimeWheel from "../../components/time/TimeWheel";
-import useHourDraft from "../../hooks/useHourDraft";
-import useHourModalAnimation from "../../hooks/useHourModalAnimation";
-import { HOURS, MINUTES, CENTER_PADDING, ITEM_HEIGHT } from "../../domain/hourPickerModel";
+import TimeWheel from "@/features/tasks/components/time/TimeWheel";
+import useHourDraft from "@/features/tasks/hooks/useHourDraft";
+import useHourModalAnimation from "@/features/tasks/hooks/useHourModalAnimation";
+import { HOURS, MINUTES, CENTER_PADDING, ITEM_HEIGHT } from "@/features/tasks/domain/hourPickerModel";
 
 export default function HourModal(props) {
   if (!props.visible) return null;

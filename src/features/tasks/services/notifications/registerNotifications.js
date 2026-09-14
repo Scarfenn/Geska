@@ -1,7 +1,7 @@
 import * as Notifications from "expo-notifications";
 import * as TaskManager from "expo-task-manager";
-import { registerNotificationHandler } from "./notificationClient";
-import { handleNotificationResponse, NOTIFICATION_ACTION_TASK } from "../notificationResponseHandler";
+import { registerNotificationHandler } from "@/features/tasks/services/notifications/notificationClient";
+import { handleNotificationResponse, NOTIFICATION_ACTION_TASK } from "@/features/tasks/services/notificationResponseHandler";
 
 let registered = false;
 async function handleResponse(response) {
