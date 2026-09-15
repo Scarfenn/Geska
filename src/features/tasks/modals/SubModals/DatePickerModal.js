@@ -18,7 +18,8 @@ export default function DatePickerModal(props) {
   return props.visible ? <DatePickerSession {...props} /> : null;
 }
 
-function DatePickerSession({ visible, themeName, mode, value, initialDate, minDate, maxDate, title = "Seleccionar fecha", onSelect, onClose }) {
+function DatePickerSession({ visible, themeName, mode, value, initialDate, minDate, maxDate, title = "Seleccionar fecha", onSelect, onClose,
+  isDateHighlighted, highlightedDateHint = "Fecha destacada" }) {
   const styles = getDatePickerModalStyles(themeName, mode);
   const theme = themes[themeName][mode];
   const { height } = useWindowDimensions();
@@ -93,13 +94,14 @@ function DatePickerSession({ visible, themeName, mode, value, initialDate, minDa
                     const selected = isSameDay(date, value);
                     const isToday = isSameDay(date, today);
                     const disabled = !isDateSelectable(date, minDate, maxDate);
+                    const highlighted = !disabled && !!isDateHighlighted?.(date);
                     return (
                       <View key={formatDateLocal(date)} style={styles.pickerDayCell}>
                         <TouchableOpacity accessibilityRole="button"
                           accessibilityLabel={date.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-                          accessibilityHint={isToday ? "Hoy" : undefined}
+                          accessibilityHint={[isToday && "Hoy", highlighted && highlightedDateHint].filter(Boolean).join(". ") || undefined}
                           accessibilityState={{ selected, disabled }} disabled={disabled} onPress={() => select(date)}
-                          style={[styles.pickerDay, isToday && styles.pickerToday, selected && styles.pickerSelected, disabled && styles.pickerDisabled]}>
+                          style={[styles.pickerDay, highlighted && styles.pickerHighlighted, isToday && styles.pickerToday, selected && styles.pickerSelected, disabled && styles.pickerDisabled]}>
                           <Text style={[styles.pickerDayText, selected && styles.pickerSelectedText]}>{date.getDate()}</Text>
                         </TouchableOpacity>
                       </View>

@@ -69,3 +69,35 @@ test('the schedule hook exposes a validation error when changing task date inval
   hook.setDraftEndDate(null);
   assert.equal(useScheduleDraft(props).repeatEndError, null);
 });
+
+test('occurrence preview follows the draft and omits daily interval one and the initial date', () => {
+  const { isRepeatPreviewDate } = loadDatabase(null, { entry: '../../src/features/tasks/domain/repeatEnd.js' });
+  const daily = { date: new Date(2026, 11, 15), repeatMode: 'daily', repeatInterval: 1, repeatDays: [] };
+  assert.equal(isRepeatPreviewDate(new Date(2026, 11, 16), daily), false);
+  assert.equal(isRepeatPreviewDate(new Date(2026, 11, 15), { ...daily, repeatInterval: 3 }), false);
+  assert.equal(isRepeatPreviewDate(new Date(2026, 11, 18), { ...daily, repeatInterval: 3 }), true);
+  assert.equal(isRepeatPreviewDate(new Date(2026, 11, 19), { ...daily, repeatInterval: 3 }), false);
+  assert.equal(isRepeatPreviewDate(new Date(2026, 8, 11), weekly), true);
+  assert.equal(isRepeatPreviewDate(new Date(2026, 8, 12), weekly), false);
+  const monthly = { ...daily, repeatMode: 'monthly', repeatDays: ['15'] };
+  assert.equal(isRepeatPreviewDate(new Date(2027, 0, 15), monthly), true);
+  assert.equal(isRepeatPreviewDate(new Date(2027, 0, 16), monthly), false);
+  assert.equal(isRepeatPreviewDate(new Date(2027, 0, 15), { ...monthly, repeatInterval: 2 }), false);
+  assert.equal(isRepeatPreviewDate(new Date(2027, 1, 15), { ...monthly, repeatInterval: 2 }), true);
+});
+
+test('all-days weekly and monthly schedules omit decoration only when equivalent to daily', () => {
+  const { isRepeatPreviewDate } = loadDatabase(null, { entry: '../../src/features/tasks/domain/repeatEnd.js' });
+  const date = new Date(2026, 11, 15);
+  const candidate = new Date(2026, 11, 16);
+  for (const [repeatMode, repeatDays] of [
+    ['weekly', ['L', 'M', 'X', 'J', 'V', 'S', 'D']],
+    ['monthly', Array.from({ length: 31 }, (_, i) => i + 1)],
+  ]) {
+    const draft = { date, repeatMode, repeatDays, repeatInterval: 1 };
+    assert.equal(isRepeatPreviewDate(candidate, draft), false);
+    assert.equal(isRepeatPreviewDate(candidate, { ...draft, repeatDays: repeatDays.join(',') }), false);
+    assert.equal(isRepeatPreviewDate(candidate, { ...draft, repeatDays: repeatDays.slice(0, -1) }), true);
+    assert.equal(isRepeatPreviewDate(candidate, { ...draft, repeatInterval: 2 }), true);
+  }
+});

@@ -1,4 +1,4 @@
-import { getFirstOccurrence } from "@/features/tasks/domain/recurrence";
+import { getFirstOccurrence, occursOnDate } from "@/features/tasks/domain/recurrence";
 import { formatDateLocal, getMinimumTaskDate } from "@/features/tasks/domain/taskDates";
 
 // The same draft shape is used by both scheduling modals. Persisted drafts are
@@ -30,4 +30,19 @@ export function canSelectRepeatEndDate(value, draft, today = new Date()) {
   const { minimum } = getRepeatEndState(draft, today);
   return minimum != null && value instanceof Date && Number.isFinite(value.getTime())
     && getMinimumTaskDate(value) >= minimum;
+}
+
+export function isRepeatPreviewDate(value, { date, repeatMode, repeatDays, repeatInterval }) {
+  if (!repeatMode || repeatMode === "none" || (repeatMode === "daily" && repeatInterval === 1)) return false;
+  if (!Number.isSafeInteger(repeatInterval) || repeatInterval < 1) return false;
+  if (repeatInterval === 1) {
+    const selected = new Set((Array.isArray(repeatDays) ? repeatDays : String(repeatDays ?? "").split(","))
+      .map(day => String(day).trim()));
+    if (repeatMode === "weekly" && ["L", "M", "X", "J", "V", "S", "D"].every(day => selected.has(day))) return false;
+    if (repeatMode === "monthly" && Array.from({ length: 31 }, (_, index) => String(index + 1)).every(day => selected.has(day))) return false;
+  }
+  if (!(value instanceof Date) || !(date instanceof Date)
+    || !(getMinimumTaskDate(value) > getMinimumTaskDate(date))) return false;
+  return occursOnDate({ date: formatDateLocal(date), repeat_mode: repeatMode,
+    repeat_days: repeatDays, repeat_interval: repeatInterval }, value);
 }

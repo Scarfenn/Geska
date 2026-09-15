@@ -221,3 +221,17 @@ test('returning to the current year clamps the browsing month before returning t
   assert.ok(app.button('Elegir mes y año').children[0].children.includes('Septiembre 2026'));
   assert.equal(app.button('Mes anterior').props.disabled, true);
 });
+
+test('optional decorative borders do not change selection, limits, or selected-day styling', () => {
+  const app = picker({ minDate: new Date(2026, 8, 10), isDateHighlighted: date => [9, 15, 18].includes(date.getDate()), highlightedDateHint: 'Próxima ocurrencia de la tarea' });
+  const style = day => Object.assign({}, ...app.day(day).props.style.filter(Boolean));
+  assert.equal(style(18).borderStyle, 'dashed');
+  assert.equal(app.day(18).props.accessibilityHint, 'Próxima ocurrencia de la tarea');
+  assert.equal(style(15).borderStyle, 'solid', 'selected style takes precedence');
+  assert.equal(app.day(9).props.accessibilityHint, undefined, 'disabled dates are not decorated');
+  assert.equal(style(16).borderStyle, undefined);
+  app.day(16).props.onPress();
+  assert.equal(app.selected[0].getDate(), 16, 'non-occurrence dates remain valid end dates');
+  const plain = picker();
+  assert.equal(Object.assign({}, ...plain.day(18).props.style.filter(Boolean)).borderStyle, undefined);
+});

@@ -9,7 +9,7 @@ import Reanimated, { LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import getRepeatModalStyles from "@/features/tasks/styles/repeatModalStyles";
 import DatePickerModal from "@/features/tasks/modals/SubModals/DatePickerModal";
-import { getRepeatEndState, canSelectRepeatEndDate } from "@/features/tasks/domain/repeatEnd";
+import { getRepeatEndState, canSelectRepeatEndDate, isRepeatPreviewDate } from "@/features/tasks/domain/repeatEnd";
 import {
   WEEK_DAYS, WEEK_DAY_NAMES, MONTH_DAYS, editorDays, toggleRepeatDay,
   parseInterval, repeatSummary,
@@ -228,6 +228,8 @@ export default function RepeatModal({
         value={localEndDate}
         initialDate={minimumEndDate}
         minDate={minimumEndDate}
+        isDateHighlighted={(date) => isRepeatPreviewDate(date, repeatDraft)}
+        highlightedDateHint="Próxima ocurrencia de la tarea"
         onSelect={selectEndDate}
         onClose={() => setEndDatePickerOpen(false)}
       />

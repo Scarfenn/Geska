@@ -378,3 +378,14 @@ test('December 15 monthly task cannot end before its first repetition on January
   app.press('Aplicar');
   assert.equal(app.saved.endDate.toDateString(), firstRepeat.toDateString());
 });
+
+test('repeat end calendar decorations update with the local interval draft', () => {
+  const start = futureTaskDate();
+  const next = new Date(start); next.setDate(next.getDate() + 3);
+  const app = modal('android', { selectedDate: start, repeatMode: 'daily', repeatInterval: 1 });
+  assert.equal(app.picker().isDateHighlighted(next), false);
+  app.type('3');
+  assert.equal(app.picker().isDateHighlighted(next), true);
+  app.type('2');
+  assert.equal(app.picker().isDateHighlighted(next), false);
+});
