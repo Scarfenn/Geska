@@ -1,3 +1,4 @@
+import * as SplashScreen from "expo-splash-screen";
 import useAndroidNavigationBar from "@/hooks/useAndroidNavigationBar";
 import useThemePreferences from "@/hooks/useThemePreferences";
 import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
@@ -10,6 +11,9 @@ import CalendarScreen from "@/features/calendar/CalendarScreen";
 import CustomDrawer from "@/components/CustomDrawer";
 
 import { Ionicons } from "@expo/vector-icons";
+
+// Keep the native splash visible until the saved theme has loaded.
+SplashScreen.preventAutoHideAsync().catch(console.warn);
 
 const Drawer = createDrawerNavigator();
 
@@ -34,7 +38,10 @@ export default function App() {
   if (!isThemeLoaded) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: currentTheme.background }}>
+    <GestureHandlerRootView
+      style={{ flex: 1, backgroundColor: currentTheme.background }}
+      onLayout={() => SplashScreen.hideAsync().catch(console.warn)}
+    >
     <SafeAreaProvider>
       <NavigationContainer theme={navigationTheme}>
         <Drawer.Navigator
