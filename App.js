@@ -1,5 +1,6 @@
+import useAndroidNavigationBar from "@/hooks/useAndroidNavigationBar";
 import useThemePreferences from "@/hooks/useThemePreferences";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -15,12 +16,27 @@ const Drawer = createDrawerNavigator();
 export default function App() {
   const { themeName, mode, setThemeName, setMode, isThemeLoaded, currentTheme } = useThemePreferences();
 
+  useAndroidNavigationBar(mode, isThemeLoaded);
+
+  const baseTheme = mode === "dark" ? DarkTheme : DefaultTheme;
+  const navigationTheme = {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      background: currentTheme.background,
+      card: currentTheme.card,
+      text: currentTheme.text,
+      border: currentTheme.border,
+      primary: currentTheme.primary,
+    },
+  };
+
   if (!isThemeLoaded) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: currentTheme.background }}>
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer theme={navigationTheme}>
         <Drawer.Navigator
             drawerContent={(props) => (
             <CustomDrawer
