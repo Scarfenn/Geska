@@ -1,3 +1,4 @@
+import useAndroidAppTheme from "@/hooks/useAndroidAppTheme";
 import * as SplashScreen from "expo-splash-screen";
 import useAndroidNavigationBar from "@/hooks/useAndroidNavigationBar";
 import useThemePreferences from "@/hooks/useThemePreferences";
@@ -20,6 +21,7 @@ const Drawer = createDrawerNavigator();
 export default function App() {
   const { themeName, mode, setThemeName, setMode, isThemeLoaded, currentTheme } = useThemePreferences();
 
+  useAndroidAppTheme(mode, isThemeLoaded);
   useAndroidNavigationBar(mode, isThemeLoaded);
 
   const baseTheme = mode === "dark" ? DarkTheme : DefaultTheme;
