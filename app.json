@@ -2,7 +2,7 @@
   "expo": {
     "name": "Geska",
     "slug": "geska",
-    "version": "0.9.2.1",
+    "version": "0.9.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -38,7 +38,7 @@
         {
           "backgroundColor": "#F2F7FA",
           "image": "./assets/adaptive-icon.png",
-          "imageWidth": 240,
+          "imageWidth": 280,
           "resizeMode": "contain",
           "dark": {
             "backgroundColor": "#101C24",
