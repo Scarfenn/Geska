@@ -69,3 +69,12 @@ test('monthly December 15 draft requires an end on or after January 15 at save t
   value.schedule.endDate = new Date(2027, 0, 15);
   assert.equal(prepareTaskDraft(value).fields.repeat_end, '2027-01-15');
 });
+
+test('saving cannot bypass reminder compatibility after changing repetition', () => {
+  const value = draft();
+  value.schedule.selectedTime = null;
+  value.schedule.reminder = { type: 'after', at: new Date(2026, 8, 9, 11).getTime() };
+  assert.throws(() => prepareTaskDraft(value), e => e.code === 'INVALID_TASK_DRAFT');
+  value.schedule.repeatMode = 'none';
+  assert.equal(prepareTaskDraft(value).fields.reminder_type, 'after');
+});

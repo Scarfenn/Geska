@@ -1,3 +1,4 @@
+import { isReminderCompatible } from "@/features/tasks/domain/reminderCompatibility";
 import { formatDateLocal, formatTime } from "@/features/tasks/domain/taskDates";
 import { parseLocalDate } from "@/features/tasks/domain/recurrence";
 import { getRepeatEndState } from "@/features/tasks/domain/repeatEnd";
@@ -68,6 +69,9 @@ export function prepareTaskDraft({ text, categoryId, subtasks = [], schedule } =
   if (mode === "monthly" && days.some(day => !/^([1-9]|[12][0-9]|3[01])$/.test(day))) invalid("Día mensual inválido");
   if (categoryId != null && typeof categoryId !== "string") invalid("Categoría inválida");
   validateReminder(schedule.reminder, schedule.selectedTime);
+  if (!isReminderCompatible(schedule.reminder, { repeatMode: mode, time: schedule.selectedTime })) {
+    invalid("El recordatorio no es compatible con esta programación. Selecciona otro.");
+  }
   if (schedule.selectedTime != null) dateValue(schedule.selectedTime);
   const date = dateValue(schedule.selectedDate);
   const endDate = dateValue(schedule.endDate, true);

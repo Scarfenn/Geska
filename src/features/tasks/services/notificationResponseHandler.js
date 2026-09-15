@@ -14,26 +14,12 @@ async function dismissResponseNotification(response) {
   const responseId =
     response?.notification?.request?.identifier;
 
-  const taskId =
-    response?.notification?.request?.content?.data?.taskId;
-
   const presented =
     await Notifications.getPresentedNotificationsAsync();
 
-  const notification = presented.find((item) => {
-    if (
-      responseId &&
-      item.request.identifier === responseId
-    ) {
-      return true;
-    }
-
-    return (
-      taskId &&
-      String(item.request.content.data?.taskId) ===
-        String(taskId)
-    );
-  });
+  const notification = responseId
+    ? presented.find(item => item.request.identifier === responseId)
+    : null;
 
   if (!notification) return;
 
@@ -65,9 +51,7 @@ export async function handleNotificationResponse(response) {
     data.occurrenceDate ?? null
   );
 
-  if (completed) {
-    await dismissResponseNotification(response);
-  }
+  await dismissResponseNotification(response);
 
   return completed;
 }

@@ -39,7 +39,7 @@ function repeatSettings(task) {
 /**
  * Intervals start at task.date. Weeks start on Monday; monthly intervals
  * count calendar months. Missing month days are skipped, never clamped.
- * repeat_end is reserved for a future feature and is not applied yet.
+ * A valid repeat_end is an inclusive local calendar bound for repetitions.
  */
 export function occursOnDate(task, value) {
   const anchor = parseLocalDate(task?.date);
@@ -53,6 +53,9 @@ export function occursOnDate(task, value) {
 
   const mode = task.repeat_mode || "none";
   if (mode === "none") return distance === 0;
+
+  const end = parseLocalDate(task.repeat_end);
+  if (end && calendarDay(target) > calendarDay(end)) return false;
 
   const { interval, days } = repeatSettings(task);
 
@@ -77,19 +80,36 @@ export function occursOnDate(task, value) {
 }
 
 
-// The Gregorian pattern repeats every 4,800 months. Stepping only through
-// eligible periods avoids day-by-day searches, even for very large intervals.
+// Editing the end searches the frequency independently of the saved bound.
 export function getFirstOccurrence(task, { afterStart = false } = {}) {
+  const from = parseLocalDate(task?.date);
+  if (!from) return null;
+  if (afterStart) {
+    from.setHours(12);
+    from.setDate(from.getDate() + 1);
+    from.setHours(0, 0, 0, 0);
+  }
+  return getNextOccurrence({ ...task, repeat_end: null }, from);
+}
+
+// Inclusive calendar search. Jump to eligible periods instead of scanning days.
+// Monthly impossibility is bounded by the 4,800-month Gregorian cycle.
+export function getNextOccurrence(task, from) {
   const anchor = parseLocalDate(task?.date);
-  if (!anchor) return null;
-  const accepts = date => (!afterStart || calendarDay(date) > calendarDay(anchor)) && occursOnDate(task, date);
-  if (!afterStart && occursOnDate(task, anchor)) return anchor;
+  const lower = typeof from === "string" ? parseLocalDate(from)
+    : from instanceof Date ? from : null;
+  if (!anchor || !lower || !Number.isFinite(lower.getTime()) || lower.getFullYear() > 9999) return null;
+  const minimum = Math.max(calendarDay(anchor), calendarDay(lower));
+  const end = parseLocalDate(task.repeat_end);
+  if ((task.repeat_mode || "none") !== "none" && end && minimum > calendarDay(end)) return null;
+  const accepts = date => calendarDay(date) >= minimum && occursOnDate(task, date);
+  if (accepts(anchor)) return anchor;
   const { interval, days } = repeatSettings(task);
   const mode = task.repeat_mode || "none";
   if (mode === "daily") {
     const candidate = new Date(anchor);
     candidate.setHours(12, 0, 0, 0);
-    candidate.setDate(anchor.getDate() + interval);
+    candidate.setDate(anchor.getDate() + Math.ceil((minimum - calendarDay(anchor)) / interval) * interval);
     candidate.setHours(0, 0, 0, 0);
     return Number.isFinite(candidate.getTime()) && candidate.getFullYear() <= 9999 && accepts(candidate) ? candidate : null;
   }
@@ -98,7 +118,11 @@ export function getFirstOccurrence(task, { afterStart = false } = {}) {
       .map(day => WEEK_DAYS.indexOf(day)).filter(day => day >= 0)
       .map(day => (day + 6) % 7))].sort((a, b) => a - b);
     const anchorOffset = (anchor.getDay() + 6) % 7;
-    for (const week of [0, interval]) {
+    const lowerMonday = minimum - ((lower < anchor ? anchor : lower).getDay() + 6) % 7;
+    const anchorMonday = calendarDay(anchor) - anchorOffset;
+    const firstPeriod = Math.floor((lowerMonday - anchorMonday) / (7 * interval));
+    for (const period of [firstPeriod, firstPeriod + 1]) {
+      const week = period * interval;
       for (const offset of offsets) {
         const candidate = new Date(anchor);
         candidate.setHours(12, 0, 0, 0);
@@ -119,9 +143,12 @@ export function getFirstOccurrence(task, { afterStart = false } = {}) {
     const anchorMonth = anchor.getFullYear() * 12 + anchor.getMonth();
     // Include the repeated phase: its selected day may precede the anchor only
     // in the initial (partial) month, but be valid in the next full cycle.
-    for (let period = 0; period <= cycle; period++) {
+    const lowerMonth = lower.getFullYear() * 12 + lower.getMonth();
+    const firstPeriod = Math.max(0, Math.floor((lowerMonth - anchorMonth) / interval));
+    for (let period = firstPeriod; period <= firstPeriod + cycle; period++) {
       const index = anchorMonth + period * interval;
       if (!Number.isSafeInteger(index) || index > 9999 * 12 + 11) return null;
+      if (end && index > end.getFullYear() * 12 + end.getMonth()) return null;
       const year = Math.floor(index / 12), month = index % 12;
       for (const day of selected) {
         const candidate = new Date(anchor);

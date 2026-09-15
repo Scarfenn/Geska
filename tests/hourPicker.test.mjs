@@ -1,18 +1,17 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-const source = await readFile(new URL('../src/features/tasks/domain/hourPickerModel.js', import.meta.url), 'utf8');
-const { HOURS, MINUTES, ITEM_HEIGHT, LOOP_COUNT, readHourDraft, buildSelectedTime, getIndexFromOffset, getMiddleIndex, getSettledIndex } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+import { loadDatabase } from './helpers/databaseHarness.mjs';
+const { HOURS, MINUTES, ITEM_HEIGHT, LOOP_COUNT, readHourDraft, buildSelectedTime, getIndexFromOffset, getMiddleIndex, getSettledIndex } = loadDatabase(null, { entry: '../../src/features/tasks/domain/hourPickerModel.js' });
 
 test('every hour round trips through AM/PM without mutating the selected date', () => {
   for (let hour = 0; hour < 24; hour++) {
     const date = new Date(2026, 8, 10, hour, 37, 25, 42);
     const original = date.getTime();
     const draft = readHourDraft(date);
-    const result = buildSelectedTime(draft, date);
+    const result = buildSelectedTime(draft);
     assert.equal(result.getHours(), hour);
     assert.equal(result.getMinutes(), 37);
-    assert.equal(result.getDate(), 10);
     assert.equal(result.getSeconds(), 0);
     assert.equal(result.getMilliseconds(), 0);
     assert.equal(date.getTime(), original);
@@ -23,7 +22,7 @@ test('every hour round trips through AM/PM without mutating the selected date', 
 
 test('unset or invalid selection starts at noon and invalid drafts are rejected', () => {
   for (const date of [null, undefined, new Date(NaN)]) {
-    assert.deepEqual(readHourDraft(date), { hour: '12', minute: '00', period: 'PM' });
+    assert.deepEqual({ ...readHourDraft(date) }, { hour: '12', minute: '00', period: 'PM' });
   }
   for (const draft of [
     { hour: '0', minute: '00', period: 'AM' },

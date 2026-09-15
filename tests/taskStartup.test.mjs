@@ -16,6 +16,7 @@ function mount(overrides = {}) {
     initDB: async () => {}, getAllTasks: async () => [task],
     getAllCategories: async () => [{ id: 'work', name: 'Trabajo' }],
     syncTaskReminders: async () => {}, updateTaskNotificationIds: async () => {},
+    AppState: { currentState: "active", addEventListener: () => ({ remove() {} }) },
     DeviceEventEmitter: { addListener: () => ({ remove() {} }) },
     console: { error() {} }, ...overrides,
   };
@@ -71,4 +72,22 @@ test('an older read cannot overwrite a newer result or update after unmount', as
   const last = deferred(); pending = last; const lastRead = callbacks.loadTasks(); await tick(); cleanup();
   last.resolve([]); await lastRead; assert.equal(state[0][0].id, 'new');
   sync.resolve(); await tick();
+});
+
+test('foreground resume refreshes reminders from storage and coalesces simultaneous resumes', async () => {
+  let onChange, calls = 0, removed = false, pending = null;
+  const { cleanup } = mount({
+    AppState: { currentState: 'active', addEventListener: (_, fn) => { onChange = fn; return { remove() { removed = true; } }; } },
+    syncTaskReminders: async read => { assert.equal(typeof read, 'function'); await read(); calls++; if (pending) await pending.promise; },
+  });
+  await tick(); assert.equal(calls, 1);
+  onChange('active'); await tick(); assert.equal(calls, 1);
+  pending = deferred();
+  onChange('background'); onChange('active'); await tick();
+  assert.equal(calls, 2);
+  onChange('inactive'); onChange('active'); await tick(); assert.equal(calls, 2);
+  pending.resolve(); await tick(); pending = null;
+  onChange('background'); onChange('active'); await tick(); assert.equal(calls, 3);
+  cleanup(); assert.equal(removed, true);
+  onChange('background'); onChange('active'); await tick(); assert.equal(calls, 3);
 });

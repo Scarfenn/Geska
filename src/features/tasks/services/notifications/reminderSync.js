@@ -112,8 +112,11 @@ export async function rescheduleTaskReminders(task, persistTask) {
 }
 
 export function syncTaskReminders(tasks, persistTask, { now } = {}) {
-  if (!Array.isArray(tasks)) return Promise.resolve();
+  if (!Array.isArray(tasks) && typeof tasks !== "function") return Promise.resolve();
   return enqueue(async () => {
+    // Read after entering the queue so earlier edits/deletions cannot be undone
+    // by a snapshot captured while another reconciliation was pending.
+    if (typeof tasks === "function") tasks = await tasks();
     const getNow = () => now || new Date();
     const permission = permissionCheck();
     const inventory = await getScheduledTaskReminders();

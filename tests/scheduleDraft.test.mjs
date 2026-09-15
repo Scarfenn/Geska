@@ -5,7 +5,8 @@ const load = async name => {
   const source = await readFile(new URL(`../src/features/tasks/domain/${name}.js`, import.meta.url), 'utf8');
   return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 };
-const { createScheduleDraft, scheduleDraftReducer: reduce } = await load('scheduleDraft');
+const { loadDatabase } = await import('./helpers/databaseHarness.mjs');
+const { createScheduleDraft, scheduleDraftReducer: reduce } = loadDatabase(null, { entry: '../../src/features/tasks/domain/scheduleDraft.js' });
 const { formatRepeatLabel, formatHumanDate, formatHumanTime } = await load('scheduleLabels');
 
 test('draft owns its dates and collections; reopening discards cancelled edits', () => {
@@ -25,11 +26,11 @@ test('date clears reminder; time only clears it when entering or leaving all-day
   const reminder = { type: 'relative', value: 5 };
   const draft = createScheduleDraft({ selectedTime: new Date(2026, 8, 13, 12), reminder });
   assert.equal(reduce(draft, { field: 'date', value: new Date(2026, 8, 14) }).reminder, null);
-  assert.deepEqual(reduce(draft, { field: 'time', value: new Date(2026, 8, 13, 13) }).reminder, reminder);
+  assert.equal(JSON.stringify(reduce(draft, { field: 'time', value: new Date(2026, 8, 13, 13) }).reminder), JSON.stringify(reminder));
   assert.equal(reduce(draft, { field: 'time', value: null }).reminder, null);
   const allDay = createScheduleDraft({ reminder });
   assert.equal(reduce(allDay, { field: 'time', value: new Date() }).reminder, null);
-  assert.deepEqual(draft.reminder, reminder);
+  assert.equal(JSON.stringify(draft.reminder), JSON.stringify(reminder));
 });
 
 test('repetition setters compose without dropping previous updates', () => {
@@ -56,4 +57,16 @@ test('date and time labels preserve defaults and accept a deterministic today', 
   assert.equal(formatHumanDate(new Date(2026, 8, 14), now), 'Mañana');
   assert.equal(formatHumanTime(null), 'En cualquier momento');
   assert.equal(formatHumanTime(new Date(2026, 8, 13, 0, 5)), '00:05');
+});
+
+test('repetition changes discard incompatible after reminders with a notice and retain compatible reminders', () => {
+  const after = createScheduleDraft({ reminder: { type: 'after', at: Date.now() + 3600000 } });
+  const weekly = reduce(after, { field: 'repeatMode', value: 'weekly' });
+  assert.equal(weekly.reminder, null);
+  assert.match(weekly.reminderNotice, /no es compatible/);
+  const selected = reduce(weekly, { field: 'reminder', value: { type: 'persistent' } });
+  assert.equal(selected.reminderNotice, null);
+  assert.equal(reduce(selected, { field: 'repeatMode', value: 'monthly' }).reminder.type, 'persistent');
+  const timed = createScheduleDraft({ selectedTime: new Date(), reminder: { type: 'relative', value: 5, unit: 'minutes' } });
+  assert.equal(reduce(timed, { field: 'repeatMode', value: 'daily' }).reminder.type, 'relative');
 });

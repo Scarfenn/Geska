@@ -280,6 +280,9 @@ function TimeModalSession(props) {
                   </Text>
                 </TouchableOpacity>
 
+                {draft.reminderNotice && <Text accessibilityLiveRegion="polite" style={{ color: theme.text }}>
+                  {draft.reminderNotice}
+                </Text>}
                 {/* RECORDATORIO */}
                 <TouchableOpacity
                   style={styles.optionRow}

@@ -19,7 +19,6 @@ export default function useHourDraft(selectedTime) {
     canApply: () => moving.current.size === 0,
     buildTime: () => buildSelectedTime(
       { hour: hourRef.current, minute: minuteRef.current, period },
-      selectedTime instanceof Date && Number.isFinite(selectedTime.getTime()) ? selectedTime : new Date(),
     ),
   };
 }

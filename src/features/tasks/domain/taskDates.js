@@ -20,10 +20,20 @@ export const formatTime = timeObj => {
   const m = timeObj.getMinutes().toString().padStart(2, "0");
   return `${h}:${m}`;
 };
+// A time picker needs a Date container, but its day is not the task's day.
+// Keep it independent of today's DST transition; combine with the actual
+// occurrence only when planning the reminder.
+export function createTimeValue(hour, minute) {
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23 ||
+      !Number.isInteger(minute) || minute < 0 || minute > 59) {
+    throw new Error("Hora inválida");
+  }
+  return new Date(2000, 0, 15, hour, minute, 0, 0);
+}
+
 export function parseTimeString(timeStr) {
-  if (!timeStr) return null;
+  if (typeof timeStr !== "string" || !/^\d{1,2}:\d{2}$/.test(timeStr)) return null;
   const [h, m] = timeStr.split(":").map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d;
+  if (h > 23 || m > 59) return null;
+  return createTimeValue(h, m);
 }

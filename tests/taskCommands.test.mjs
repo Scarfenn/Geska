@@ -144,8 +144,31 @@ test('notification adapter uses idempotent completion and emits updates after sa
     entry: '../../src/features/tasks/services/taskCompletion.js',
     stubs: { '@/features/tasks/services/taskCommands': h.commands, 'react-native': { DeviceEventEmitter: { emit: name => events.push(name) } } },
   });
-  assert.equal(await adapter.completeTask(task.id), true);
-  assert.equal(await adapter.completeTask(task.id), true);
+  assert.equal(await adapter.completeTask(task.id, task.date), true);
+  assert.equal(await adapter.completeTask(task.id, task.date), true);
   assert.equal((await h.api.getAllTasks())[0].done, true); assert.equal(events.length, 2);
-  assert.equal(await adapter.completeTask('missing'), false);
+  assert.equal(await adapter.completeTask(task.id), false);
+  assert.equal(await adapter.completeTask(task.id, '2026-09-10'), false);
+  assert.equal(await adapter.completeTask('missing', task.date), false);
+});
+
+test('old notification dates cannot complete a moved task or excluded recurrence', async t => {
+  const h = setup(t), value = draft(); value.subtasks = []; value.schedule.repeatMode = 'daily';
+  const { task } = await h.commands.createTask(value);
+  const cases = [
+    { selectedDate: new Date(2026, 8, 20), repeatMode: 'none' },
+    { selectedDate: new Date(2026, 8, 9), repeatMode: 'weekly', repeatDays: ['V'] },
+    { selectedDate: new Date(2026, 8, 8), repeatMode: 'daily', repeatInterval: 2 },
+    { selectedDate: new Date(2026, 8, 1), repeatMode: 'daily', endDate: new Date(2026, 8, 5) },
+  ];
+  for (const changes of cases) {
+    await h.commands.editTask(task.id, { ...value, schedule: { ...value.schedule, ...changes } });
+    await assert.rejects(h.commands.setTaskDone(task.id, true, '2026-09-09'), e => e.code === 'STALE_OCCURRENCE');
+    const [stored] = await h.api.getAllTasks();
+    assert.equal(stored.done, false);
+    assert.equal(stored.occurrences.length, 0);
+  }
+  await h.commands.editTask(task.id, value);
+  assert.equal((await h.commands.setTaskDone(task.id, true, '2026-09-09')).changed, true);
+  assert.equal((await h.commands.setTaskDone(task.id, true, '2026-09-09')).changed, false);
 });

@@ -1,3 +1,4 @@
+import { occursOnDate } from "@/features/tasks/domain/recurrence";
 import { withDatabase } from "@/storage/sqlite/initialize";
 import { insertTaskRow, updateTaskRow, deleteTaskRows, readTask } from "@/storage/sqlite/repositories/taskRows";
 
@@ -76,6 +77,7 @@ export function changeTaskCompletion(id, { done, date = null, subtaskId = null }
     const task = await requireTask(db, id);
     const repeating = task.repeat_mode !== "none";
     if (repeating && !date) failure("OCCURRENCE_REQUIRED", "Falta la fecha de la ocurrencia");
+    if (date && !occursOnDate(task, date)) failure("STALE_OCCURRENCE", "La notificación ya no corresponde a esta programación");
     const target = subtaskId == null ? task : task.subtasks.find(s => String(s.id) === String(subtaskId));
     if (!target) failure("SUBTASK_CONFLICT", "La subtarea ya no existe");
     const currentDone = repeating ? !!target.occurrences.find(o => o.date === date)?.done : !!target.done;

@@ -101,3 +101,11 @@ test('all-days weekly and monthly schedules omit decoration only when equivalent
     assert.equal(isRepeatPreviewDate(candidate, { ...draft, repeatInterval: 2 }), true);
   }
 });
+
+test('editing an existing end still validates and decorates later repetitions', () => {
+  const { isRepeatPreviewDate } = loadDatabase(null, { entry: '../../src/features/tasks/domain/repeatEnd.js' });
+  const draft = { ...weekly, endDate: new Date(2026, 8, 11) };
+  assert.equal(formatDateLocal(getRepeatEndState(draft, today).firstOccurrence), '2026-09-11');
+  assert.equal(canSelectRepeatEndDate(new Date(2026, 8, 18), draft, today), true);
+  assert.equal(isRepeatPreviewDate(new Date(2026, 8, 18), draft), true);
+});

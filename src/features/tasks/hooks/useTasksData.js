@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DeviceEventEmitter } from "react-native";
+import { AppState, DeviceEventEmitter } from "react-native";
 import { initDB, getAllTasks, getAllCategories, updateTaskNotificationIds } from "@/storage/database";
 import { syncTaskReminders } from "@/features/tasks/services/notifications";
 export default function useTasksData(tasksVersion) {
@@ -9,6 +9,7 @@ export default function useTasksData(tasksVersion) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const loadRequest = useRef(0);
+  const synchronization = useRef(null);
   const mounted = useRef(false);
   const hasLoadedTasks = useRef(false);
   const previousTasksVersion = useRef(tasksVersion);
@@ -37,27 +38,40 @@ export default function useTasksData(tasksVersion) {
       return null;
     }
   }, []);
-  const setup = useCallback(async () => {
-    setIsLoading(true);
-    // Publish the view before notifications: permissions or scheduling failures
-    // must never hide tasks or prevent category initialization.
-    const loadedTasks = await loadTasks();
-    if (!loadedTasks || !mounted.current) return;
-    try {
-      await syncTaskReminders(loadedTasks, updateTaskNotificationIds);
-      if (mounted.current) await loadTasks();
-    } catch (error) {
-      console.error("No se pudieron sincronizar los recordatorios", error);
-    }
+  const setup = useCallback(() => {
+    if (synchronization.current) return synchronization.current;
+    const operation = (async () => {
+      if (!hasLoadedTasks.current) setIsLoading(true);
+      // Publish the view before notifications: permissions or scheduling failures
+      // must never hide tasks or prevent category initialization.
+      const loadedTasks = await loadTasks();
+      if (!loadedTasks || !mounted.current) return;
+      try {
+        await syncTaskReminders(getAllTasks, updateTaskNotificationIds);
+        if (mounted.current) await loadTasks();
+      } catch (error) {
+        console.error("No se pudieron sincronizar los recordatorios", error);
+      }
+    })();
+    synchronization.current = operation;
+    operation.finally(() => { if (synchronization.current === operation) synchronization.current = null; });
+    return operation;
   }, [loadTasks]);
   useEffect(() => {
     mounted.current = true;
     setup();
     const subscription = DeviceEventEmitter.addListener("tasks-updated", loadTasks);
+    let previousState = AppState.currentState;
+    const appStateSubscription = AppState.addEventListener("change", state => {
+      const resumed = state === "active" && previousState !== "active";
+      previousState = state;
+      if (resumed && mounted.current) setup();
+    });
     return () => {
       mounted.current = false;
       ++loadRequest.current;
       subscription.remove();
+      appStateSubscription.remove();
     };
   }, [loadTasks, setup]);
   useEffect(() => {

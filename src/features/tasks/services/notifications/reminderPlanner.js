@@ -1,10 +1,11 @@
-import { occursOnDate, parseLocalDate } from "@/features/tasks/domain/recurrence";
+import { isReminderCompatible } from "@/features/tasks/domain/reminderCompatibility";
+import { getNextOccurrence, parseLocalDate } from "@/features/tasks/domain/recurrence";
 import { formatDateLocal } from "@/features/tasks/domain/taskDates";
 import {
   MINUTE_MS, HOUR_MS, startOfDay, reminderFromTask,
   getAllDayReminderDate, getPersistentDatesForDay,
 } from "@/features/tasks/services/reminderModel";
-import { MAX_OCCURRENCE_SEARCH_DAYS, MAX_QUEUED_REMINDERS } from "@/features/tasks/services/notifications/constants";
+import { MAX_QUEUED_REMINDERS } from "@/features/tasks/services/notifications/constants";
 
 function parseTime(value) {
   if (typeof value !== "string" || !/^\d{1,2}:\d{2}$/.test(value)) return null;
@@ -20,10 +21,11 @@ export function reminderKey(taskId, reminderType, entry) {
 }
 
 // Pure planning: local calendar arithmetic for occurrences, elapsed time for
-// relative offsets. Search is bounded once per plan, not once per occurrence.
+// relative offsets. Jump between occurrences until the queue or schedule ends.
 export function planTaskReminders(task, { now = new Date(), limit = MAX_QUEUED_REMINDERS } = {}) {
   const anchor = parseLocalDate(task?.date);
   const reminder = reminderFromTask(task);
+  if (!isReminderCompatible(reminder, { repeatMode: task?.repeat_mode, time: task?.time })) return [];
   const count = Math.min(MAX_QUEUED_REMINDERS, Math.max(0, Math.floor(limit)));
   if (!task?.id || !task.title?.trim() || !anchor || !reminder ||
       !Number.isFinite(now.getTime()) || !count) return [];
@@ -43,15 +45,28 @@ export function planTaskReminders(task, { now = new Date(), limit = MAX_QUEUED_R
   const time = parseTime(task.time);
   if (reminder.type === "relative" && !time) return [];
 
-  const start = startOfDay(now);
-  if (anchor > start) start.setTime(anchor.getTime());
+  // Invert the advance notice to begin near the first still-future reminder.
+  // All-day offsets use calendar days; relative offsets use elapsed time.
+  let start = new Date(now);
+  if (reminder.type === "relative") {
+    start = new Date(now.getTime() + value * (reminder.unit === "hours" ? HOUR_MS : MINUTE_MS));
+  } else if (reminder.type === "all_day") {
+    start.setHours(12, 0, 0, 0);
+    start.setDate(start.getDate() + Math.ceil(value));
+  }
+  start = startOfDay(start);
   const result = [];
-  for (let offset = 0; offset < MAX_OCCURRENCE_SEARCH_DAYS && result.length < count; offset++) {
-    const occurrence = new Date(start);
-    occurrence.setDate(start.getDate() + offset);
-    if (!repeating && occurrence > anchor) break;
+  let occurrence = getNextOccurrence(task, start);
+  while (occurrence && result.length < count) {
     const occurrenceDate = formatDateLocal(occurrence);
-    if (!occursOnDate(task, occurrence) || completed.has(occurrenceDate)) continue;
+    const following = new Date(occurrence);
+    following.setHours(12, 0, 0, 0);
+    following.setDate(following.getDate() + 1);
+    following.setHours(0, 0, 0, 0);
+    if (completed.has(occurrenceDate)) {
+      occurrence = getNextOccurrence(task, following);
+      continue;
+    }
 
     if (reminder.type === "persistent") {
       for (const date of getPersistentDatesForDay(occurrence, now)) {
@@ -69,6 +84,7 @@ export function planTaskReminders(task, { now = new Date(), limit = MAX_QUEUED_R
       }
       if (date > now) result.push({ date, occurrenceDate });
     }
+    occurrence = getNextOccurrence(task, following);
   }
   return result;
 }

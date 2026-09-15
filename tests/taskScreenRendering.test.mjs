@@ -8,7 +8,7 @@ const babel = require('@babel/core');
 const root = new URL('../src/features/tasks/', import.meta.url);
 const modulePaths = [
   'TasksScreen.js', 'hooks/useTasksData.js', 'hooks/useTaskEditor.js', 'hooks/useTaskActions.js',
-  'domain/taskDates.js', 'domain/taskSelectors.js', 'domain/recurrence.js', 'domain/repeatEnd.js',
+  'domain/reminderCompatibility.js', 'domain/taskDates.js', 'domain/taskSelectors.js', 'domain/recurrence.js', 'domain/repeatEnd.js',
   'services/taskMutations.js', 'services/subtaskMutations.js', 'services/taskCommands.js', 'domain/taskDraft.js', 'services/reminderModel.js',
   'components/CategoryBar.js', 'components/TasksModals.js',
 ];
@@ -27,7 +27,7 @@ function loadModule(path, context, cache = new Map()) {
       : spec.startsWith('.') ? new URL(spec + '.js', 'file://' + path).pathname : '';
     if (modules.has(resolved)) return loadModule(resolved, context, cache);
     if (spec === 'react') return context;
-    if (spec === 'react-native') return { ...Object.fromEntries(['Text', 'View', 'TouchableOpacity', 'StatusBar', 'ActivityIndicator', 'ScrollView'].map(n => [n, n])), DeviceEventEmitter: context.DeviceEventEmitter, Alert: context.Alert };
+    if (spec === 'react-native') return { ...Object.fromEntries(['Text', 'View', 'TouchableOpacity', 'StatusBar', 'ActivityIndicator', 'ScrollView'].map(n => [n, n])), AppState: { currentState: "active", addEventListener: () => ({ remove() {} }) }, DeviceEventEmitter: context.DeviceEventEmitter, Alert: context.Alert };
     if (spec.includes('safe-area')) return { SafeAreaView: 'SafeAreaView' };
     if (spec.includes('vector-icons')) return { Ionicons: 'Ionicons' };
     if (spec.endsWith('/styles') || spec.endsWith('Styles')) return context.createStyles;

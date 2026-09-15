@@ -6,9 +6,9 @@ The background task is still defined synchronously at application startup.
 
 - `reminderPlanner.js`: pure `planTaskReminders(task, { now, limit })` returns
   `{ date, occurrenceDate, persistentHour? }` entries. Uses the shared recurrence
-  domain and reminder model. The maximum is 16 entries; calendar search is bounded
-  to 3,660 days from the later of today or the task anchor. `repeat_end` remains
-  reserved, matching the existing recurrence domain.
+  domain and reminder model. The maximum is 16 entries; the planner jumps to the next eligible occurrence
+  without a fixed day horizon, up to calendar year 9999. Occurrences respect
+  the inclusive local-calendar `repeat_end` bound in the shared recurrence domain.
 - `notificationClient.js`: Expo permissions, channels, content, scheduling and
   cancellation. Partial scheduling failures attempt to cancel created IDs and
   report `createdIds`, `pendingCancellationIds` and failure causes.
@@ -31,7 +31,7 @@ expired entries are not sent to Expo.
 `scheduleTaskReminders` still returns an ID array; on denial it preserves recorded
 IDs. `scheduleTaskReminder` returns the first ID or null. `rescheduleTaskReminders`
 returns the task with its IDs, and optionally accepts a persistence callback.
-`syncTaskReminders` accepts a complete task snapshot and returns per-task results;
+`syncTaskReminders` accepts a complete task snapshot or an async reader and returns per-task results;
 failures include successful results and individual causes. Do not pass a filtered
 list to full sync: requests for missing tasks are considered orphaned.
 
@@ -54,8 +54,13 @@ Existing requests are kept until replacements are created. Native queue limits c
 therefore reject a replacement batch; that error preserves prior requests instead
 of deleting all reminders first. The 16-entry limit is per task, not an OS-wide quota.
 Recurring queues are replenished on synchronization; this is not a new background
-scheduler. The application synchronizes at task-screen startup and after relevant
-mutations. A failed post-save reconciliation warns that the task itself was saved.
+scheduler. The application synchronizes at task-screen startup, on foreground resume and after relevant
+mutations. Foreground synchronization is coalesced and reads SQLite inside the
+notification queue. The queue is not guaranteed to refill while the app stays
+terminated: local notifications cannot reliably wake JavaScript to replenish it.
+Native repeating triggers are not interchangeable with these requests because
+request metadata identifies a specific occurrence and scheduling honors its
+completion and inclusive end date. A failed post-save reconciliation warns that the task itself was saved.
 
 Use `updateTaskNotificationIds` as the persistence callback so a delayed reminder
 sync cannot overwrite the task title or completion state. Importing the facade
@@ -69,3 +74,9 @@ migration, concurrency, and explicit registration with simulated native adapters
 Database tests cover partial ID updates against real SQLite. Native permission
 prompts, delivery, channel settings and background execution still need Android/iOS
 device validation.
+
+Reminder compatibility is shared by the editor, draft validation and planner.
+In particular, `after` requires a non-repeating task without a time. Legacy
+incompatible requests are removed by reconciliation. Notification completion
+requires an occurrence date that still matches the stored schedule; stale or
+undated actions do not modify tasks and only their exact notification is dismissed.

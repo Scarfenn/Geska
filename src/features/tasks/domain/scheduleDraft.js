@@ -1,3 +1,4 @@
+import { isReminderCompatible } from "@/features/tasks/domain/reminderCompatibility";
 const cloneDate = (value) => value ? new Date(value) : null;
 
 export function createScheduleDraft(props) {
@@ -19,5 +20,11 @@ export function scheduleDraftReducer(state, { field, value }) {
     ...state, time: cloneDate(next),
     reminder: Boolean(state.time) === Boolean(next) ? state.reminder : null,
   };
-  return { ...state, [field]: next };
+  const updated = { ...state, [field]: next };
+  if (!isReminderCompatible(updated.reminder, updated)) {
+    return { ...updated, reminder: null,
+      reminderNotice: "Se quitó el recordatorio porque no es compatible con esta programación." };
+  }
+  if (field === "reminder") updated.reminderNotice = null;
+  return updated;
 }

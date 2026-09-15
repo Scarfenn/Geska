@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 // Load this dependency-free Expo module without changing the project's module type.
 const source = await readFile(new URL('../src/features/tasks/domain/recurrence.js', import.meta.url), 'utf8');
-const { occursOnDate, parseLocalDate, getFirstOccurrence } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const { occursOnDate, parseLocalDate, getFirstOccurrence, getNextOccurrence } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 const task = (overrides = {}) => ({ date: '2026-09-08', repeat_mode: 'none', ...overrides });
 
 test('single tasks use the local calendar date and reject invalid dates', () => {
@@ -76,11 +76,11 @@ test('calendar intervals remain stable across daylight-saving transitions', () =
   }
 });
 
-test('repeat_end remains reserved and evaluation does not mutate input', () => {
+test('repeat_end excludes later occurrences without mutating input', () => {
   const t = Object.freeze(task({ repeat_mode: 'daily', repeat_end: '2026-09-08' }));
   const date = new Date(2026, 8, 10, 15);
   const timestamp = date.getTime();
-  assert.equal(occursOnDate(t, date), true);
+  assert.equal(occursOnDate(t, date), false);
   assert.equal(date.getTime(), timestamp);
   assert.equal(occursOnDate(task({ repeat_mode: 'unsupported' }), date), false);
 });
@@ -155,5 +155,64 @@ test('first repetition excludes the initial date without changing normal task oc
     const next = getFirstOccurrence(value, { afterStart: true });
     assert.equal(localDay(next), expected);
     assert.equal(occursOnDate(value, next), true);
+  }
+});
+
+test('end is inclusive across modes, intervals, non-occurrence ends and local DST days', () => {
+  for (const [settings, last, next] of [
+    [{ repeat_mode: 'daily', repeat_interval: 2 }, '2026-09-10', '2026-09-12'],
+    [{ repeat_mode: 'weekly', repeat_days: 'M', repeat_interval: 2 }, '2026-09-22', '2026-10-06'],
+    [{ repeat_mode: 'monthly', repeat_days: '8', repeat_interval: 2 }, '2026-11-08', '2027-01-08'],
+    [{ date: '2026-09-05', repeat_mode: 'daily' }, '2026-09-06', '2026-09-07'],
+  ]) {
+    const value = task({ ...settings, repeat_end: last });
+    const late = parseLocalDate(last); late.setHours(23, 59);
+    assert.equal(occursOnDate(value, late), true);
+    assert.equal(occursOnDate(value, next), false);
+    assert.equal(occursOnDate({ ...value, repeat_end: null }, next), true);
+  }
+  const weekly = task({ repeat_mode: 'weekly', repeat_days: 'X', repeat_end: '2026-09-11' });
+  assert.equal(occursOnDate(weekly, '2026-09-09'), true);
+  assert.equal(occursOnDate(weekly, '2026-09-11'), false);
+  assert.equal(occursOnDate(weekly, '2026-09-16'), false);
+  // A leftover bound must not hide a task whose repetition was disabled.
+  assert.equal(occursOnDate(task({ repeat_end: '2026-09-01' }), '2026-09-08'), true);
+});
+
+
+test('next occurrence jumps across long daily, weekly and monthly intervals', () => {
+  for (const [settings, from, expected] of [
+    [{ date: '2026-09-15', repeat_mode: 'daily', repeat_interval: 4000 }, '2026-09-16', '2037-08-28'],
+    [{ date: '2026-09-15', repeat_mode: 'weekly', repeat_interval: 600, repeat_days: 'M' }, '2026-09-16', '2038-03-16'],
+    [{ date: '2026-09-15', repeat_mode: 'monthly', repeat_interval: 132, repeat_days: '15' }, '2026-09-16', '2037-09-15'],
+    [{ date: '2024-02-29', repeat_mode: 'monthly', repeat_interval: 12 }, '2097-01-01', '2104-02-29'],
+    [{ date: '2026-01-31', repeat_mode: 'monthly' }, '2026-02-01', '2026-03-31'],
+    [{ date: '2026-09-15', repeat_mode: 'daily', repeat_interval: 4000, repeat_end: '2037-08-27' }, '2026-09-16', null],
+    [{ date: '2026-09-15', repeat_mode: 'daily', repeat_interval: 4000, repeat_end: '2037-08-28' }, '2026-09-16', '2037-08-28'],
+    [{ date: '2026-02-01', repeat_mode: 'monthly', repeat_interval: 12, repeat_days: '31' }, '2030-01-01', null],
+    [{ date: '9999-12-31', repeat_mode: 'daily' }, '9999-12-31', '9999-12-31'],
+    [{ date: '2026-09-15', repeat_mode: 'daily', repeat_interval: Number.MAX_SAFE_INTEGER }, '2026-09-16', null],
+  ]) assert.equal(localDay(getNextOccurrence(task(settings), from)), expected);
+});
+
+test('next occurrence agrees with calendar evaluation from arbitrary dates, including DST', () => {
+  for (const anchor of ['2026-09-05', '2026-04-04', '2026-12-31']) {
+    for (const interval of [1, 2, 12]) {
+      for (const [mode, days] of [['none', []], ['daily', []], ['weekly', ['L', 'V']], ['monthly', ['15', '31']]]) {
+        const value = Object.freeze(task({ date: anchor, repeat_mode: mode, repeat_interval: interval, repeat_days: days }));
+        for (const offset of [-3, 0, 1, 15, 370]) {
+          const from = parseLocalDate(anchor); from.setHours(12); from.setDate(from.getDate() + offset);
+          const timestamp = from.getTime();
+          let expected = new Date(from); expected.setHours(0, 0, 0, 0);
+          let found = null;
+          for (let n = 0; n < 740; n++) {
+            if (occursOnDate(value, expected)) { found = localDay(expected); break; }
+            expected.setHours(12); expected.setDate(expected.getDate() + 1); expected.setHours(0, 0, 0, 0);
+          }
+          assert.equal(localDay(getNextOccurrence(value, from)), found, JSON.stringify({ value, offset }));
+          assert.equal(from.getTime(), timestamp);
+        }
+      }
+    }
   }
 });

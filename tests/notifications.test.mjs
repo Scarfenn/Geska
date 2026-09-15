@@ -41,9 +41,9 @@ test('relative reminders can cross midnight and all-day offsets use calendar dat
 test('persistent and after reminders retain completion metadata and obey the limit', () => {
   const entries = plan(task({ reminder_type: 'persistent', time: null }), { now: new Date(2026, 8, 9, 13), limit: 3 });
   assert.deepEqual(Array.from(entries, e => e.persistentHour), [17, 21, 9]);
-  const after = task({ reminder_type: 'after', reminder_at: new Date(2026, 8, 9, 11).getTime() });
+  const after = task({ repeat_mode: 'none', time: null, reminder_type: 'after', reminder_at: new Date(2026, 8, 9, 11).getTime() });
   assert.equal(plan(after)[0].occurrenceDate, after.date);
-  assert.equal(plan({ ...after, occurrences: [{ date: after.date, done: true }] }).length, 0);
+  assert.equal(plan({ ...after, done: true }).length, 0);
   assert.equal(plan(task(), { limit: 100 }).length, 16);
 });
 
@@ -232,4 +232,135 @@ test('a slow permission prompt cannot schedule reminders whose time already pass
   };
   const result = await h.api.reconcileTaskReminders(task({ repeat_mode: 'none' }), null, { now: reference });
   assert.equal(result.status, 'empty'); assert.equal(count(h, 'schedule'), 0);
+});
+
+test('relative, all-day and persistent plans stop at the inclusive occurrence end', () => {
+  for (const reminder of [
+    {}, { reminder_type: 'all_day', reminder_value: 1, reminder_unit: 'days', time: null },
+    { reminder_type: 'persistent', time: null },
+  ]) {
+    const value = task({ ...reminder, repeat_end: '2026-09-10' });
+    const entries = plan(value);
+    assert.ok(entries.length > 0);
+    assert.ok(entries.every(e => e.occurrenceDate <= '2026-09-10'));
+    assert.ok(entries.some(e => e.occurrenceDate === '2026-09-10'));
+    assert.equal(plan(value, { now: new Date(2026, 8, 11, 8) }).length, 0);
+  }
+});
+
+test('shortening, extending and clearing an end reconciles pending notifications', async () => {
+  const h = notificationHarness(); let saved = task();
+  const persist = async value => { saved = value; };
+  const dates = () => Array.from(h.scheduled.values(), n => n.content.data.occurrenceDate);
+  await h.api.reconcileTaskReminders(saved, persist, { now: now() });
+  const original = [...saved.notification_ids];
+  // Full startup sync also repairs notifications saved before end enforcement.
+  saved = { ...saved, repeat_end: '2026-09-10' };
+  await h.api.syncTaskReminders([saved], persist, { now: now() });
+  assert.deepEqual(dates(), ['2026-09-09', '2026-09-10']);
+  assert.deepEqual([...saved.notification_ids], original.slice(0, 2));
+  assert.equal(count(h, 'cancel'), 14);
+  saved = { ...saved, repeat_end: '2026-09-12' };
+  await h.api.reconcileTaskReminders(saved, persist, { now: now() });
+  assert.deepEqual(dates(), ['2026-09-09', '2026-09-10', '2026-09-11', '2026-09-12']);
+  saved = { ...saved, repeat_end: null };
+  await h.api.reconcileTaskReminders(saved, persist, { now: now() });
+  assert.equal(h.scheduled.size, 16);
+  assert.equal(saved.notification_ids.length, 16);
+});
+
+test('invalid legacy after reminders are cancelled rather than scheduled on a non-occurrence', async () => {
+  const h = notificationHarness();
+  let saved = task({ repeat_mode: 'none', time: null, reminder_type: 'after', reminder_at: new Date(2026, 8, 9, 10).getTime() });
+  const persist = async value => { saved = value; };
+  await h.api.reconcileTaskReminders(saved, persist, { now: now() });
+  assert.equal(h.scheduled.size, 1);
+  saved = { ...saved, repeat_mode: 'weekly', repeat_days: 'V' };
+  await h.api.reconcileTaskReminders(saved, persist, { now: now() });
+  assert.equal(h.scheduled.size, 0);
+  assert.equal(saved.notification_ids.length, 0);
+});
+
+test('fresh storage sync replenishes a consumed queue and retains undelivered IDs', async () => {
+  const h = notificationHarness(); let saved = task();
+  const persist = async value => { saved = value; };
+  await h.api.syncTaskReminders(async () => saved ? [saved] : [], persist, { now: now() });
+  const kept = saved.notification_ids.at(-1);
+  for (const id of saved.notification_ids.slice(0, -1)) h.scheduled.delete(id);
+  await h.api.syncTaskReminders(async () => [saved], persist, { now: new Date(2026, 8, 24, 8) });
+  assert.equal(h.scheduled.size, 16);
+  assert.ok(saved.notification_ids.includes(kept));
+  assert.ok(Array.from(h.scheduled.values()).every(n => n.content.data.occurrenceDate >= '2026-09-24'));
+  h.scheduled.clear();
+  await h.api.syncTaskReminders(async () => [saved], persist, { now: new Date(2026, 9, 15, 8) });
+  assert.equal(h.scheduled.size, 16);
+});
+
+test('a stale action dismisses only the exact notification and unrelated actions do nothing', async () => {
+  const h = notificationHarness();
+  h.stubs['@/features/tasks/services/taskCompletion'].completeTask = async () => false;
+  h.native.getPresentedNotificationsAsync = async () => ['other-occurrence', 'stale'].map(identifier => ({ request: { identifier, content: { data: { taskId: 'task' } } } }));
+  const { handleNotificationResponse } = h.load('features/tasks/services/notificationResponseHandler.js');
+  const response = { actionIdentifier: h.api.COMPLETE_TASK_ACTION_ID, notification: { request: { identifier: 'stale', content: { data: { taskId: 'task', occurrenceDate: '2026-09-09' } } } } };
+  assert.equal(await handleNotificationResponse(response), false);
+  assert.deepEqual(h.calls.filter(c => c[0] === 'dismiss'), [['dismiss', 'stale']]);
+  await handleNotificationResponse({ ...response, actionIdentifier: 'default' });
+  assert.equal(count(h, 'dismiss'), 1);
+});
+
+test('queued foreground sync reads the latest task state only when it can reconcile', async () => {
+  const h = notificationHarness(); let release, entered, reads = 0;
+  const waiting = new Promise(resolve => { entered = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  const inventory = h.native.getAllScheduledNotificationsAsync;
+  h.native.getAllScheduledNotificationsAsync = async () => {
+    entered(); await gate; return inventory();
+  };
+  let current = task();
+  const first = h.api.reconcileTaskReminders(current, null, { now: now() });
+  await waiting;
+  const resume = h.api.syncTaskReminders(async () => { reads++; return [current]; }, null, { now: now() });
+  assert.equal(reads, 0);
+  current = { ...current, repeat_end: '2026-09-10' };
+  release(); await first; await resume;
+  assert.equal(reads, 1);
+  assert.equal(h.scheduled.size, 2);
+});
+
+test('planner schedules distant occurrences without a ten-year horizon', () => {
+  for (const [settings, expected] of [
+    [{ repeat_mode: 'daily', repeat_interval: 4000 }, '2037-08-28'],
+    [{ repeat_mode: 'weekly', repeat_interval: 600, repeat_days: 'M' }, '2038-03-16'],
+    [{ repeat_mode: 'monthly', repeat_interval: 132, repeat_days: '15' }, '2037-09-15'],
+  ]) {
+    const value = task({ ...settings, date: '2026-09-15' });
+    const entries = plan(value, { now: new Date(2026, 8, 16, 8) });
+    assert.equal(entries.length, 16);
+    assert.equal(entries[0].occurrenceDate, expected);
+    const ended = plan({ ...value, repeat_end: expected }, { now: new Date(2026, 8, 16, 8) });
+    assert.equal(ended.length, 1);
+    const completed = plan({ ...value, occurrences: [{ date: expected, done: true }] }, { now: new Date(2026, 8, 16, 8) });
+    assert.equal(completed[0].occurrenceDate, entries[1].occurrenceDate);
+  }
+});
+
+test('advance notice starts from the future occurrence while retaining reminders due today', () => {
+  const from = new Date(2026, 8, 9, 8);
+  const relative = plan(task({ date: '2026-09-10', time: '09:00', reminder_value: 24, reminder_unit: 'hours', repeat_end: '2026-09-10' }), { now: from });
+  assert.equal(relative.length, 1);
+  assert.equal(relative[0].date.getTime(), new Date(2026, 8, 9, 9).getTime());
+  const allDay = plan(task({ date: '2026-09-16', time: null, reminder_type: 'all_day', reminder_value: 7, reminder_unit: 'days', repeat_end: '2026-09-16' }), { now: from });
+  assert.equal(allDay.length, 1);
+  assert.equal(allDay[0].date.getTime(), new Date(2026, 8, 9, 9).getTime());
+  // Very large advance notice must jump over expired reminders too.
+  const distant = plan(task({ reminder_value: 24 * 4000, reminder_unit: 'hours' }), { now: from, limit: 1 });
+  assert.equal(distant.length, 1);
+  assert.ok(distant[0].date > from);
+});
+
+test('impossible schedules, exhausted bounds and year overflow return an empty plan', () => {
+  assert.equal(plan(task({ date: '2026-02-01', repeat_mode: 'monthly', repeat_days: '31', repeat_interval: 12 })).length, 0);
+  assert.equal(plan(task({ repeat_interval: Number.MAX_SAFE_INTEGER }), { now: new Date(2026, 8, 10) }).length, 0);
+  assert.equal(plan(task({ date: '9999-12-31' }), { now: new Date(9999, 11, 31, 10) }).length, 0);
+  assert.equal(plan(task({ reminder_value: Number.MAX_VALUE })).length, 0);
 });

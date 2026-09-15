@@ -91,3 +91,14 @@ test('recurring tasks sort by the selected occurrence, ignoring global completio
   assert.deepEqual(ids(forDay(16)), ['recurring', 'pending']);
   assert.deepEqual(tasks, before);
 });
+
+test('task list includes the final occurrence and excludes later dates without erasing history', () => {
+  const value = task('ending', { repeat_mode: 'daily', repeat_end: '2026-09-15',
+    occurrences: [{ date: '2026-09-15', done: true }] });
+  const before = structuredClone(value);
+  const finalDay = selectTasksForDay([value], new Date(2026, 8, 15), 'all');
+  assert.equal(finalDay.length, 1);
+  assert.equal(finalDay[0].done, true);
+  assert.equal(selectTasksForDay([value], new Date(2026, 8, 16), 'all').length, 0);
+  assert.deepEqual(value, before);
+});

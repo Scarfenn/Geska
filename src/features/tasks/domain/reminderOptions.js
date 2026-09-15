@@ -1,3 +1,4 @@
+import { isReminderCompatible } from "@/features/tasks/domain/reminderCompatibility";
 import {
   PERSISTENT_REMINDER_HOURS,
   MINUTE_MS,
@@ -176,7 +177,7 @@ export function isOptionActive(
   );
 }
 
-export function getAvailableOptions({
+function availableOptions({
   selectedDate,
   selectedTime,
   repeatMode,
@@ -332,4 +333,11 @@ export function persistentDescription({ selectedDate, repeatMode }, now) {
     return hours.length ? `Hoy quedan: ${hours.join(" · ")}` : "No quedan horarios hoy";
   }
   return `Horarios habituales: ${PERSISTENT_REMINDER_HOURS.map(hour => `${String(hour).padStart(2, "0")}:00`).join(" · ")}`;
+}
+
+export function getAvailableOptions(context, now) {
+  return availableOptions(context, now).filter(option =>
+    isReminderCompatible(optionReminder(option, now), {
+      repeatMode: context.repeatMode, time: context.selectedTime,
+    }));
 }

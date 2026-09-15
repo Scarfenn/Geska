@@ -1,3 +1,5 @@
+import { createTimeValue } from "@/features/tasks/domain/taskDates";
+
 export const ITEM_HEIGHT = 44;
 export const WHEEL_HEIGHT = ITEM_HEIGHT * 5;
 export const CENTER_PADDING = (WHEEL_HEIGHT - ITEM_HEIGHT) / 2;
@@ -34,12 +36,9 @@ export function readHourDraft(date) {
   };
 }
 
-export function buildSelectedTime({ hour, minute, period }, baseDate = new Date()) {
+export function buildSelectedTime({ hour, minute, period }) {
   if (!HOURS.includes(hour) || !MINUTES.includes(minute) || !["AM", "PM"].includes(period)) {
     throw new Error("Hora inválida");
   }
-  const date = new Date(baseDate);
-  if (!Number.isFinite(date.getTime())) throw new Error("Fecha inválida");
-  date.setHours(Number(hour) % 12 + (period === "PM" ? 12 : 0), Number(minute), 0, 0);
-  return date;
+  return createTimeValue(Number(hour) % 12 + (period === "PM" ? 12 : 0), Number(minute));
 }
