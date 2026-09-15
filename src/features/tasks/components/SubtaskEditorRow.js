@@ -10,10 +10,8 @@ export default function SubtaskEditorRow({ subtask, drag, isActive, disabled, st
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <TouchableOpacity onLongPress={drag} delayLongPress={100} disabled={disabled || isActive}
           hitSlop={12} accessibilityRole="button" accessibilityLabel="Reordenar subtarea">
-          <Ionicons name="reorder-three-outline" size={26} color={theme.primaryText} />
+          <Ionicons name="reorder-three-outline" size={26} color={theme.primaryText} style={{ marginRight: 8 }} />
         </TouchableOpacity>
-        <Ionicons name={subtask.done ? "checkmark-circle" : "ellipse-outline"} size={20}
-          color={subtask.done ? theme.doneCheck : theme.pendingCheck} style={{ marginRight: 8 }} />
         <TextInput ref={inputRef} style={[styles.input, { flex: 1, marginBottom: 0 }]}
           placeholder="Escribe una subtarea..." placeholderTextColor={theme.pendingText}
           accessibilityLabel="Texto de la subtarea" editable={!disabled} value={subtask.text}
