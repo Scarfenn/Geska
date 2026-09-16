@@ -1,6 +1,6 @@
 {
   "name": "geska",
-  "version": "0.9.3",
+  "version": "0.9.3.1",
   "main": "index.js",
   "scripts": {
     "test": "node --test tests/*.test.mjs",

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Geska",
     "slug": "geska",
-    "version": "0.9.3",
+    "version": "0.9.3.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
