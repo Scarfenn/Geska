@@ -19,7 +19,7 @@ export default function DatePickerModal(props) {
 }
 
 function DatePickerSession({ visible, themeName, mode, value, initialDate, minDate, maxDate, title = "Seleccionar fecha", onSelect, onClose,
-  isDateHighlighted, highlightedDateHint = "Fecha destacada" }) {
+  isDateHistorical, isDateHighlighted, highlightedDateHint = "Fecha destacada" }) {
   const styles = getDatePickerModalStyles(themeName, mode);
   const theme = themes[themeName][mode];
   const { height } = useWindowDimensions();
@@ -94,15 +94,18 @@ function DatePickerSession({ visible, themeName, mode, value, initialDate, minDa
                     const selected = isSameDay(date, value);
                     const isToday = isSameDay(date, today);
                     const disabled = !isDateSelectable(date, minDate, maxDate);
+                    const historical = !disabled && !!isDateHistorical?.(date);
                     const highlighted = !disabled && !!isDateHighlighted?.(date);
                     return (
                       <View key={formatDateLocal(date)} style={styles.pickerDayCell}>
                         <TouchableOpacity accessibilityRole="button"
                           accessibilityLabel={date.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-                          accessibilityHint={[isToday && "Hoy", highlighted && highlightedDateHint].filter(Boolean).join(". ") || undefined}
+                          accessibilityHint={[isToday && "Hoy", historical && "Fecha histórica. Sin repetición ni recordatorios", highlighted && highlightedDateHint].filter(Boolean).join(". ") || undefined}
                           accessibilityState={{ selected, disabled }} disabled={disabled} onPress={() => select(date)}
-                          style={[styles.pickerDay, highlighted && styles.pickerHighlighted, isToday && styles.pickerToday, selected && styles.pickerSelected, disabled && styles.pickerDisabled]}>
+                          style={[styles.pickerDay, historical && styles.pickerHistorical, highlighted && styles.pickerHighlighted, isToday && styles.pickerToday, selected && styles.pickerSelected, disabled && styles.pickerDisabled]}>
                           <Text style={[styles.pickerDayText, selected && styles.pickerSelectedText]}>{date.getDate()}</Text>
+                          {historical && <Ionicons name="time-outline" size={11} color={selected ? theme.onPrimary : theme.inactiveCategoryText}
+                            style={styles.pickerHistoryIcon} accessible={false} /> }
                         </TouchableOpacity>
                       </View>
                     );

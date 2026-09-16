@@ -39,20 +39,22 @@ test('editing and saving a repetition end date preserves its local day', () => {
   assert.equal(schedule.endDate.getHours(), 0);
 });
 
-test('task date selection allows today but rejects past local dates, including DST transitions', () => {
+test('task date selection allows thirty historical calendar days across DST transitions', () => {
   const { canSelectTaskDate, getMinimumTaskDate } = loadDatabase(null, { entry: '../../src/features/tasks/domain/taskDates.js' });
-  for (const now of [new Date(2026, 8, 6, 23), new Date(2026, 3, 5, 23)]) {
+  for (const now of [new Date(2026, 8, 6, 23), new Date(2026, 3, 5, 23), new Date(2026, 0, 15, 23), new Date(2024, 2, 1, 23)]) {
     const today = getMinimumTaskDate(now);
     assert.equal(canSelectTaskDate(today, now), true);
-    assert.equal(canSelectTaskDate(addCalendarDays(today, -1), now), false);
+    assert.equal(canSelectTaskDate(addCalendarDays(today, -1), now), true);
     assert.equal(canSelectTaskDate(addCalendarDays(today, 1), now), true);
+    assert.equal(canSelectTaskDate(addCalendarDays(today, -30), now), true);
+    assert.equal(canSelectTaskDate(addCalendarDays(today, -31), now), false);
     assert.equal(now.getHours(), 23);
   }
   assert.equal(canSelectTaskDate(null), false);
   assert.equal(canSelectTaskDate(new Date(NaN)), false);
 });
 
-test('schedule date handler rejects past dates before dispatching any draft changes', () => {
+test('schedule date handler rejects dates outside the historical window without rewriting existing tasks', () => {
   const calls = [];
   const { default: useScheduleDraft } = loadDatabase(null, {
     entry: '../../src/features/tasks/hooks/useScheduleDraft.js',

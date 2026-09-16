@@ -34,7 +34,7 @@ function picker(overrides = {}) {
     onSelect: date => selected.push(date), onClose: () => closeCount++, ...overrides };
   const module = { exports: {} };
   vm.runInNewContext(source, {
-    Date, module, exports: module.exports,
+    Date: class extends Date { constructor(...args) { super(...(args.length ? args : [2026, 8, 14, 12])); } }, module, exports: module.exports,
     React: { createElement: (type, props, ...children) => typeof type === 'function' ? type(props) : ({ type, props: props || {}, children }) },
     require: spec => {
       if (spec === 'react') return react;
@@ -234,4 +234,70 @@ test('optional decorative borders do not change selection, limits, or selected-d
   assert.equal(app.selected[0].getDate(), 16, 'non-occurrence dates remain valid end dates');
   const plain = picker();
   assert.equal(Object.assign({}, ...plain.day(18).props.style.filter(Boolean)).borderStyle, undefined);
+});
+
+test('historical decoration is distinct, accessible and only shown on selectable dates', () => {
+  const { isHistoricalTaskDate } = load('@/features/tasks/domain/taskDates');
+  const isDateHistorical = date => isHistoricalTaskDate(date, new Date(2026, 8, 14));
+  const app = picker({ value: new Date(2026, 8, 12), minDate: new Date(2026, 7, 15), isDateHistorical });
+  const style = day => Object.assign({}, ...app.day(day).props.style.filter(Boolean));
+  assert.equal(style(13).borderStyle, 'dotted');
+  assert.match(app.day(13).props.accessibilityHint, /Fecha histórica/);
+  assert.equal(style(12).borderStyle, 'solid', 'selection remains legible');
+  assert.ok(app.day(12).children.some(c => c?.props?.name === 'time-outline'), 'selected historical day keeps its marker');
+  assert.equal(app.day(14).props.accessibilityHint, 'Hoy');
+  assert.equal(app.day(15).props.accessibilityHint, undefined);
+  app.press('Mes anterior');
+  assert.equal(app.day(14).props.disabled, true);
+  assert.equal(app.day(14).props.accessibilityHint, undefined);
+  assert.equal(app.day(15).props.disabled, false);
+  app.day(15).props.onPress();
+  assert.equal(app.selected[0].getMonth(), 7);
+  assert.equal(app.selected[0].getDate(), 15);
+});
+
+test('TimeModal disables historical scheduling, preserves legacy drafts and re-enables it for today', () => {
+  let state, active = null, tree;
+  const { default: useScheduleDraft } = loadDatabase(null, {
+    entry: '../../src/features/tasks/hooks/useScheduleDraft.js',
+    stubs: { react: {
+      useReducer(reducer, props, create) { state ??= create(props); return [state, action => { state = reducer(state, action); }]; },
+      useState(initial) { return [active ?? initial, value => { active = value; }]; },
+    } },
+  });
+  const module = { exports: {} };
+  vm.runInNewContext(compile('../src/features/tasks/modals/TimeModal.js'), {
+    module, exports: module.exports,
+    React: { createElement: (type, props, ...children) => typeof type === 'function' ? type(props) : ({ type, props: props || {}, children }) },
+    require: spec => {
+      if (spec === 'react-native') return { Modal: 'Modal', View: 'View', Text: 'Text', TouchableOpacity: 'TouchableOpacity', TouchableWithoutFeedback: 'TouchableWithoutFeedback', Animated: { View: 'Animated.View' } };
+      if (spec === '@expo/vector-icons') return { Ionicons: 'Ionicons' };
+      if (spec.endsWith('/useModalAnimation')) return () => ({ animateOpen() {}, animateClose() {} });
+      if (spec.endsWith('/useScheduleDraft')) return useScheduleDraft;
+      if (spec.includes('/SubModals/')) return spec.split('/').at(-1);
+      return load(spec);
+    },
+  });
+  const today = new Date(); today.setHours(12, 0, 0, 0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+  const props = { visible: true, themeName: 'basic', mode: 'light', selectedDate: yesterday, repeatMode: 'weekly', repeatDays: ['L'], repeatInterval: 1 };
+  const render = () => { tree = module.exports.default(props); };
+  const all = () => {
+    const nodes = []; const walk = node => { if (Array.isArray(node)) return node.forEach(walk); if (!node || typeof node !== 'object') return; nodes.push(node); node.children?.forEach(walk); }; walk(tree); return nodes;
+  };
+  const row = icon => all().find(n => n.type === 'TouchableOpacity' && JSON.stringify(n.children).includes(icon));
+  render();
+  assert.equal(state.repeatMode, 'weekly');
+  for (const icon of ['repeat-outline', 'notifications-outline']) {
+    assert.equal(row(icon).props.disabled, true);
+    row(icon).props.onPress(); assert.equal(active, null);
+  }
+  assert.ok(!row('time-outline').props.disabled);
+  const picker = all().find(n => n.type === 'DatePickerModal');
+  picker.props.onSelect(yesterday); render();
+  assert.equal(state.repeatMode, 'none');
+  picker.props.onSelect(today); render();
+  assert.equal(row('repeat-outline').props.disabled, false);
+  assert.equal(row('notifications-outline').props.disabled, false);
+  row('repeat-outline').props.onPress(); assert.equal(active, 'repeat');
 });

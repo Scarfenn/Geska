@@ -1,6 +1,6 @@
 import { useReducer, useState } from "react";
 import { createScheduleDraft, scheduleDraftReducer } from "@/features/tasks/domain/scheduleDraft";
-import { canSelectTaskDate, getMinimumTaskDate } from "@/features/tasks/domain/taskDates";
+import { canSelectTaskDate, getEarliestSelectableTaskDate, isHistoricalTaskDate } from "@/features/tasks/domain/taskDates";
 import { getRepeatEndState } from "@/features/tasks/domain/repeatEnd";
 
 export default function useScheduleDraft(props) {
@@ -11,7 +11,8 @@ export default function useScheduleDraft(props) {
   return {
     draft, activeModal, setActiveModal,
     repeatEndError: getRepeatEndState(draft).error,
-    draftDate: draft.date, minTaskDate: getMinimumTaskDate(),
+    draftDate: draft.date, minTaskDate: getEarliestSelectableTaskDate(),
+    isHistoricalDate: isHistoricalTaskDate(draft.date),
     handleDateSelected: (date) => {
       if (canSelectTaskDate(date)) dispatch({ field: "date", value: date });
     },

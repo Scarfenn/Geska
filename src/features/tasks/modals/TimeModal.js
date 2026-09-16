@@ -1,3 +1,4 @@
+import { isHistoricalTaskDate } from "@/features/tasks/domain/taskDates";
 import useModalAnimation from "@/hooks/useModalAnimation";
 import {
   Modal,
@@ -32,7 +33,7 @@ function TimeModalSession(props) {
     draftDate, minTaskDate, handleDateSelected, draftTime, handleSelectedTimeChange,
     draftRepeatMode, setDraftRepeatMode, draftRepeatDays, setDraftRepeatDays,
     draftRepeatInterval, setDraftRepeatInterval, draftReminder, setDraftReminder,
-    draftEndDate, setDraftEndDate, repeatEndError,
+    draftEndDate, setDraftEndDate, repeatEndError, isHistoricalDate,
   } = useScheduleDraft(props);
 
   // -------------------------------------------------
@@ -50,13 +51,14 @@ function TimeModalSession(props) {
         title="Fecha de la tarea"
         value={draftDate}
         minDate={minTaskDate}
+        isDateHistorical={isHistoricalTaskDate}
         onSelect={handleDateSelected}
         onClose={() => setActiveModal(null)}
       />
 
       {/* Modal de Repetición */}
       <RepeatModal
-        visible={activeModal === "repeat"}
+        visible={!isHistoricalDate && activeModal === "repeat"}
         closeModal={() => setActiveModal(null)}
         themeName={themeName}
         mode={mode}
@@ -95,7 +97,7 @@ function TimeModalSession(props) {
 
       {/* Modal de Recordatorio */}
       <ReminderModal
-        visible={activeModal === "reminder"}
+        visible={!isHistoricalDate && activeModal === "reminder"}
         themeName={themeName}
         mode={mode}
 
@@ -245,10 +247,14 @@ function TimeModalSession(props) {
                   REPETICIÓN Y RECORDATORIO
                 </Text>
 
+                {isHistoricalDate && <Text accessibilityLiveRegion="polite" style={{ color: theme.inactiveCategoryText, marginBottom: 4 }}>
+                  Registro histórico: sin repetición ni recordatorios al seleccionar una fecha pasada.
+                </Text>}
                 {/* REPETICIÓN */}
                 <TouchableOpacity
-                  style={styles.optionRow}
-                  onPress={() => setActiveModal("repeat")}
+                  style={[styles.optionRow, isHistoricalDate && { opacity: 0.4 }]}
+                  disabled={isHistoricalDate} accessibilityState={{ disabled: !!isHistoricalDate }}
+                  onPress={() => { if (!isHistoricalDate) setActiveModal("repeat"); }}
                 >
                   <View
                     style={{
@@ -285,9 +291,10 @@ function TimeModalSession(props) {
                 </Text>}
                 {/* RECORDATORIO */}
                 <TouchableOpacity
-                  style={styles.optionRow}
+                  style={[styles.optionRow, isHistoricalDate && { opacity: 0.4 }]}
+                  disabled={isHistoricalDate} accessibilityState={{ disabled: !!isHistoricalDate }}
                   activeOpacity={0.7}
-                  onPress={() => setActiveModal("reminder")}
+                  onPress={() => { if (!isHistoricalDate) setActiveModal("reminder"); }}
                 >
                   <View
                     style={{

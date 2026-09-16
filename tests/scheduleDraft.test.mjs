@@ -70,3 +70,23 @@ test('repetition changes discard incompatible after reminders with a notice and 
   const timed = createScheduleDraft({ selectedTime: new Date(), reminder: { type: 'relative', value: 5, unit: 'minutes' } });
   assert.equal(reduce(timed, { field: 'repeatMode', value: 'daily' }).reminder.type, 'relative');
 });
+
+test('choosing a historical date clears scheduling only in the draft and retains its time', () => {
+  const today = new Date(2026, 8, 16, 12);
+  const props = { selectedDate: today, selectedTime: new Date(2000, 0, 15, 10, 30), repeatMode: 'weekly',
+    repeatDays: ['X'], repeatInterval: 2, endDate: new Date(2027, 0, 1), reminder: { type: 'relative', value: 5, unit: 'minutes' } };
+  const original = createScheduleDraft(props);
+  const historical = reduce(original, { field: 'date', value: new Date(2026, 8, 15), today });
+  assert.equal(historical.repeatMode, 'none');
+  assert.equal(historical.repeatDays.length, 0);
+  assert.equal(historical.repeatInterval, 1);
+  assert.equal(historical.endDate, null);
+  assert.equal(historical.reminder, null);
+  assert.equal(historical.time.getTime(), props.selectedTime.getTime());
+  assert.equal(original.repeatMode, 'weekly');
+  assert.equal(original.reminder.type, 'relative');
+  const future = reduce(historical, { field: 'date', value: today, today });
+  assert.equal(future.repeatMode, 'none', 'returning to today does not silently restore scheduling');
+  const reopened = createScheduleDraft({ ...props, selectedDate: new Date(2020, 0, 1) });
+  assert.equal(reopened.repeatMode, 'weekly', 'opening an old series must not erase it');
+});

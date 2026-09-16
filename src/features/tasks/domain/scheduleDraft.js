@@ -1,3 +1,4 @@
+import { isHistoricalTaskDate } from "@/features/tasks/domain/taskDates";
 import { isReminderCompatible } from "@/features/tasks/domain/reminderCompatibility";
 const cloneDate = (value) => value ? new Date(value) : null;
 
@@ -13,9 +14,14 @@ export function createScheduleDraft(props) {
   };
 }
 
-export function scheduleDraftReducer(state, { field, value }) {
+export function scheduleDraftReducer(state, { field, value, today }) {
   const next = typeof value === "function" ? value(state[field]) : value;
-  if (field === "date") return { ...state, date: cloneDate(next), reminder: null };
+  if (field === "date") {
+    const updated = { ...state, date: cloneDate(next), reminder: null, reminderNotice: null };
+    return isHistoricalTaskDate(next, today)
+      ? { ...updated, repeatMode: "none", repeatDays: [], repeatInterval: 1, endDate: null }
+      : updated;
+  }
   if (field === "time") return {
     ...state, time: cloneDate(next),
     reminder: Boolean(state.time) === Boolean(next) ? state.reminder : null,

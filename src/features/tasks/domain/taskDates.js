@@ -4,9 +4,22 @@ export function getMinimumTaskDate(today = new Date()) {
   return date;
 }
 
+export function getEarliestSelectableTaskDate(today = new Date()) {
+  const date = new Date(today);
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() - 30);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+export function isHistoricalTaskDate(value, today = new Date()) {
+  return value instanceof Date && Number.isFinite(value.getTime())
+    && formatDateLocal(value) < formatDateLocal(today);
+}
+
 export function canSelectTaskDate(value, today = new Date()) {
   return value instanceof Date && Number.isFinite(value.getTime())
-    && getMinimumTaskDate(value) >= getMinimumTaskDate(today);
+    && formatDateLocal(value) >= formatDateLocal(getEarliestSelectableTaskDate(today));
 }
 
 export function formatDateLocal(date) {
