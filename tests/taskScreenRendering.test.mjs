@@ -270,3 +270,68 @@ test('double save shares one in-flight command and exposes saving state until co
   pending.resolve(); await Promise.all([a, b]); app.render();
   assert.equal(app.find('TaskModal')[0].props.isSaving, false); app.unmount();
 });
+
+const addButton = app => app.find('TouchableOpacity').find(n => n.props.accessibilityLabel === 'Crear tarea');
+const relativeDay = offset => {
+  const value = new Date(); value.setHours(12, 0, 0, 0); value.setDate(value.getDate() + offset); return value;
+};
+
+test('creation snapshots the selected day for today, future and the inclusive historical window', async () => {
+  const app = screen(); await tick(); app.render();
+  for (const offset of [0, 1, -10, -30]) {
+    const selected = relativeDay(offset);
+    app.find('DaySelector')[0].props.setSelectedDay(selected); app.render();
+    assert.equal(addButton(app).props.disabled, false);
+    assert.equal(addButton(app).props.accessibilityState.disabled, false);
+    addButton(app).props.onPress(); app.render();
+    const modal = app.find('TaskModal')[0].props;
+    assert.equal(modal.visible, true);
+    assert.equal(modal.selectedDate.getTime(), selected.getTime());
+    assert.notEqual(modal.selectedDate, selected, 'draft owns its Date');
+    assert.equal(modal.repeatMode, 'none'); assert.equal(modal.reminder, null);
+    modal.closeModal(); app.render();
+  }
+  app.unmount();
+});
+
+test('old days remain browsable and editable while creation is visibly and functionally disabled', async () => {
+  const old = relativeDay(-31);
+  const oldDate = `${old.getFullYear()}-${String(old.getMonth() + 1).padStart(2, '0')}-${String(old.getDate()).padStart(2, '0')}`;
+  const stored = { ...task, date: oldDate };
+  const app = screen({ getAllTasks: async () => [stored] }); await tick(); app.render();
+  app.find('DaySelector')[0].props.setSelectedDay(old); app.render();
+  assert.equal(app.find('DaySelector')[0].props.selectedDay.getTime(), old.getTime());
+  assert.equal(app.find('TaskList')[0].props.tasks[0].id, stored.id);
+  const button = addButton(app);
+  assert.equal(button.props.disabled, true);
+  assert.equal(button.props.accessibilityState.disabled, true);
+  assert.ok(button.props.style[1], 'disabled style is applied');
+  button.props.onPress(); app.render();
+  assert.equal(app.find('TaskModal')[0].props.visible, false, 'direct invocation is guarded too');
+  app.find('TaskList')[0].props.startEditTask(stored); app.render();
+  assert.equal(app.find('TaskModal')[0].props.visible, true);
+  assert.equal(app.find('TaskModal')[0].props.taskToEdit.id, stored.id);
+  assert.equal(app.find('TaskModal')[0].props.selectedDate.getDate(), old.getDate());
+  app.unmount();
+});
+
+test('navigation and editor date changes are independent after creation opens', async () => {
+  const app = screen(); await tick(); app.render();
+  const initial = relativeDay(-10);
+  app.find('DaySelector')[0].props.setSelectedDay(initial); app.render();
+  addButton(app).props.onPress(); app.render();
+  const editorDate = relativeDay(5);
+  app.find('TimeModal')[0].props.onTimeSelected({ date: editorDate, time: null, repeatMode: 'none', repeatDays: [], repeatInterval: 1, reminder: null, endDate: null });
+  app.render();
+  assert.equal(app.find('DaySelector')[0].props.selectedDay.getTime(), initial.getTime());
+  app.find('DaySelector')[0].props.setSelectedDay(relativeDay(-31)); app.render();
+  assert.equal(app.find('TaskModal')[0].props.selectedDate.getTime(), editorDate.getTime());
+  assert.equal(app.find('TaskModal')[0].props.visible, true);
+  assert.equal(addButton(app).props.disabled, true);
+  app.find('TaskModal')[0].props.closeModal(); app.render();
+  const tomorrow = relativeDay(1);
+  app.find('DaySelector')[0].props.setSelectedDay(tomorrow); app.render();
+  addButton(app).props.onPress(); app.render();
+  assert.equal(app.find('TaskModal')[0].props.selectedDate.getTime(), tomorrow.getTime());
+  app.unmount();
+});

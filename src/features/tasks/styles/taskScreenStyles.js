@@ -39,6 +39,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
     color: theme.inactiveCategoryText,
     fontWeight: "600"
   },
+  mainButtonDisabled: { opacity: 0.4, elevation: 0, shadowOpacity: 0 },
   mainButton: {
     position: "absolute",
     bottom: 24,

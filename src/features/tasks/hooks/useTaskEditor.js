@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { parseLocalDate } from "@/features/tasks/domain/recurrence";
-import { parseTimeString } from "@/features/tasks/domain/taskDates";
+import { canSelectTaskDate, parseTimeString } from "@/features/tasks/domain/taskDates";
 import { reminderFromTask } from "@/features/tasks/services/reminderModel";
-export default function useTaskEditor(selectedCategory) {
+export default function useTaskEditor(selectedCategory, selectedDay) {
   const [selectedCategoryForTask, setSelectedCategoryForTask] = useState(null);
   const [activeModal, setActiveModal] = useState(null);
   const [taskModalVisible, setTaskModalVisible] = useState(false);
@@ -35,9 +35,11 @@ export default function useTaskEditor(selectedCategory) {
     endDate: data.endDate
   });
   const openModalAdd = () => {
-    const now = new Date();
+    const initialDate = selectedDay ?? new Date();
+    // Recheck at the action boundary as well as in the button's render state.
+    if (!canSelectTaskDate(initialDate)) return;
     setSchedule({
-      selectedDate: now,
+      selectedDate: new Date(initialDate),
       selectedTime: null,
       repeatMode: "none",
       repeatDays: [],

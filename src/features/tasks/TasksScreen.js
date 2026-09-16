@@ -1,3 +1,4 @@
+import { canSelectTaskDate } from "@/features/tasks/domain/taskDates";
 import { useState } from "react";
 import { Text, View, TouchableOpacity, StatusBar, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -32,7 +33,7 @@ export default function TasksScreen({
     setup
   } = useTasksData(tasksVersion);
   const [selectedDay, setSelectedDay] = useState(new Date());
-  const editor = useTaskEditor(selectedCategory);
+  const editor = useTaskEditor(selectedCategory, selectedDay);
   const {
     activeTaskId,
     setActiveTaskId,
@@ -44,6 +45,7 @@ export default function TasksScreen({
   const actions = useTaskActions(loadTasks);
   const theme = themes[themeName][mode];
   const styles = getTaskScreenStyles(themeName, mode);
+  const canCreateTask = canSelectTaskDate(selectedDay);
   const tasksForRender = selectTasksForDay(tasks, selectedDay, selectedCategory);
   return (
     <SafeAreaView
@@ -128,7 +130,14 @@ export default function TasksScreen({
         />}
 
         {/* Botón agregar tarea */}
-        <TouchableOpacity style={styles.mainButton} onPress={openModalAdd}>
+        <TouchableOpacity
+          accessibilityRole="button" accessibilityLabel="Crear tarea"
+          accessibilityState={{ disabled: !canCreateTask }}
+          accessibilityHint={!canCreateTask ? "Esta fecha solo permite consultar el historial" : undefined}
+          disabled={!canCreateTask}
+          style={[styles.mainButton, !canCreateTask && styles.mainButtonDisabled]}
+          onPress={openModalAdd}
+        >
           <Ionicons name="add" size={32} color={theme.onPrimary} />
         </TouchableOpacity>
 
