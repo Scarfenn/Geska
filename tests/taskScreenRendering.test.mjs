@@ -197,7 +197,7 @@ test('editing submits one aggregate draft and preserves task identity', async ()
     updateTaskNotificationIds: async value => updates.push(value),
     scheduleTaskReminders: async () => ['new'],
   });
-  await tick(); app.render(); app.find('TaskList')[0].props.startEditTask(original); app.render();
+  await tick(); app.render(); app.find('TaskOptionsMenu')[0].props.startEditTask(original); app.render();
   await app.find('TaskModal')[0].props.saveTask({ text: 'Edited', categoryId: 'work', subtasks: [{ id: 'a', text: 'After' }, { id: 'draft', isNew: true, text: 'New' }] });
   assert.equal(calls.length, 1); assert.equal(calls[0].id, original.id);
   assert.equal(calls[0].fields.title, 'Edited'); assert.equal(calls[0].fields.done, undefined);
@@ -308,7 +308,7 @@ test('old days remain browsable and editable while creation is visibly and funct
   assert.ok(button.props.style[1], 'disabled style is applied');
   button.props.onPress(); app.render();
   assert.equal(app.find('TaskModal')[0].props.visible, false, 'direct invocation is guarded too');
-  app.find('TaskList')[0].props.startEditTask(stored); app.render();
+  app.find('TaskOptionsMenu')[0].props.startEditTask(stored); app.render();
   assert.equal(app.find('TaskModal')[0].props.visible, true);
   assert.equal(app.find('TaskModal')[0].props.taskToEdit.id, stored.id);
   assert.equal(app.find('TaskModal')[0].props.selectedDate.getDate(), old.getDate());
@@ -333,5 +333,22 @@ test('navigation and editor date changes are independent after creation opens', 
   app.find('DaySelector')[0].props.setSelectedDay(tomorrow); app.render();
   addButton(app).props.onPress(); app.render();
   assert.equal(app.find('TaskModal')[0].props.selectedDate.getTime(), tomorrow.getTime());
+  app.unmount();
+});
+
+test('shared task menu receives selected task and anchor, routes actions and clears selection', async () => {
+  const app = screen(); await tick(); app.render();
+  const anchor = { x: 10, y: 100, width: 300, height: 60 };
+  app.find('TaskList')[0].props.openOptions(task.id, anchor); app.render();
+  let menu = app.find('TaskOptionsMenu')[0].props;
+  assert.equal(menu.task.id, task.id); assert.equal(menu.anchor, anchor);
+  menu.closeOptions(); app.render();
+  assert.equal(app.find('TaskOptionsMenu')[0].props.task, undefined);
+  menu.startEditTask(menu.task); app.render();
+  assert.equal(app.find('TaskModal')[0].props.visible, true);
+  assert.equal(app.find('TaskModal')[0].props.taskToEdit.id, task.id);
+  app.find('TaskModal')[0].props.closeModal();
+  menu.manageSubtasks(task.id); app.render();
+  assert.equal(app.find('SubtaskModal')[0].props.visible, true);
   app.unmount();
 });

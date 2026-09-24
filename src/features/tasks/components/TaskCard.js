@@ -1,8 +1,6 @@
 import { themes } from "@/styles/themes";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
-  Animated,
-  Easing,
   Text,
   TouchableOpacity,
   View,
@@ -15,24 +13,15 @@ export default function TaskCard({
   task,
   toggleTaskDone,
   toggleSubtaskDone,
-  removeTask,
   themeName,
   mode,
-  isMenuOpen,
   openOptions,
-  closeOptions,
-  setModalTaskId,
-  startEditTask,
-  setActiveModal,
 }) {
   const theme = themes[themeName][mode];
   const styles = getTaskCardStyles(themeName, mode);
 
   const [collapsed, setCollapsed] = useState(false);
-  const [menuMounted, setMenuMounted] = useState(isMenuOpen);
-  const menuAnimation = useRef(
-    new Animated.Value(isMenuOpen ? 1 : 0)
-  ).current;
+  const headerRef = useRef(null);
 
   const subtasks = task.subtasks || [];
   const totalSubtasks = subtasks.length;
@@ -40,58 +29,20 @@ export default function TaskCard({
     (subtask) => subtask.done
   ).length;
 
-  useEffect(() => {
-    menuAnimation.stopAnimation();
-
-    if (isMenuOpen) {
-      setMenuMounted(true);
-
-      Animated.timing(menuAnimation, {
-        toValue: 1,
-        duration: 200,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }).start();
-
-      return;
-    }
-
-    Animated.timing(menuAnimation, {
-      toValue: 0,
-      duration: 150,
-      easing: Easing.in(Easing.ease),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) {
-        setMenuMounted(false);
-      }
+  const showOptions = () => {
+    headerRef.current?.measureInWindow((x, y, width, height) => {
+      if (width > 0 && height > 0) openOptions(task.id, { x, y, width, height });
     });
-  }, [isMenuOpen, menuAnimation]);
-
-  const handleManageSubtasks = () => {
-    setModalTaskId(task.id);
-    setActiveModal("subtask");
-    closeOptions();
-  };
-
-  const handleEdit = () => {
-    startEditTask(task);
-    closeOptions();
-  };
-
-  const handleDelete = () => {
-    removeTask(task.id);
-    closeOptions();
   };
 
   return (
     <View style={styles.taskCardContainer}>
-      <View style={styles.taskCardHeader}>
+      <View ref={headerRef} collapsable={false} style={styles.taskCardHeader}>
         <TouchableOpacity
           activeOpacity={0.6}
           style={styles.task}
           onPress={() => toggleTaskDone(task.id)}
-          onLongPress={() => openOptions(task.id)}
+          onLongPress={showOptions}
         >
           <Ionicons
             name={
@@ -219,77 +170,6 @@ export default function TaskCard({
         </View>
       )}
 
-      {menuMounted && (
-        <Animated.View
-          pointerEvents={isMenuOpen ? "auto" : "none"}
-          style={[
-            styles.optionMenu,
-            {
-              position: "absolute",
-              opacity: menuAnimation,
-              transform: [
-                {
-                  translateY: menuAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-10, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <TouchableOpacity
-            onPress={handleManageSubtasks}
-            style={styles.taskMenuItem}
-          >
-            <Ionicons
-              name="list-outline"
-              size={18}
-              color={theme.text}
-              style={styles.taskMenuIcon}
-            />
-            <Text
-              style={styles.taskMenuLabel}
-            >
-              Administrar subtareas
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleEdit}
-            style={styles.taskMenuItem}
-          >
-            <Ionicons
-              name="create-outline"
-              size={18}
-              color={theme.text}
-              style={styles.taskMenuIcon}
-            />
-            <Text
-              style={styles.taskMenuLabel}
-            >
-              Editar
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleDelete}
-            style={styles.taskMenuItem}
-          >
-            <Ionicons
-              name="trash-outline"
-              size={18}
-              color={theme.danger}
-              style={styles.taskMenuIcon}
-            />
-            <Text
-              style={styles.taskMenuDangerLabel}
-            >
-              Eliminar
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
     </View>
   );
 }

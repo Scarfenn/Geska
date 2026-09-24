@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import getTaskScreenStyles from "@/features/tasks/styles/taskScreenStyles";
 import { themes } from "@/styles/themes";
+import TaskOptionsMenu from "@/features/tasks/components/TaskOptionsMenu";
 import TaskList from "@/features/tasks/components/TaskList";
 import DaySelector from "@/features/tasks/components/DaySelector";
 import ThemeSelector from "@/components/ThemeSelector";
@@ -32,6 +33,7 @@ export default function TasksScreen({
     loadTasks,
     setup
   } = useTasksData(tasksVersion);
+  const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedDay, setSelectedDay] = useState(new Date());
   const editor = useTaskEditor(selectedCategory, selectedDay);
   const {
@@ -118,15 +120,10 @@ export default function TasksScreen({
           tasks={tasksForRender}
           toggleTaskDone={(id) => actions.toggleTaskDone(id, selectedDay)}
           toggleSubtaskDone={(id, subtaskId) => actions.toggleSubtaskDone(id, subtaskId, selectedDay)}
-          removeTask={actions.removeTask}
           themeName={themeName}
           mode={mode}
-          openOptions={(id) => setActiveTaskId(id)}
-          activeTaskId={activeTaskId}
+          openOptions={(id, anchor) => { setMenuAnchor(anchor); setActiveTaskId(id); }}
           closeOptions={() => setActiveTaskId(null)}
-          startEditTask={openModalEdit}
-          setActiveModal={setActiveModal}
-          setModalTaskId={setModalTaskId}
         />}
 
         {/* Botón agregar tarea */}
@@ -140,6 +137,17 @@ export default function TasksScreen({
         >
           <Ionicons name="add" size={32} color={theme.onPrimary} />
         </TouchableOpacity>
+
+        <TaskOptionsMenu
+          task={tasksForRender.find(task => task.id === activeTaskId)}
+          anchor={menuAnchor}
+          themeName={themeName}
+          mode={mode}
+          closeOptions={() => setActiveTaskId(null)}
+          startEditTask={openModalEdit}
+          removeTask={actions.removeTask}
+          manageSubtasks={id => { setModalTaskId(id); setActiveModal("subtask"); }}
+        />
 
         {/* Modales */}
         <TasksModals

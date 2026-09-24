@@ -45,15 +45,10 @@ export default function TaskList({
   tasks,
   toggleTaskDone,
   toggleSubtaskDone,
-  removeTask,
   themeName,
   mode,
-  activeTaskId,
-  setModalTaskId,
   openOptions,
   closeOptions,
-  startEditTask,
-  setActiveModal,
 }) {
   const theme = themes[themeName][mode];
   const styles = getTaskListStyles(
@@ -105,6 +100,7 @@ export default function TaskList({
           emptyState
         ) : (
           <Animated.FlatList
+            onScrollBeginDrag={closeOptions}
             data={sortedTasks}
             itemLayoutAnimation={taskLayoutTransition}
             keyExtractor={(item) =>
@@ -120,21 +116,9 @@ export default function TaskList({
                 toggleSubtaskDone={
                   toggleSubtaskDone
                 }
-                removeTask={removeTask}
                 themeName={themeName}
                 mode={mode}
-                isMenuOpen={
-                  activeTaskId === item.id
-                }
                 openOptions={openOptions}
-                closeOptions={closeOptions}
-                setModalTaskId={
-                  setModalTaskId
-                }
-                startEditTask={startEditTask}
-                setActiveModal={
-                  setActiveModal
-                }
               />
             )}
           />

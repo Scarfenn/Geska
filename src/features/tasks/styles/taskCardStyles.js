@@ -59,21 +59,6 @@ export default createThemedStyles((theme, mode, themeName) => ({
   subtaskLabel: {
     marginLeft: 6
   },
-  taskMenuItem: {
-    paddingVertical: 5,
-    flexDirection: "row"
-  },
-  taskMenuIcon: {
-    marginRight: 5
-  },
-  taskMenuLabel: {
-    color: theme.text,
-    fontWeight: "bold"
-  },
-  taskMenuDangerLabel: {
-    color: theme.danger,
-    fontWeight: "bold"
-  },
   task: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -87,24 +72,4 @@ export default createThemedStyles((theme, mode, themeName) => ({
     alignItems: "center",
     paddingRight: 10
   },
-  optionMenu: {
-    borderWidth: 1,
-    borderColor: theme.border + "40",
-    borderRadius: 8,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    marginTop: 5,
-    top: 40,
-    marginLeft: 32,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 999,
-    backgroundColor: theme.card
-  }
 }));
