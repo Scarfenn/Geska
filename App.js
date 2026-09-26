@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import TasksScreen from "@/features/tasks/TasksScreen";
 import CalendarScreen from "@/features/calendar/CalendarScreen";
 import AccountScreen from "@/features/account/AccountScreen";
+import ThemeScreen from "@/features/settings/ThemeScreen";
 import SettingsScreen from "@/features/settings/SettingsScreen";
 import CustomDrawer from "@/components/CustomDrawer";
 
@@ -111,10 +112,12 @@ export default function App() {
                 {...props} 
                 themeName={themeName} 
                 mode={mode} 
-                setThemeName={setThemeName} 
-                setMode={setMode} 
                 />
               }
+          </Drawer.Screen>
+
+          <Drawer.Screen name="ThemeScreen" options={{ drawerItemStyle: { display: "none" }, swipeEnabled: false }}>
+            {props => <ThemeScreen {...props} themeName={themeName} mode={mode} setThemeName={setThemeName} setMode={setMode} />}
           </Drawer.Screen>
 
           <Drawer.Screen name="Cuenta" options={{ drawerItemStyle: { display: "none" }, swipeEnabled: false }}>

@@ -1,14 +1,13 @@
 import { ScrollView, View, Text, TouchableOpacity, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import ThemeSelector from "@/components/ThemeSelector";
 import { themes } from "@/styles/themes";
 import SettingsSection from "@/features/settings/components/SettingsSection";
 import SettingsRow from "@/features/settings/components/SettingsRow";
 import getSettingsStyles from "@/features/settings/styles/settingsStyles";
 import { appVersion } from "@/features/settings/services/appInfo";
 
-export default function SettingsScreen({ navigation, themeName, mode, setThemeName, setMode }) {
+export default function SettingsScreen({ navigation, themeName, mode }) {
   const theme = themes[themeName][mode];
   const styles = getSettingsStyles(themeName, mode);
   const rowProps = { theme, styles };
@@ -24,10 +23,7 @@ export default function SettingsScreen({ navigation, themeName, mode, setThemeNa
           <Text accessibilityRole="header" style={styles.title}>Ajustes</Text>
         </View>
         <SettingsSection title="APARIENCIA" styles={styles} style={styles.appearance}>
-          <ThemeSelector themeName={themeName} mode={mode} setThemeName={setThemeName} setMode={setMode}
-            renderTrigger={({ onPress, expanded }) => (
-              <SettingsRow {...rowProps} title="Tema" subtitle={themeLabel} icon="color-palette-outline" onPress={onPress} expanded={expanded} />
-            )} />
+          <SettingsRow {...rowProps} title="Tema" subtitle={themeLabel} icon="color-palette-outline" onPress={() => navigation.navigate("ThemeScreen")} />
         </SettingsSection>
         <SettingsSection title="CUENTA Y NUBE" styles={styles} note="La cuenta es opcional. Puedes seguir usando Geska sin conexión.">
           <SettingsRow {...rowProps} title="Cuenta" subtitle="Gestionar cuenta" icon="person-circle-outline" onPress={() => navigation.navigate("Cuenta")} />
