@@ -29,13 +29,13 @@ export default function SettingsScreen({ navigation, themeName, mode, setThemeNa
               <SettingsRow {...rowProps} title="Tema" subtitle={themeLabel} icon="color-palette-outline" onPress={onPress} expanded={expanded} />
             )} />
         </SettingsSection>
-        <SettingsSection title="CUENTA Y NUBE" styles={styles} note="El acceso a cuentas estará disponible próximamente. Puedes seguir usando Geska sin conexión.">
-          <SettingsRow {...rowProps} title="Cuenta" subtitle="Próximamente" icon="person-circle-outline" />
+        <SettingsSection title="CUENTA Y NUBE" styles={styles} note="La cuenta es opcional. Puedes seguir usando Geska sin conexión.">
+          <SettingsRow {...rowProps} title="Cuenta" subtitle="Gestionar cuenta" icon="person-circle-outline" onPress={() => navigation.navigate("Cuenta")} />
           <View style={styles.divider} />
-          <SettingsRow {...rowProps} title="Copias de seguridad" subtitle="Requiere cuenta · Próximamente" icon="cloud-upload-outline" />
+          <SettingsRow {...rowProps} title="Copias de seguridad" subtitle="Próximamente" icon="cloud-upload-outline" />
         </SettingsSection>
         <SettingsSection title="GESKA" styles={styles}>
-          <SettingsRow {...rowProps} title="Regálame un café" subtitle="Próximamente" icon="cafe-outline" />
+          <SettingsRow {...rowProps} title="Apoya el proyecto" subtitle="Próximamente" icon="heart-outline" />
           <View style={styles.divider} />
           <SettingsRow {...rowProps} title="Acerca de Geska" subtitle={`Versión ${appVersion}`} icon="information-circle-outline" />
         </SettingsSection>

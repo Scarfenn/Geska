@@ -30,6 +30,8 @@ lifecycle integration: register it once when wiring the cloud flow, inside Auth
 infrastructure, with appropriate cleanup. The SDK autoRefreshToken option is
 already enabled; importing these modules alone starts no refresh work.
 
-No Storage or backup transport is implemented. AsyncStorage is the requested
+Optional Storage transport now lives in `backupStorage.js`, coordinated by
+`features/backup/services/backupService.js`; see the backup README. It has no UI
+or startup integration. AsyncStorage is the requested
 session adapter; it is not encrypted credential storage. The SDK persists session
 tokens there, not the password supplied to sign-up/sign-in.

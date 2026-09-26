@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import TasksScreen from "@/features/tasks/TasksScreen";
 import CalendarScreen from "@/features/calendar/CalendarScreen";
+import AccountScreen from "@/features/account/AccountScreen";
 import SettingsScreen from "@/features/settings/SettingsScreen";
 import CustomDrawer from "@/components/CustomDrawer";
 
@@ -75,16 +76,15 @@ export default function App() {
           <Drawer.Screen
             name="Tareas"
             options={{
-              drawerIcon: ({ color, size }) => (
+              drawerIcon: ({ color, size }) => 
                 <Ionicons
                   name="checkmark-circle-outline"
                   size={size}
                   color={color}
                 />
-              ),
             }}
           >
-            {(props) => (
+            {(props) => 
               <TasksScreen
                 {...props}
                 themeName={themeName}
@@ -92,14 +92,33 @@ export default function App() {
                 setThemeName={setThemeName}
                 setMode={setMode}
               />
-            )}
+            }
           </Drawer.Screen>
 
           <Drawer.Screen
             name="Ajustes"
-            options={{ drawerIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} /> }}
+            options={{ 
+              drawerIcon: ({ color, size }) => 
+              <Ionicons 
+                name="settings-outline" 
+                size={size} 
+                color={color} 
+              /> 
+            }}
           >
-            {props => <SettingsScreen {...props} themeName={themeName} mode={mode} setThemeName={setThemeName} setMode={setMode} />}
+            {props => 
+              <SettingsScreen 
+                {...props} 
+                themeName={themeName} 
+                mode={mode} 
+                setThemeName={setThemeName} 
+                setMode={setMode} 
+                />
+              }
+          </Drawer.Screen>
+
+          <Drawer.Screen name="Cuenta" options={{ drawerItemStyle: { display: "none" }, swipeEnabled: false }}>
+            {props => <AccountScreen {...props} themeName={themeName} mode={mode} />}
           </Drawer.Screen>
 
           {/* PANTALLA CALENDARIO */}

@@ -42,20 +42,22 @@ function nodes(tree) {
   return tree && typeof tree === 'object' ? [tree, ...nodes(tree.children || [])] : [];
 }
 
-test('settings renders offline in every theme/mode; only menu and theme are actionable', () => {
+test('settings renders offline in every theme/mode; menu, theme and account are actionable', () => {
   const h = harness('1.2.3');
   const Screen = h.load('src/features/settings/SettingsScreen.js').default;
   const themes = h.load('src/styles/themes.js').themes;
   for (const themeName of Object.keys(themes)) for (const mode of ['light', 'dark']) {
-    let opened = 0;
+    let opened = 0, destination;
     const setThemeName = () => {}, setMode = () => {};
-    const tree = Screen({ navigation: { openDrawer() { opened++; } }, themeName, mode, setThemeName, setMode });
+    const tree = Screen({ navigation: { openDrawer() { opened++; }, navigate(name) { destination = name; } }, themeName, mode, setThemeName, setMode });
     const all = nodes(tree);
     assert.equal(tree.props.style.backgroundColor, themes[themeName][mode].background);
     const buttons = all.filter(n => n.props.accessibilityRole === 'button');
-    assert.equal(buttons.length, 2);
+    assert.equal(buttons.length, 3);
     buttons.find(n => n.props.accessibilityLabel === 'Abrir menú de navegación').props.onPress();
     assert.equal(opened, 1);
+    buttons.find(n => n.props.accessibilityLabel.startsWith("Cuenta.")).props.onPress();
+    assert.equal(destination, "Cuenta");
     assert.ok(buttons.some(n => n.props.accessibilityLabel.includes(mode === 'dark' ? 'Oscuro' : 'Claro')));
     assert.ok(all.some(n => n.props.accessibilityLabel === 'Acerca de Geska. Versión 1.2.3'));
     assert.equal(h.selectorProps.setThemeName, setThemeName);

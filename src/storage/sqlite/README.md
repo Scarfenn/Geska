@@ -61,9 +61,10 @@ restore deleted rows. Setting a cleared occurrence explicitly restores that
 occurrence with its original ID. Category deletion still detaches tasks; a partial
 unique index permits reusing a deleted category's name with a new ID.
 
-This is preparation only: no cloud upload, backup, restore/reset command, retention
-purge or device synchronization is implemented. A future backup must include raw
-rows from every table (including tombstones), not just `getAllTasks()`. A sync
+The optional backup service can upload raw snapshots; see
+`features/backup/README.md`. No restore/reset command, retention purge or device
+synchronization is implemented. Backups include raw rows from every table
+(including tombstones), not just `getAllTasks()`. A sync
 protocol still needs conflict resolution and device-clock handling; these local
 wall-clock timestamps alone do not provide either.
 
@@ -95,5 +96,6 @@ Supabase's optional `getSupabaseClient()` lives in `storage/supabase/client.js`.
 It creates one client on demand or returns null when either environment variable
 is missing. Invalid non-empty configuration can throw at the accessor; it is not
 used by the local startup or task repositories. Optional Auth is documented in
-`../supabase/README.md`. No uploads, scheduling, hooks or UI are connected.
+`../supabase/README.md`. Upload infrastructure is optional and separate; no
+backup scheduling, hooks or UI are connected.
 Snapshot and JSON creation work entirely offline.
