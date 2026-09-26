@@ -15,6 +15,7 @@ export default function ThemeSelector({
   mode,
   setThemeName,
   setMode,
+  renderTrigger,
 }) {
   const theme = themes[themeName][mode];
 
@@ -81,8 +82,13 @@ export default function ThemeSelector({
   return (
     <View style={{ position: "relative" }}>
       {/* BOTÓN */}
+      {renderTrigger ? renderTrigger({ onPress: () => setIsOpen(!isOpen), expanded: isOpen }) : (
       <Animated.View style={{ transform: [{ scale: scaleButton }] }}>
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Seleccionar tema"
+          accessibilityState={{ expanded: isOpen }}
+          hitSlop={4}
           activeOpacity={0.8}
           onPress={() => setIsOpen(!isOpen)}
           onPressIn={onPressIn}
@@ -104,6 +110,7 @@ export default function ThemeSelector({
           <Ionicons name="color-palette" size={20} color={theme.text} />
         </TouchableOpacity>
       </Animated.View>
+      )}
 
       {/* OVERLAY */}
       {isMounted && (
@@ -128,7 +135,7 @@ export default function ThemeSelector({
           style={{
             position: "absolute",
             right: 0,
-            top: 50,
+            top: renderTrigger ? "100%" : 50,
             padding: 14,
             borderRadius: 14,
             width: 270,
@@ -155,6 +162,9 @@ export default function ThemeSelector({
             {themeKeys.map((t) => (
               <TouchableOpacity
                 key={t}
+                accessibilityRole="button"
+                accessibilityLabel={`Tema ${t}`}
+                accessibilityState={{ selected: themeName === t }}
                 onPress={() => {
                   setThemeName(t);
                   setIsOpen(false);
@@ -209,10 +219,13 @@ export default function ThemeSelector({
           />
 
           <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Cambiar a modo ${mode === "light" ? "oscuro" : "claro"}`}
             onPress={() =>
               setMode(mode === "light" ? "dark" : "light")
             }
             style={{
+              minHeight: 48,
               flexDirection: "row",
               justifyContent: "space-between",
               alignItems: "center",

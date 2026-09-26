@@ -16,6 +16,7 @@ import useTaskEditor from "@/features/tasks/hooks/useTaskEditor";
 import { selectTasksForDay } from "@/features/tasks/domain/taskSelectors";
 import useTaskActions from "@/features/tasks/hooks/useTaskActions";
 export default function TasksScreen({
+  navigation,
   themeName,
   mode,
   setThemeName,
@@ -61,10 +62,17 @@ export default function TasksScreen({
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>
-            <Ionicons name="time-outline" size={22} color={theme.text} />{" "}
-            Tu día
-          </Text>
+          <View style={styles.headerTitle}>
+            <TouchableOpacity
+              style={styles.drawerButton}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir menú de navegación"
+              onPress={() => navigation.openDrawer()}
+            >
+              <Ionicons name="menu-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Tu día</Text>
+          </View>
 
           {/* Selector de Tema */}
           <ThemeSelector

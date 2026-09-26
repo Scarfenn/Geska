@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import TasksScreen from "@/features/tasks/TasksScreen";
 import CalendarScreen from "@/features/calendar/CalendarScreen";
+import SettingsScreen from "@/features/settings/SettingsScreen";
 import CustomDrawer from "@/components/CustomDrawer";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -92,6 +93,13 @@ export default function App() {
                 setMode={setMode}
               />
             )}
+          </Drawer.Screen>
+
+          <Drawer.Screen
+            name="Ajustes"
+            options={{ drawerIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} /> }}
+          >
+            {props => <SettingsScreen {...props} themeName={themeName} mode={mode} setThemeName={setThemeName} setMode={setMode} />}
           </Drawer.Screen>
 
           {/* PANTALLA CALENDARIO */}

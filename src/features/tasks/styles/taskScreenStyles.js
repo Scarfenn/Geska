@@ -20,6 +20,20 @@ export default createThemedStyles((theme, mode, themeName) => ({
     paddingBottom: 2,
     marginBottom: 8
   },
+  headerTitle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flexShrink: 1
+  },
+  drawerButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: theme.card,
+    alignItems: "center",
+    justifyContent: "center"
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
