@@ -4,10 +4,10 @@ import { groupBy, mapTask, mapOccurrence } from "@/storage/sqlite/taskMappers";
 export async function getAllTasks() {
   return withDatabase(async db => {
     // Await every read before leaving the transaction, including on failure.
-    const tasks = await db.getAllAsync("SELECT * FROM tasks");
-    const subtasks = await db.getAllAsync("SELECT * FROM subtasks ORDER BY task_id, sort_order ASC, rowid ASC");
-    const occurrences = await db.getAllAsync("SELECT * FROM task_occurrences");
-    const subtaskOccurrences = await db.getAllAsync("SELECT * FROM subtask_occurrences");
+    const tasks = await db.getAllAsync("SELECT * FROM tasks WHERE deleted_at IS NULL");
+    const subtasks = await db.getAllAsync("SELECT * FROM subtasks WHERE deleted_at IS NULL ORDER BY task_id, sort_order ASC, rowid ASC");
+    const occurrences = await db.getAllAsync("SELECT * FROM task_occurrences WHERE deleted_at IS NULL");
+    const subtaskOccurrences = await db.getAllAsync("SELECT * FROM subtask_occurrences WHERE deleted_at IS NULL");
     const subtasksByTask = groupBy(subtasks, "task_id");
     const occurrencesByTask = groupBy(occurrences, "task_id");
     const occurrencesBySubtask = groupBy(subtaskOccurrences, "subtask_id");
@@ -47,6 +47,6 @@ export async function deleteTask(id) {
 export async function updateTaskNotificationIds(task) {
   return withDatabase(async db => {
     const ids = Array.isArray(task.notification_ids) ? task.notification_ids.filter(Boolean) : [];
-    await db.runAsync("UPDATE tasks SET notification_ids=?, notification_id=? WHERE id=?", [JSON.stringify(ids), ids[0] ?? null, task.id]);
+    await db.runAsync("UPDATE tasks SET notification_ids=?, notification_id=? WHERE deleted_at IS NULL AND id=?", [JSON.stringify(ids), ids[0] ?? null, task.id]);
   });
 }

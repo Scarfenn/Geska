@@ -1,3 +1,4 @@
+import { deletionTimeSql } from "@/storage/sqlite/timestamps";
 import { withDatabase } from "@/storage/sqlite/initialize";
 export async function addSubtask(taskId, text, sortOrder = null) {
   return withDatabase(async db => {
@@ -9,7 +10,7 @@ export async function addSubtask(taskId, text, sortOrder = null) {
             COALESCE(MAX(sort_order), -1) + 1
               AS next_order
           FROM subtasks
-          WHERE task_id=?
+          WHERE deleted_at IS NULL AND task_id=?
           `, [taskId]);
       finalSortOrder = result?.next_order ?? 0;
     }
@@ -31,10 +32,10 @@ export async function addSubtask(taskId, text, sortOrder = null) {
 export async function deleteSubtask(id) {
   return withDatabase(async db => {
     await db.runAsync(`
-      DELETE FROM subtask_occurrences
-      WHERE subtask_id=?
+      UPDATE subtask_occurrences SET deleted_at=${deletionTimeSql}
+      WHERE deleted_at IS NULL AND subtask_id=?
       `, [id]);
-    await db.runAsync("DELETE FROM subtasks WHERE id=?", [id]);
+    await db.runAsync(`UPDATE subtasks SET deleted_at=${deletionTimeSql} WHERE deleted_at IS NULL AND id=?`, [id]);
   }, {
     transaction: true
   });
@@ -44,13 +45,13 @@ export async function updateSubtaskOrder(id, sortOrder) {
     await db.runAsync(`
       UPDATE subtasks
       SET sort_order=?
-      WHERE id=?
+      WHERE deleted_at IS NULL AND id=?
       `, [sortOrder, id]);
   });
 }
 export async function updateSubtaskDone(id, done) {
   return withDatabase(async db => {
-    await db.runAsync("UPDATE subtasks SET done=? WHERE id=?", [done ? 1 : 0, id]);
+    await db.runAsync("UPDATE subtasks SET done=? WHERE deleted_at IS NULL AND id=?", [done ? 1 : 0, id]);
   });
 }
 export async function updateSubtaskText(id, text) {
@@ -58,7 +59,7 @@ export async function updateSubtaskText(id, text) {
     await db.runAsync(`
       UPDATE subtasks
       SET text=?
-      WHERE id=?
+      WHERE deleted_at IS NULL AND id=?
       `, [text, id]);
   });
 }

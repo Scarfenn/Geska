@@ -56,7 +56,8 @@ test('insert and update share serialization and aggregate reads keep four querie
   const before = (await h.api.getAllTasks())[0];
   await h.api.updateTask({ ...value, title: 'Edited' });
   const after = (await h.api.getAllTasks())[0];
-  assert.deepEqual({ ...after, title: before.title }, { ...before });
+  assert.ok(after.updated_at > before.updated_at);
+  assert.deepEqual({ ...after, title: before.title, updated_at: before.updated_at }, { ...before });
   assert.equal(after.reminder_value, 0); assert.equal(after.reminder_minutes, 0);
   assert.deepEqual(Array.from(after.notification_ids), ['n1', 'n2']);
   const a = await h.api.addSubtask(value.id, 'Later', 2), b = await h.api.addSubtask(value.id, 'Earlier', 0);
@@ -74,20 +75,20 @@ for (const operation of ['deleteTask', 'deleteCategory', 'deleteSubtask']) {
     const before = await h.api.getAllTasks();
     const table = { deleteTask: 'tasks', deleteCategory: 'categories', deleteSubtask: 'subtasks' }[operation];
     const id = { deleteTask: 'task', deleteCategory: category.id, deleteSubtask: subtask }[operation];
-    h.intercept((method, sql) => { if (sql.trim().startsWith(`DELETE FROM ${table} WHERE id=`)) throw new Error('delete failed'); });
+    h.intercept((method, sql) => { if (sql.trim().startsWith(`UPDATE ${table} SET deleted_at=`) && sql.includes("AND id=?")) throw new Error('delete failed'); });
     await assert.rejects(h.api[operation](id), /delete failed/);
     assert.deepEqual(await h.api.getAllTasks(), before);
     assert.equal((await h.api.getAllCategories()).length, 1);
     h.intercept(() => {}); await h.api[operation](id);
     if (operation === 'deleteTask') {
       assert.equal((await h.api.getAllTasks()).length, 0);
-      for (const table of ['subtasks', 'task_occurrences', 'subtask_occurrences']) assert.equal((await h.db.getAllAsync(`SELECT * FROM ${table}`)).length, 0);
+      for (const table of ['subtasks', 'task_occurrences', 'subtask_occurrences']) assert.equal((await h.db.getAllAsync(`SELECT * FROM ${table} WHERE deleted_at IS NULL`)).length, 0);
     } else if (operation === 'deleteCategory') {
       assert.equal((await h.api.getAllCategories()).length, 0);
       assert.equal((await h.api.getAllTasks())[0].categoryId, null);
     } else {
       assert.equal((await h.api.getAllTasks())[0].subtasks.length, 0);
-      assert.equal((await h.db.getAllAsync('SELECT * FROM subtask_occurrences')).length, 0);
+      assert.equal((await h.db.getAllAsync('SELECT * FROM subtask_occurrences WHERE deleted_at IS NULL')).length, 0);
     }
   });
 }
@@ -116,7 +117,7 @@ test('concurrent operations cannot join a failing transaction and the queue reco
   let entered; const started = new Promise(resolve => { entered = resolve; });
   let release; const pause = new Promise(resolve => { release = resolve; });
   h.intercept(async (method, sql) => {
-    if (sql.includes('DELETE FROM tasks WHERE id=')) { entered(); await pause; throw new Error('failed deletion'); }
+    if (sql.includes('UPDATE tasks SET deleted_at=')) { entered(); await pause; throw new Error('failed deletion'); }
   });
   const removal = assert.rejects(h.api.deleteTask('task'), /failed deletion/);
   await started;
@@ -152,7 +153,7 @@ test('malformed notification JSON falls back to legacy IDs and reopening does no
 
 test('a failed aggregate read rejects and does not poison the next transaction', async t => {
   const h = databaseHarness(t); await seed(h.api);
-  h.intercept((method, sql) => { if (sql === 'SELECT * FROM task_occurrences') throw new Error('read failed'); });
+  h.intercept((method, sql) => { if (sql === 'SELECT * FROM task_occurrences WHERE deleted_at IS NULL') throw new Error('read failed'); });
   await assert.rejects(h.api.getAllTasks(), /read failed/);
   h.intercept(() => {});
   assert.equal((await h.api.getAllTasks()).length, 1);
@@ -169,4 +170,71 @@ test('notification persistence cannot overwrite concurrent task edits or recreat
   await h.api.deleteTask(current.id);
   await h.api.updateTaskNotificationIds({ ...stale, notification_ids: ['late-id'] });
   assert.equal((await h.api.getAllTasks()).length, 0);
+});
+
+test('all tables timestamp inserts, edits and cascading tombstones; repeated deletion is stable', async t => {
+  const h = databaseHarness(t); const { category, subtask } = await seed(h.api);
+  const tables = ['categories', 'tasks', 'subtasks', 'task_occurrences', 'subtask_occurrences'];
+  for (const table of tables) {
+    const row = await h.db.getFirstAsync(`SELECT * FROM ${table}`);
+    assert.ok(Number.isSafeInteger(row.updated_at) && row.updated_at > 0);
+    assert.equal(row.deleted_at, null);
+    await h.db.runAsync(`UPDATE ${table} SET id=id WHERE id=?`, [row.id]);
+    assert.ok((await h.db.getFirstAsync(`SELECT * FROM ${table}`)).updated_at > row.updated_at);
+  }
+  await h.api.deleteTask('task');
+  for (const table of tables.slice(1)) {
+    const row = await h.db.getFirstAsync(`SELECT * FROM ${table}`);
+    assert.ok(row.deleted_at > 0);
+    assert.ok(row.updated_at >= row.deleted_at);
+  }
+  const before = await h.db.getFirstAsync('SELECT * FROM tasks');
+  await h.api.deleteTask('task');
+  await h.api.updateTask({ ...task(), title: 'Stale edit' });
+  assert.deepEqual(await h.db.getFirstAsync('SELECT * FROM tasks'), before);
+  assert.equal(await h.api.getOccurrence('task', '2026-09-09'), null);
+  assert.equal(await h.api.getSubtaskOccurrence(subtask, '2026-09-09'), null);
+  await h.api.deleteCategory(category.id);
+  const recreated = await h.api.addCategory('Work');
+  assert.notEqual(recreated.id, category.id);
+  assert.equal((await h.db.getAllAsync('SELECT * FROM categories')).length, 2);
+  assert.equal((await h.api.getAllCategories()).length, 1);
+});
+
+test('cleared occurrences keep tombstones and can be explicitly set again with the same ID', async t => {
+  const h = databaseHarness(t); await seed(h.api);
+  await h.api.clearOccurrence('task', '2026-09-09');
+  const deleted = await h.db.getFirstAsync('SELECT * FROM task_occurrences');
+  assert.ok(deleted.deleted_at > 0);
+  assert.equal(await h.api.getOccurrence('task', '2026-09-09'), null);
+  await h.api.setOccurrenceDone('task', '2026-09-09', false);
+  const restored = await h.api.getOccurrence('task', '2026-09-09');
+  assert.equal(restored.id, deleted.id);
+  assert.equal(restored.deleted_at, null);
+  assert.equal(restored.done, 0);
+  assert.ok(restored.updated_at > deleted.updated_at);
+});
+
+test('legacy timestamp migration is atomic, preserves categories and does not restamp on reopen', async t => {
+  const h = databaseHarness(t);
+  await h.db.execAsync(`CREATE TABLE categories (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL UNIQUE);
+    INSERT INTO categories VALUES ('old', 'Work');`);
+  let fail = true;
+  h.intercept((method, sql) => {
+    if (fail && sql.includes('ALTER TABLE tasks ADD COLUMN updated_at')) {
+      fail = false; throw new Error('timestamp migration failed');
+    }
+  });
+  await assert.rejects(h.api.initDB(), /timestamp migration failed/);
+  assert.equal((await h.db.getAllAsync('PRAGMA table_info(categories)')).some(c => c.name === 'updated_at'), false);
+  await h.api.initDB();
+  const original = await h.db.getFirstAsync('SELECT * FROM categories');
+  assert.equal(original.name, 'Work');
+  assert.ok(original.updated_at > 0);
+  const { loadDatabase } = await import('./helpers/databaseHarness.mjs');
+  await loadDatabase(h.db).initDB();
+  assert.deepEqual(await h.db.getFirstAsync('SELECT * FROM categories'), original);
+  await h.api.deleteCategory('old');
+  await h.api.addCategory('Work');
+  assert.equal((await h.api.getAllCategories()).length, 1);
 });

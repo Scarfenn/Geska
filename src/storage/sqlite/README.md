@@ -13,7 +13,7 @@ independent of the repositories and exposes the same function names.
   completion read-modify-write operations against the current stored state.
 
 Every public operation rejects on database failure. Occurrence lookups return
-`null` only when no row exists. UI callers must await mutations before clearing
+`null` when no active row exists. UI callers must await mutations before clearing
 inputs or closing a modal, and handle rejected promises at the interaction boundary.
 
 Initialization and migrations, dependent deletions, occurrence writes, automatic
@@ -29,7 +29,7 @@ connection, not separate app processes or other database connections.
 
 Task commands use aggregate operations: task creation/editing and all subtask
 changes share a single transaction. Existing subtask completion/history is retained
-on text/order edits. Omitted rows and their occurrences are deleted; unknown existing
+on text/order edits. Omitted rows and their occurrences are soft-deleted; unknown existing
 IDs fail rather than updating another task or resurrecting a removed row. Subtask
 arrays represent the complete desired list, not a patch.
 
@@ -41,3 +41,28 @@ Run `npm test` from the project root. Database tests execute the real SQL agains
 Python 3's in-memory SQLite through `tests/helpers/sqlite_bridge.py`, with failures
 injected at the adapter boundary. No user database is opened. Native Expo behavior
 and visual interaction still require device testing.
+
+## Local change tracking
+
+All five tables have `updated_at` (non-null INTEGER) and `deleted_at` (nullable
+INTEGER), expressed as UTC Unix milliseconds. Initialization migrates existing
+rows in one transaction, using migration time because historical edit times are
+unknown. Reopening the database preserves these values.
+
+SQLite triggers timestamp inserts and updates across all write paths. Each row's
+`updated_at` advances by at least one millisecond per local update, including
+notification metadata writes. Explicitly changed timestamps are preserved for
+future import code. Indexes on `updated_at` support per-table change scans.
+Child writes timestamp the child row; they do not timestamp the parent task.
+
+Repository deletions retain tombstones, including dependent subtasks and
+occurrences, and regular reads exclude them. Stale task/subtask edits cannot
+restore deleted rows. Setting a cleared occurrence explicitly restores that
+occurrence with its original ID. Category deletion still detaches tasks; a partial
+unique index permits reusing a deleted category's name with a new ID.
+
+This is preparation only: no cloud upload, backup, restore/reset command, retention
+purge or device synchronization is implemented. A future backup must include raw
+rows from every table (including tombstones), not just `getAllTasks()`. A sync
+protocol still needs conflict resolution and device-clock handling; these local
+wall-clock timestamps alone do not provide either.

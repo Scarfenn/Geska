@@ -45,6 +45,8 @@ export function mapTask(task) {
   const hasLegacyRelativeReminder = task.time && task.reminder_minutes != null;
   return {
     id: task.id,
+    updated_at: task.updated_at,
+    deleted_at: task.deleted_at,
     title: task.title,
     description: task.description ?? null,
     done: !!task.done,

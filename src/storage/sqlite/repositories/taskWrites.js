@@ -1,3 +1,4 @@
+import { deletionTimeSql } from "@/storage/sqlite/timestamps";
 import { occursOnDate } from "@/features/tasks/domain/recurrence";
 import { withDatabase } from "@/storage/sqlite/initialize";
 import { insertTaskRow, updateTaskRow, deleteTaskRows, readTask } from "@/storage/sqlite/repositories/taskRows";
@@ -31,15 +32,15 @@ async function replaceSubtasks(db, task, drafts) {
   }
   for (const original of task.subtasks) {
     if (retained.has(String(original.id))) continue;
-    await db.runAsync("DELETE FROM subtask_occurrences WHERE subtask_id=?", [original.id]);
-    await db.runAsync("DELETE FROM subtasks WHERE id=? AND task_id=?", [original.id, task.id]);
+    await db.runAsync(`UPDATE subtask_occurrences SET deleted_at=${deletionTimeSql} WHERE deleted_at IS NULL AND subtask_id=?`, [original.id]);
+    await db.runAsync(`UPDATE subtasks SET deleted_at=${deletionTimeSql} WHERE deleted_at IS NULL AND id=? AND task_id=?`, [original.id, task.id]);
   }
   for (const draft of drafts) {
     if (draft.isNew) {
       await db.runAsync("INSERT INTO subtasks (id, task_id, text, done, sort_order) VALUES (?, ?, ?, 0, ?)",
         [newTaskId(), task.id, draft.text, draft.sort_order]);
     } else {
-      await db.runAsync("UPDATE subtasks SET text=?, sort_order=? WHERE id=? AND task_id=?",
+      await db.runAsync("UPDATE subtasks SET text=?, sort_order=? WHERE deleted_at IS NULL AND id=? AND task_id=?",
         [draft.text, draft.sort_order, draft.id, task.id]);
     }
   }
@@ -90,11 +91,11 @@ export function changeTaskCompletion(id, { done, date = null, subtaskId = null }
         const column = subtaskId == null ? "task_id" : "subtask_id";
         await db.runAsync(`INSERT OR IGNORE INTO ${table} (id, ${column}, date, done) VALUES (?, ?, ?, ?)`,
           [`${target.id}_${date}`, target.id, date, nextDone ? 1 : 0]);
-        await db.runAsync(`UPDATE ${table} SET done=? WHERE ${column}=? AND date=?`,
+        await db.runAsync(`UPDATE ${table} SET done=?, deleted_at=NULL WHERE ${column}=? AND date=?`,
           [nextDone ? 1 : 0, target.id, date]);
       } else {
         const table = subtaskId == null ? "tasks" : "subtasks";
-        await db.runAsync(`UPDATE ${table} SET done=? WHERE id=?`, [nextDone ? 1 : 0, target.id]);
+        await db.runAsync(`UPDATE ${table} SET done=? WHERE deleted_at IS NULL AND id=?`, [nextDone ? 1 : 0, target.id]);
       }
     }
     return { task: await readTask(db, id), changed };

@@ -1,7 +1,8 @@
+import { deletionTimeSql } from "@/storage/sqlite/timestamps";
 import { withDatabase } from "@/storage/sqlite/initialize";
 export async function getOccurrence(taskId, date) {
   return withDatabase(async db => {
-    return await db.getFirstAsync("SELECT * FROM task_occurrences WHERE task_id=? AND date=?", [taskId, date]);
+    return await db.getFirstAsync("SELECT * FROM task_occurrences WHERE deleted_at IS NULL AND task_id=? AND date=?", [taskId, date]);
   });
 }
 export async function setOccurrenceDone(taskId, date, done) {
@@ -12,7 +13,7 @@ export async function setOccurrenceDone(taskId, date, done) {
       `, [`${taskId}_${date}`, taskId, date, done ? 1 : 0]);
     await db.runAsync(`
       UPDATE task_occurrences
-      SET done=?
+      SET done=?, deleted_at=NULL
       WHERE task_id=? AND date=?
       `, [done ? 1 : 0, taskId, date]);
   }, {
@@ -21,7 +22,7 @@ export async function setOccurrenceDone(taskId, date, done) {
 }
 export async function clearOccurrence(taskId, date) {
   return withDatabase(async db => {
-    await db.runAsync("DELETE FROM task_occurrences WHERE task_id=? AND date=?", [taskId, date]);
+    await db.runAsync(`UPDATE task_occurrences SET deleted_at=${deletionTimeSql} WHERE deleted_at IS NULL AND task_id=? AND date=?`, [taskId, date]);
   });
 }
 export async function getSubtaskOccurrence(subtaskId, date) {
@@ -29,7 +30,7 @@ export async function getSubtaskOccurrence(subtaskId, date) {
     return await db.getFirstAsync(`
       SELECT *
       FROM subtask_occurrences
-      WHERE subtask_id=? AND date=?
+      WHERE deleted_at IS NULL AND subtask_id=? AND date=?
       `, [subtaskId, date]);
   });
 }
@@ -46,7 +47,7 @@ export async function setSubtaskOccurrenceDone(subtaskId, date, done) {
       `, [`${subtaskId}_${date}`, subtaskId, date, done ? 1 : 0]);
     await db.runAsync(`
       UPDATE subtask_occurrences
-      SET done=?
+      SET done=?, deleted_at=NULL
       WHERE subtask_id=? AND date=?
       `, [done ? 1 : 0, subtaskId, date]);
   }, {

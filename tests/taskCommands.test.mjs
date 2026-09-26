@@ -29,7 +29,7 @@ test('creating a task rolls back its row and all subtasks when an insertion fail
   h.intercept((method, sql, params) => { if (sql.startsWith('INSERT INTO subtasks') && params[2] === 'Second') throw new Error('subtask failed'); });
   await assert.rejects(h.commands.createTask(draft()), /subtask failed/);
   assert.equal((await h.api.getAllTasks()).length, 0);
-  assert.equal((await h.db.getAllAsync('SELECT * FROM subtasks')).length, 0);
+  assert.equal((await h.db.getAllAsync('SELECT * FROM subtasks WHERE deleted_at IS NULL')).length, 0);
   assert.equal(h.reminders.length, 0);
   h.intercept(() => {});
   const saved = await h.commands.createTask(draft());
@@ -122,7 +122,7 @@ test('removal commits before cancellation, and cancellation failure is reported 
   };
   const result = await h.commands.removeTask(task.id);
   assert.equal(result.status, 'deleted'); assert.equal(result.reminders.status, 'failed');
-  assert.equal((await h.db.getAllAsync('SELECT * FROM subtasks')).length, 0);
+  assert.equal((await h.db.getAllAsync('SELECT * FROM subtasks WHERE deleted_at IS NULL')).length, 0);
 });
 
 test('foreign or deleted subtask IDs cannot modify another task or resurrect removed rows', async t => {

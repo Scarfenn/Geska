@@ -7,7 +7,7 @@ export function initDB() {
       await db.execAsync(`
       CREATE TABLE IF NOT EXISTS categories (
         id TEXT PRIMARY KEY NOT NULL,
-        name TEXT NOT NULL UNIQUE
+        name TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS tasks (
