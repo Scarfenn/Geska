@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { themes } from "@/styles/themes";
 import getThemeStyles from "@/features/settings/styles/themeStyles";
+import ThemePreview from "@/features/settings/components/ThemePreview";
 
 export default function ThemeScreen({ navigation, themeName, mode, setThemeName, setMode }) {
   const theme = themes[themeName][mode];
@@ -10,13 +11,15 @@ export default function ThemeScreen({ navigation, themeName, mode, setThemeName,
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle={mode === "dark" ? "light-content" : "dark-content"} backgroundColor={theme.background} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.layout}>
         <View style={styles.header}>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Volver a Ajustes" style={styles.menuButton} onPress={() => navigation.navigate("Ajustes")}>
             <Ionicons name="arrow-back" size={24} color={theme.text} accessible={false} />
           </TouchableOpacity>
           <Text accessibilityRole="header" style={styles.title}>Tema</Text>
         </View>
+        <ThemePreview palette={theme}
+          accessibilityLabel={`Vista previa del tema ${themeName.charAt(0).toUpperCase() + themeName.slice(1)} en modo ${mode === "dark" ? "oscuro" : "claro"}. Ejemplo con tareas ficticias.`} />
         <View style={styles.section}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>MODO</Text>
           <View style={styles.modeControl}>
@@ -30,34 +33,28 @@ export default function ThemeScreen({ navigation, themeName, mode, setThemeName,
             ))}
           </View>
         </View>
-        <View style={styles.section}>
+        <View style={styles.familySection}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>FAMILIA DE TEMA</Text>
-          <View style={styles.grid}>
-            {Object.keys(themes).map(name => {
-              const palette = themes[name][mode];
-              const label = name.charAt(0).toUpperCase() + name.slice(1);
-              const selected = themeName === name;
-              return (
-                <TouchableOpacity key={name} accessible accessibilityRole="button" accessibilityLabel={`Tema ${label}`}
-                  accessibilityState={{ selected }} onPress={() => setThemeName(name)}
-                  style={[styles.familyCard, selected && styles.selectedCard]}>
-                  <View style={[styles.preview, { backgroundColor: palette.background, borderColor: palette.border }]}
-                    accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                    {[palette.primary, palette.inactiveCategory, palette.card, palette.doneCheck].map((color, index) => (
-                      <View key={index} style={[styles.swatch, { backgroundColor: color }]} />
-                    ))}
-                  </View>
-                  <View style={styles.familyLabel}>
+          <ScrollView style={styles.familyScroll} contentContainerStyle={styles.familyScrollContent} showsVerticalScrollIndicator={false} removeClippedSubviews={false}>
+            <View style={styles.grid}>
+              {Object.keys(themes).map(name => {
+                const palette = themes[name][mode];
+                const label = name.charAt(0).toUpperCase() + name.slice(1);
+                const selected = themeName === name;
+                return (
+                  <TouchableOpacity key={name} accessible accessibilityRole="button" accessibilityLabel={`Tema ${label}`}
+                    accessibilityState={{ selected }} onPress={() => setThemeName(name)}
+                    style={[styles.familyCard, selected && styles.selectedCard]}>
+                    <View accessible={false} style={[styles.familyAccent, { backgroundColor: palette.primary }]} />
                     <Text style={styles.familyName}>{label}</Text>
                     {selected && <Ionicons name="checkmark-circle" size={22} color={theme.primaryText} accessible={false} />}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={styles.note}>Los cambios se aplican al instante.</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }

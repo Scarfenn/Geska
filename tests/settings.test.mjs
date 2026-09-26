@@ -77,7 +77,7 @@ test('navigation and shared selector JSX compile after adding Settings', () => {
 
 const flattenStyle = style => Object.assign({}, ...[style].flat(Infinity).filter(Boolean));
 
-test('ThemeScreen renders every real family in both modes, with token previews and accessible selection', () => {
+test('ThemeScreen renders every real family in both modes, with compact token accents and accessible selection', () => {
   const h = harness();
   const Screen = h.load('src/features/settings/ThemeScreen.js').default;
   const themes = h.load('src/styles/themes.js').themes;
@@ -99,9 +99,10 @@ test('ThemeScreen renders every real family in both modes, with token previews a
       const check = nodes(card).find(n => n.props.name === 'checkmark-circle');
       assert.equal(Boolean(check), name === themeName);
       assert.equal(flattenStyle(card.props.style).borderColor, name === themeName ? themes[themeName][mode].primaryText : themes[themeName][mode].border);
-      const preview = nodes(card).find(n => n.props.accessibilityElementsHidden);
-      assert.equal(flattenStyle(preview.props.style).backgroundColor, palette.background);
-      assert.deepEqual(nodes(preview).slice(1).map(n => flattenStyle(n.props.style).backgroundColor), [palette.primary, palette.inactiveCategory, palette.card, palette.doneCheck]);
+      const accents = nodes(card).filter(n => n.type === 'View');
+      assert.equal(accents.length, 1, 'only a single family accent remains, no four-swatch palette');
+      assert.equal(flattenStyle(accents[0].props.style).backgroundColor, palette.primary);
+      assert.ok(flattenStyle(card.props.style).minHeight >= 48);
       card.props.onPress();
       assert.equal(familyCall, name);
       assert.equal(modeCall, undefined);
@@ -171,11 +172,66 @@ test('selection updates the controlled screen and Settings subtitle when App sup
   const Settings = h.load('src/features/settings/SettingsScreen.js').default;
   const themes = h.load('src/styles/themes.js').themes;
   const props = { themeName: 'ocean', mode: 'light', navigation: {}, setThemeName(name) { props.themeName = name; }, setMode(mode) { props.mode = mode; } };
+  const previewOf = tree => nodes(tree).find(n => n.props.accessibilityRole === 'image');
+  assert.equal(flattenStyle(previewOf(Screen(props)).props.style).backgroundColor, themes.ocean.light.background);
   nodes(Screen(props)).find(n => n.props.accessibilityLabel === 'Tema Coffee').props.onPress();
+  assert.equal(flattenStyle(previewOf(Screen(props)).props.style).backgroundColor, themes.coffee.light.background);
   nodes(Screen(props)).find(n => n.props.accessibilityLabel === 'Oscuro').props.onPress();
   const updated = Screen(props);
+  assert.equal(flattenStyle(previewOf(updated).props.style).backgroundColor, themes.coffee.dark.background);
+  assert.match(previewOf(updated).props.accessibilityLabel, /Coffee en modo oscuro/);
   assert.equal(updated.props.style.backgroundColor, themes.coffee.dark.background);
   assert.ok(nodes(updated).find(n => n.props.accessibilityLabel === 'Tema Coffee').props.accessibilityState.selected);
   assert.ok(nodes(updated).find(n => n.props.accessibilityLabel === 'Oscuro').props.accessibilityState.selected);
   assert.ok(nodes(Settings(props)).some(n => n.props.accessibilityLabel === 'Tema. Coffee · Oscuro'));
+});
+
+test('pure ThemePreview represents actual palette tokens for every family/mode with one noninteractive accessible element', () => {
+  const h = harness();
+  const Preview = h.load('src/features/settings/components/ThemePreview.js').default;
+  const themes = h.load('src/styles/themes.js').themes;
+  const verify = palette => {
+    const tree = Preview({ palette, accessibilityLabel: 'Vista previa de ejemplo' });
+    const all = nodes(tree);
+    const text = value => all.find(n => n.type === 'Text' && n.children.includes(value));
+    assert.equal(tree.props.accessibilityRole, 'image');
+    assert.equal(tree.props.accessible, true);
+    assert.equal(tree.props.accessibilityLabel, 'Vista previa de ejemplo');
+    assert.equal(flattenStyle(tree.props.style).backgroundColor, palette.background);
+    assert.equal(flattenStyle(tree.props.style).borderColor, palette.border);
+    for (const [label, token] of [['Hoy', 'text'], ['Todas', 'onPrimary'], ['Personal', 'inactiveCategoryText'], ['Leer un capítulo', 'pendingText'], ['Dar un paseo', 'doneText'], ['VISTA PREVIA', 'inactiveCategoryText']]) {
+      assert.equal(flattenStyle(text(label).props.style).color, palette[token]);
+    }
+    for (const [icon, token] of [['add', 'onPrimary'], ['ellipse-outline', 'pendingCheck'], ['checkmark-circle', 'doneCheck']]) {
+      assert.equal(all.find(n => n.props.name === icon).props.color, palette[token]);
+    }
+    for (const [label, token] of [['Todas', 'primary'], ['Personal', 'inactiveCategory'], ['Dar un paseo', 'card']]) {
+      const parent = all.find(n => n.children.includes(text(label)));
+      assert.equal(flattenStyle(parent.props.style).backgroundColor, palette[token]);
+    }
+    const content = tree.children[0];
+    assert.equal(content.props.accessibilityElementsHidden, true);
+    assert.equal(content.props.importantForAccessibility, 'no-hide-descendants');
+    assert.equal(content.props.pointerEvents, 'none');
+    assert.equal(all.filter(n => n.props.accessible).length, 1);
+    assert.ok(all.every(n => !n.props.onPress && !n.props.onLongPress && n.type !== 'TouchableOpacity'));
+  };
+  for (const family of Object.values(themes)) for (const mode of ['light', 'dark']) verify(family[mode]);
+  // Distinct sentinels detect hardcoded colors or accidentally consulting global themes.
+  verify(Object.fromEntries(Object.keys(themes.basic.light).map(token => [token, `token:${token}`])));
+  const source = readFileSync(new URL('../src/features/settings/components/ThemePreview.js', import.meta.url), 'utf8');
+  const ast = babel.parseSync(source, { configFile: false, babelrc: false, parserOpts: { plugins: ['jsx'] } });
+  assert.deepEqual(ast.program.body.filter(n => n.type === 'ImportDeclaration').map(n => n.source.value), ['react-native', '@expo/vector-icons']);
+});
+
+test('selected preview comes between the header and mode selector', () => {
+  const h = harness();
+  const Screen = h.load('src/features/settings/ThemeScreen.js').default;
+  const all = nodes(Screen({ themeName: 'ocean', mode: 'dark', navigation: {}, setThemeName() {}, setMode() {} }));
+  const previewIndex = all.findIndex(n => n.props.accessibilityRole === 'image');
+  const textIndex = text => all.findIndex(n => n.type === 'Text' && n.children.includes(text));
+  assert.ok(textIndex('Tema') < previewIndex);
+  assert.ok(previewIndex < textIndex('MODO'));
+  assert.ok(textIndex('MODO') < textIndex('FAMILIA DE TEMA'));
+  assert.match(all[previewIndex].props.accessibilityLabel, /Ocean en modo oscuro/);
 });
