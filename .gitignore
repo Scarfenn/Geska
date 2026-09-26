@@ -3,7 +3,8 @@ node_modules/
 .expo-shared/
 dist/
 .env
-.env.*
+.env.local
+.env.*.local
 *.log
 /android
 /ios

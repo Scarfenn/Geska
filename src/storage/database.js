@@ -10,3 +10,6 @@ export {
   newTaskId, createTaskWithSubtasks, editTaskWithSubtasks, replaceTaskSubtasks,
   changeTaskCompletion, removeTaskWithSnapshot,
 } from "@/storage/sqlite/repositories/taskWrites";
+
+// Full raw snapshot for backups; normal UI repositories retain their filters.
+export { getBackupSnapshot } from "@/storage/sqlite/backupSnapshot";

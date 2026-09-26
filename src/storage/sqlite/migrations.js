@@ -1,5 +1,9 @@
 import { nowSql } from "@/storage/sqlite/timestamps";
 
+// First versioned backup schema: the five tables after all migrations below.
+// Increment when changing their columns or stored-value semantics.
+export const SQLITE_SCHEMA_VERSION = 1;
+
 async function ensureTaskColumns(db) {
   const columns = await db.getAllAsync("PRAGMA table_info(tasks)");
   const existing = new Set(columns.map(column => column.name));

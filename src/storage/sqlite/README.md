@@ -66,3 +66,34 @@ purge or device synchronization is implemented. A future backup must include raw
 rows from every table (including tombstones), not just `getAllTasks()`. A sync
 protocol still needs conflict resolution and device-clock handling; these local
 wall-clock timestamps alone do not provide either.
+
+## Backup snapshot API (stage 1)
+
+`getBackupSnapshot()` is exported through `@/storage/database`. It awaits local
+initialization/migration, then reads all five tables in one queued transaction,
+including deleted rows, without mappers or UI filters. It returns
+`{ schemaVersion, createdAt, tables }`. `createdAt` is the UTC ISO timestamp at
+capture start. Reads use the supplied connection sequentially, and any failure
+rejects the whole operation. No network operation runs in the SQLite queue.
+
+`SQLITE_SCHEMA_VERSION = 1` in migrations identifies the current post-migration
+row schema for backups; it is an explicit application contract, not SQLite's
+internal `schema_version` counter or an existing migration history. Increment it
+when changing columns or stored-value semantics. Legacy null values remain null
+in backups, including `repeat_interval` (the UI's fallback to 1 is not applied).
+Legacy `updated_at` is migration time, not an inferred historical edit time.
+
+`createBackupDocument(snapshot)` and `serializeBackup(snapshot)` in
+`features/backup/domain/backupFormat.js` package these raw rows in a JSON envelope:
+`{ format: "geska-sqlite-backup", formatVersion: 1, schemaVersion, createdAt, tables }`.
+Format and row-schema versions evolve independently. This is a logical data export,
+not a byte-for-byte SQLite file or a backup of AsyncStorage settings. Notification
+IDs are preserved as raw data but are device-local; a future restore must handle
+that explicitly. There is no restore implementation or restore-time validation yet.
+
+Supabase's optional `getSupabaseClient()` lives in `storage/supabase/client.js`.
+It creates one client on demand or returns null when either environment variable
+is missing. Invalid non-empty configuration can throw at the accessor; it is not
+used by the local startup or task repositories. Session persistence, token refresh
+and URL session detection are disabled for this stage. No Auth, uploads, scheduling,
+hooks or UI are connected. Snapshot and JSON creation work entirely offline.
