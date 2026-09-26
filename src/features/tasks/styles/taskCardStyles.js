@@ -18,7 +18,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
   taskTime: {
     marginTop: 2,
     fontSize: 13,
-    color: theme.pendingText + "AA"
+    color: theme.inactiveCategoryText
   },
   subtaskProgress: {
     flexDirection: "row",

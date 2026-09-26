@@ -9,7 +9,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
     padding: 10,
     marginBottom: 10,
     borderRadius: 5,
-    borderColor: theme.border,
+    borderColor: theme.inactiveCategoryText,
     backgroundColor: theme.card,
     color: theme.text
   },

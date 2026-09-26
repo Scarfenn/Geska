@@ -65,7 +65,8 @@ export default function App() {
               backgroundColor: currentTheme.card,
               width: 250,
             },
-            drawerActiveTintColor: currentTheme.primary,
+            drawerActiveTintColor: currentTheme.onPrimary,
+            drawerActiveBackgroundColor: currentTheme.primary,
             drawerInactiveTintColor: currentTheme.text,
             drawerLabelStyle: {
               fontSize: 16,

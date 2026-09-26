@@ -73,7 +73,7 @@ export default function TaskCard({
 
                 {task.time && (
                   <Text
-                    style={[styles.taskTime, { opacity: task.done ? 0.45 : 0.85 }]}
+                    style={[styles.taskTime, task.done && styles.doneText]}
                   >
                     {task.time}
                   </Text>

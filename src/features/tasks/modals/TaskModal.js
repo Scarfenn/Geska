@@ -371,7 +371,7 @@ function TaskModalSession({
                       size={24}
                       color={
                         selectedCategory
-                          ? theme.primary
+                          ? theme.primaryText
                           : theme.text
                       }
                     />
@@ -394,7 +394,7 @@ function TaskModalSession({
                       size={24}
                       color={
                         draftSubtasks.length > 0
-                          ? theme.primary
+                          ? theme.primaryText
                           : theme.text
                       }
                     />

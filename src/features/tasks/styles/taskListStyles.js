@@ -14,13 +14,13 @@ export default createThemedStyles((theme, mode, themeName) => ({
   taskEmptyTitle: {
     textAlign: "center",
     fontSize: 18,
-    color: mode === "light" ? "#444" : "#ccc",
+    color: theme.text,
     fontWeight: "600"
   },
   taskEmptyDescription: {
     textAlign: "center",
     fontSize: 14,
-    color: mode === "light" ? "#666" : "#aaa",
+    color: theme.inactiveCategoryText,
     marginTop: 8
   },
   taskListContent: {

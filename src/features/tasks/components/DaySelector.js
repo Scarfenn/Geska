@@ -186,7 +186,7 @@ export default function DaySelector({
                           height: 6,
                           borderRadius: 3,
                           backgroundColor:
-                            theme.primary,
+                            theme.primaryText,
                           marginTop: 3,
                         }}
                       />

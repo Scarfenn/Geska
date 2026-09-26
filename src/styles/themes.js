@@ -16,7 +16,7 @@ export const themes = {
       onDanger: "#FFFFFF",
 
       doneText: "#6C7079",
-      doneCheck: "#3FAE7A",
+      doneCheck: "#349D6C",
       pendingText: "#1F2937",
       pendingCheck: "#737373",
 
@@ -75,9 +75,9 @@ export const themes = {
       onDanger: "#FFFFFF",
 
       doneText: "#7B7170",
-      doneCheck: "#8FD8BE",           // Menta pastel
+      doneCheck: "#55977F",           // Menta pastel
       pendingText: "#4A3C38",
-      pendingCheck: "#C7B3AE",
+      pendingCheck: "#9D8580",
 
       inactiveCategory: "#F5DEDF",
       inactiveCategoryText: "#76615E",
@@ -134,9 +134,9 @@ export const themes = {
       onDanger: "#FFFFFF",
     
     doneText: "#586E80",
-    doneCheck: "#2AAFA3",
+    doneCheck: "#23948A",
     pendingText: "#0F3A5F",
-    pendingCheck: "#6F96B8",
+    pendingCheck: "#648AA9",
 
     inactiveCategory: "#9EC8E0",   // más oceánico, menos cielo
     inactiveCategoryText: "#33536A",
@@ -193,9 +193,9 @@ export const themes = {
       onDanger: "#FFFFFF",
 
       doneText: "#587769",
-      doneCheck: "#5FBF87",
+      doneCheck: "#469F6C",
       pendingText: "#294233",
-      pendingCheck: "#8CAFA0",
+      pendingCheck: "#6C927F",
 
       inactiveCategory: "#C4E0D2",
       inactiveCategoryText: "#3F6755",
@@ -252,7 +252,7 @@ export const themes = {
       onDanger: "#FFFFFF",
 
       doneText: "#776D63",
-      doneCheck: "#B98A5F",
+      doneCheck: "#AA7C53",
       pendingText: "#48382C",
       pendingCheck: "#92735B",
 
@@ -311,9 +311,9 @@ export const themes = {
       onDanger: "#FFFFFF",
 
       doneText: "#81705A",
-      doneCheck: "#E3B35C",
+      doneCheck: "#B18437",
       pendingText: "#4E3C21",
-      pendingCheck: "#D6A756",
+      pendingCheck: "#AF853F",
 
       inactiveCategory: "#F6E3B9",
       inactiveCategoryText: "#7A6341",
@@ -370,9 +370,9 @@ export const themes = {
       onDanger: "#FFFFFF",
 
       doneText: "#826A66",
-      doneCheck: "#D7776D",
+      doneCheck: "#CA6A61",
       pendingText: "#5B302B",
-      pendingCheck: "#E7695D",
+      pendingCheck: "#D85E53",
 
       inactiveCategory: "#F5D0C8",
       inactiveCategoryText: "#7F534C",
@@ -488,7 +488,7 @@ export const themes = {
       onDanger: "#FFFFFF",
 
       doneText: "#74697A",
-      doneCheck: "#C285E6",
+      doneCheck: "#AD70D0",
       pendingText: "#443251",
       pendingCheck: "#9D7BB3",
 

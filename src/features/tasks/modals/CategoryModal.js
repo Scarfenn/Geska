@@ -70,7 +70,7 @@ export default function CategoryModal({
               <TextInput
                 style={styles.input}
                 placeholder="Nombre de la categoría..."
-                placeholderTextColor={mode === "light" ? "#888" : "#ccc"}
+                placeholderTextColor={styles.textSecondary.color}
                 value={categoryName}
                 onChangeText={setCategoryName}
               />

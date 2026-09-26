@@ -121,7 +121,7 @@ export default function TaskCategoryModal({
                 size={19}
                 color={
                   selectedCategory === null
-                    ? theme.primary
+                    ? theme.primaryText
                     : theme.inactiveCategoryText
                 }
               />

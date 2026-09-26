@@ -26,7 +26,7 @@ export default function ThemePreview({ palette, accessibilityLabel }) {
           <Ionicons name="ellipse-outline" size={22} color={palette.pendingCheck} />
           <View style={styles.taskContent}>
             <Text style={[styles.taskTitle, { color: palette.pendingText }]}>Leer un capítulo</Text>
-            <Text style={[styles.time, { color: palette.pendingText, opacity: 0.65 }]}>18:00</Text>
+            <Text style={[styles.time, { color: palette.inactiveCategoryText }]}>18:00</Text>
           </View>
         </View>
         <View style={[styles.task, { backgroundColor: palette.card, borderColor: palette.border }]}>

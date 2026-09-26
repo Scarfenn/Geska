@@ -108,7 +108,7 @@ test('compatibility facade and focused sheets preserve colors in all palettes', 
   }
 });
 
-test('empty-list text and inline icon keep their previous colors in every palette', () => {
+test('empty-list text and inline icon use family tokens in every palette', () => {
   const source = readFileSync(new URL('../src/features/tasks/components/TaskList.js', import.meta.url), 'utf8');
   const code = babel.transformSync(source, { configFile: false, babelrc: false,
     plugins: ['@babel/plugin-transform-modules-commonjs', ['@babel/plugin-transform-react-jsx', { runtime: 'classic' }]],
@@ -136,8 +136,8 @@ test('empty-list text and inline icon keep their previous colors in every palett
     const title = nodes.find(node => node.type === 'Text' && node.children.includes('¡No tienes ninguna tarea!'));
     const description = nodes.find(node => node.type === 'Text' && node.children.some(child => child?.props?.name === 'add-circle-outline'));
     const icon = nodes.find(node => node.props.name === 'add-circle-outline');
-    assert.equal(title.props.style.color, mode === 'light' ? '#444' : '#ccc');
-    assert.equal(description.props.style.color, mode === 'light' ? '#666' : '#aaa');
+    assert.equal(title.props.style.color, themes[themeName][mode].text);
+    assert.equal(description.props.style.color, themes[themeName][mode].inactiveCategoryText);
     assert.equal(icon.props.color, description.props.style.color);
   }
 });

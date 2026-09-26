@@ -199,7 +199,7 @@ test('pure ThemePreview represents actual palette tokens for every family/mode w
     assert.equal(tree.props.accessibilityLabel, 'Vista previa de ejemplo');
     assert.equal(flattenStyle(tree.props.style).backgroundColor, palette.background);
     assert.equal(flattenStyle(tree.props.style).borderColor, palette.border);
-    for (const [label, token] of [['Hoy', 'text'], ['Todas', 'onPrimary'], ['Personal', 'inactiveCategoryText'], ['Leer un capítulo', 'pendingText'], ['Dar un paseo', 'doneText'], ['VISTA PREVIA', 'inactiveCategoryText']]) {
+    for (const [label, token] of [['Hoy', 'text'], ['Todas', 'onPrimary'], ['Personal', 'inactiveCategoryText'], ['Leer un capítulo', 'pendingText'], ['Dar un paseo', 'doneText'], ['VISTA PREVIA', 'inactiveCategoryText'], ['18:00', 'inactiveCategoryText']]) {
       assert.equal(flattenStyle(text(label).props.style).color, palette[token]);
     }
     for (const [icon, token] of [['add', 'onPrimary'], ['ellipse-outline', 'pendingCheck'], ['checkmark-circle', 'doneCheck']]) {

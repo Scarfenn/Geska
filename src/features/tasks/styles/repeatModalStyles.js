@@ -159,7 +159,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
     fontSize: 16,
     fontWeight: "700",
     borderBottomWidth: 1,
-    borderBottomColor: theme.border
+    borderBottomColor: theme.inactiveCategoryText
   },
   repeatDisabled: {
     opacity: 0.4
