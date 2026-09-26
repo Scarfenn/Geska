@@ -529,4 +529,63 @@ export const themes = {
       subtaskCounterCompleteText: "#BD83F4",
     },
   },
+
+  /* =========================================================
+     ARCTIC
+  ========================================================== */
+  arctic: {
+    light: {
+      background: "#EAF5F7",
+      text: "#293D44",
+      card: "#F6FCFD",
+      border: "#A4C2CB",
+      primary: "#83D5F0",
+      onPrimary: "#203840",
+      primaryText: "#246B83",
+      danger: "#B42332",
+      dangerBackground: "#B42332",
+      onDanger: "#FFFFFF",
+
+      doneText: "#586F77",
+      doneCheck: "#39818B",
+      pendingText: "#30474F",
+      pendingCheck: "#667F89",
+
+      inactiveCategory: "#D5E9EF",
+      inactiveCategoryText: "#49646F",
+
+      // Contador de subtareas: pendiente y completo.
+      subtaskCounterBackground: "#E4EFF3",
+      subtaskCounterText: "#49646F",
+      subtaskCounterCompleteBackground: "#D7EFF0",
+      subtaskCounterCompleteText: "#346D75",
+    },
+
+    dark: {
+      background: "#232C30",
+      text: "#E5F3F6",
+      card: "#303C41",
+      border: "#627D87",
+      primary: "#92DFF5",
+      onPrimary: "#23383F",
+      primaryText: "#A6E7F8",
+      danger: "#FF9AA4",
+      dangerBackground: "#8D2635",
+      onDanger: "#FFFFFF",
+
+      doneText: "#A8BEC6",
+      doneCheck: "#8BCFD3",
+      pendingText: "#E1F0F4",
+      pendingCheck: "#ADC6D0",
+
+      inactiveCategory: "#40545C",
+      inactiveCategoryText: "#C7DDE5",
+
+      // Contador de subtareas: pendiente y completo.
+      subtaskCounterBackground: "#3A4A51",
+      subtaskCounterText: "#C7DDE5",
+      subtaskCounterCompleteBackground: "#3B555A",
+      subtaskCounterCompleteText: "#A1DEE0",
+    },
+  },
 };
