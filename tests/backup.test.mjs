@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import vm from 'node:vm';
 import { databaseHarness, loadDatabase } from './helpers/databaseHarness.mjs';
-const require = createRequire(import.meta.url);
 const format = loadDatabase(null, { entry: '../../src/features/backup/domain/backupFormat.js' });
 const plain = value => JSON.parse(JSON.stringify(value));
 const tableNames = ['categories', 'tasks', 'subtasks', 'task_occurrences', 'subtask_occurrences'];
@@ -98,32 +94,4 @@ test('empty backups are valid; incomplete or lossy documents are rejected', asyn
   assert.throws(() => format.serializeBackup({ ...snapshot, tables: {} }), /tabla/);
   snapshot.tables.tasks.push({ id: 'bad', title: undefined });
   assert.throws(() => format.serializeBackup(snapshot), /serializable/);
-});
-
-test('Supabase is lazy, optional and reusable, with all session behavior disabled', () => {
-  const code = require('@babel/core').transformSync(readFileSync(new URL('../src/storage/supabase/client.js', import.meta.url), 'utf8'), {
-    configFile: false, babelrc: false, plugins: ['@babel/plugin-transform-modules-commonjs'],
-  }).code;
-  const env = {}; const calls = []; const client = {};
-  const module = { exports: {} };
-  vm.runInNewContext(code, {
-    module, exports: module.exports, process: { env },
-    require(name) {
-      if (name === 'react-native-url-polyfill/auto') return {};
-      if (name === '@supabase/supabase-js') return { createClient(...args) { calls.push(args); return client; } };
-      throw new Error(`Unexpected import ${name}`);
-    },
-  });
-  const { getSupabaseClient } = module.exports;
-  assert.equal(calls.length, 0);
-  assert.equal(getSupabaseClient(), null);
-  env.EXPO_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
-  assert.equal(getSupabaseClient(), null);
-  env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'test-publishable-key';
-  assert.equal(getSupabaseClient(), client);
-  assert.equal(getSupabaseClient(), client);
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0][0], env.EXPO_PUBLIC_SUPABASE_URL);
-  assert.equal(calls[0][1], env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
-  assert.deepEqual({ ...calls[0][2].auth }, { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false });
 });

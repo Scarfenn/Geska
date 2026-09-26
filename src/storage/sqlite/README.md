@@ -94,6 +94,6 @@ that explicitly. There is no restore implementation or restore-time validation y
 Supabase's optional `getSupabaseClient()` lives in `storage/supabase/client.js`.
 It creates one client on demand or returns null when either environment variable
 is missing. Invalid non-empty configuration can throw at the accessor; it is not
-used by the local startup or task repositories. Session persistence, token refresh
-and URL session detection are disabled for this stage. No Auth, uploads, scheduling,
-hooks or UI are connected. Snapshot and JSON creation work entirely offline.
+used by the local startup or task repositories. Optional Auth is documented in
+`../supabase/README.md`. No uploads, scheduling, hooks or UI are connected.
+Snapshot and JSON creation work entirely offline.
