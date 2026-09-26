@@ -66,8 +66,8 @@ test('app version falls back to Expo config without native application metadata'
   assert.equal(h.load('src/features/settings/services/appInfo.js').appVersion, h.load('app.json').expo.version);
 });
 
-test('navigation and shared selector JSX compile after adding Settings', () => {
-  for (const path of ['App.js', 'src/components/ThemeSelector.js']) {
+test('navigation JSX compiles after adding Settings', () => {
+  for (const path of ['App.js']) {
     const source = readFileSync(new URL('../' + path, import.meta.url), 'utf8');
     assert.doesNotThrow(() => babel.transformSync(source, { configFile: false, babelrc: false,
       plugins: ['@babel/plugin-transform-modules-commonjs', ['@babel/plugin-transform-react-jsx', { runtime: 'classic' }]],

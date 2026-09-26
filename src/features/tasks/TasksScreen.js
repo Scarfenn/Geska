@@ -8,7 +8,6 @@ import { themes } from "@/styles/themes";
 import TaskOptionsMenu from "@/features/tasks/components/TaskOptionsMenu";
 import TaskList from "@/features/tasks/components/TaskList";
 import DaySelector from "@/features/tasks/components/DaySelector";
-import ThemeSelector from "@/components/ThemeSelector";
 import CategoryBar from "@/features/tasks/components/CategoryBar";
 import TasksModals from "@/features/tasks/components/TasksModals";
 import useTasksData from "@/features/tasks/hooks/useTasksData";
@@ -19,8 +18,6 @@ export default function TasksScreen({
   navigation,
   themeName,
   mode,
-  setThemeName,
-  setMode,
   tasksVersion
 }) {
   const {
@@ -74,13 +71,6 @@ export default function TasksScreen({
             <Text style={styles.title}>Tu día</Text>
           </View>
 
-          {/* Selector de Tema */}
-          <ThemeSelector
-            themeName={themeName}
-            mode={mode}
-            setThemeName={setThemeName}
-            setMode={setMode}
-          />
         </View>
 
         {/* Selector de Día */}

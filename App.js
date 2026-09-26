@@ -90,8 +90,6 @@ export default function App() {
                 {...props}
                 themeName={themeName}
                 mode={mode}
-                setThemeName={setThemeName}
-                setMode={setMode}
               />
             }
           </Drawer.Screen>
