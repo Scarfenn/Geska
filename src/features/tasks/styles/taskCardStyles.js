@@ -66,7 +66,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
     marginTop: 2,
     borderBottomWidth: 1,
     borderRightWidth: 1,
-    borderRadius: 5,
+    borderRadius: 8,
     backgroundColor: theme.card,
     borderColor: theme.border,
     alignItems: "center",

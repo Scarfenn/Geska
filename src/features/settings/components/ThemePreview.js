@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   categories: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
   category: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, maxWidth: "100%" },
   categoryText: { fontSize: 13, fontWeight: "600" },
-  task: { flexDirection: "row", alignItems: "center", padding: 12, gap: 8, borderRadius: 5, borderBottomWidth: 1, borderRightWidth: 1, marginBottom: 6 },
+  task: { flexDirection: "row", alignItems: "center", padding: 12, gap: 8, borderRadius: 8, borderBottomWidth: 1, borderRightWidth: 1, marginBottom: 6 },
   taskContent: { flex: 1 },
   taskTitle: { fontSize: 15 },
   time: { marginTop: 3, fontSize: 12 },
