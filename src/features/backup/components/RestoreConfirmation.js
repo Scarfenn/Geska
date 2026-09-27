@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 const names = { categories: "Categorías", tasks: "Tareas", subtasks: "Subtareas" };
 export default function RestoreConfirmation({ preview, busy, onApply, onCancel, styles }) {
   return (
-    <View style={{gap: 12}}>
+    <View style={styles.confirmationContent}>
       <Text accessibilityRole="header" style={styles.rowTitle}>Revisar restauración</Text>
       <Text style={styles.text}>Copia del {new Date(preview.createdAt).toLocaleString()}</Text>
       {Object.entries(names).map(([table, name]) => <Text key={table} style={styles.text}>

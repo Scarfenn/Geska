@@ -6,6 +6,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
   ...getSettingsStyles(themeName, mode),
   ...getButtonStyles(themeName, mode),
   panel: { padding: 16, gap: 12, backgroundColor: theme.card, borderRadius: 16, borderWidth: 1, borderColor: theme.border, marginTop: 20 },
+  confirmationContent: { gap: 12 },
   text: { color: theme.text, fontSize: 15, lineHeight: 22 },
   error: { color: theme.danger, fontSize: 13, lineHeight: 22 },
   backupInfoHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", columnGap: 12 },
@@ -18,6 +19,5 @@ export default createThemedStyles((theme, mode, themeName) => ({
   dangerButtonText: { color: theme.onDanger, fontSize: 16, fontWeight: "bold" },
   cancelButton: { minHeight: 24, justifyContent: "center", alignItems: "center", padding: 4, marginTop: 12 },
   cancelButtonText: { color: theme.primaryText, fontSize: 16, fontWeight: "600" },
-  disabledSaveButtonText: { color: theme.onPrimary + "80", fontSize: 16, fontWeight: "bold" },
   disabled: { opacity: 0.5 },
 }));

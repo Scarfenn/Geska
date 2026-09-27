@@ -154,7 +154,7 @@ test('restore confirmation shows active counts and history without technical met
     const button = all.find(n => n.type === 'TouchableOpacity' && n.children.some(c => c.children?.includes('Reemplazar datos locales')));
     button.props.onPress(); assert.equal(applied, 1);
     assert.equal(button.props.style[0].backgroundColor, themes[themeName][mode].dangerBackground);
-    assert.ok(all.some(n => n.props.accessibilityRole === 'alert' && n.children.join('').includes('No hay opción de deshacer')));
+    assert.ok(all.some(n => n.props.accessibilityRole === 'alert' && n.children.join('').includes('Tus datos locales serán reemplazados por esta copia')));
     const texts = all.filter(n => n.type === 'Text').map(n => n.children.join(''));
     for (const expected of ['Categorías: 5', 'Tareas: 10', 'Subtareas: 0',
       `Copia del ${new Date(preview.createdAt).toLocaleString()}`,

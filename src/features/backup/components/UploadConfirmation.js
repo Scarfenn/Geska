@@ -4,7 +4,7 @@ export default function UploadConfirmation({ remote, busy, onConfirm, onCancel, 
   const date = remote?.lastModified && Number.isFinite(Date.parse(remote.lastModified))
     ? new Date(remote.lastModified).toLocaleString() : null;
   return (
-    <View style={{gap: 12}}>
+    <View style={styles.confirmationContent}>
       <Text accessibilityRole="header" style={styles.rowTitle}>¿Reemplazar copia de seguridad?</Text>
       <Text accessibilityLiveRegion="polite" style={styles.text}>
         {`Ya existe una copia guardada${date ? ` (${date})` : ""}. Al crear una nueva, esa copia será reemplazada.`}
