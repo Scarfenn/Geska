@@ -47,12 +47,12 @@ test('upload errors require refresh and focus refresh waits for ongoing upload',
   const gate = deferred(); let reads = 0;
   const service = { getCurrentBackup: async () => { reads++; return { userId: 'u', remote }; }, uploadBackup: () => gate.promise };
   const c = createBackupController(service, () => {});
-  await c.refresh(); const upload = c.upload(); const refresh = c.refresh();
+  await c.refresh(); c.upload(); const upload = c.confirmUpload(); const refresh = c.refresh();
   await Promise.resolve(); assert.equal(reads, 1);
   gate.resolve({ userId: 'u', remote, metadataError: null }); await upload; await refresh;
   assert.equal(reads, 2);
   service.uploadBackup = async () => { throw Object.assign(new Error('network'), { code: 'BACKUP_UPLOAD_FAILED' }); };
-  await c.upload(); assert.equal(c.getState().status, 'error');
+  c.upload(); await c.confirmUpload(); assert.equal(c.getState().status, 'error');
   assert.equal(c.getState().remote, null);
   await c.refresh(); assert.equal(c.getState().status, 'ready');
   await c.refresh(() => false); assert.equal(reads, 3);
@@ -72,7 +72,7 @@ function renderHarness() {
       if (spec === 'react-native') return { ...Object.fromEntries(['View', 'Text', 'TouchableOpacity', 'ScrollView', 'StatusBar', 'ActivityIndicator'].map(n => [n, n])), StyleSheet: { create: x => x } };
       if (spec === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
       if (spec === '@expo/vector-icons') return { Ionicons: 'Ionicons' };
-      if (spec.endsWith('/components/RestoreConfirmation')) return load('src/' + spec.slice(2) + '.js');
+      if (spec.includes('/components/')) return load('src/' + spec.slice(2) + '.js');
       if (spec.endsWith('/hooks/useBackup')) return () => state;
       if (spec.startsWith('@/styles/') || spec.includes('/styles/')) return load('src/' + spec.slice(2) + '.js');
       throw new Error(`Unexpected UI dependency: ${spec}`);
@@ -126,7 +126,11 @@ test('hook queries only on focus and ignores updates after blur', async () => {
   const tick = () => new Promise(resolve => setImmediate(resolve));
   const blur = focus(); await tick();
   assert.equal(requests, 1); assert.equal(state.status, 'ready');
+  view.controller.upload(); assert.equal(state.status, 'confirm-upload');
   blur(); const oldState = state;
+  assert.equal(view.controller.getState().status, 'ready');
+  await view.controller.confirmUpload();
+  assert.equal(view.controller.getState().busy, false);
   await view.controller.refresh(); assert.equal(state, oldState);
   focus(); await tick(); assert.equal(requests, 3);
 });
@@ -147,5 +151,67 @@ test('restore confirmation displays downloaded metadata/counts and explicit dest
     assert.equal(button.props.style[0].backgroundColor, themes[themeName][mode].dangerBackground);
     assert.ok(all.some(n => n.props.accessibilityRole === 'alert' && n.children.join('').includes('No hay opción de deshacer')));
     assert.ok(all.some(n => n.children.includes(12) && n.children.includes(2)));
+  }
+});
+
+
+test('existing backup requires confirmation; cancellation and repeated taps never duplicate upload', async () => {
+  const gate = deferred(); let uploads = 0, reads = 0;
+  const c = createBackupController({
+    getCurrentBackup: async () => { reads++; return { userId: 'u', remote }; },
+    uploadBackup: () => { uploads++; return gate.promise; },
+  }, () => {});
+  await c.refresh();
+  c.upload(); c.upload();
+  assert.equal(c.getState().status, 'confirm-upload');
+  assert.equal(uploads, 0);
+  c.cancelUpload(); await c.confirmUpload();
+  assert.equal(c.getState().status, 'ready');
+  assert.equal(uploads, 0); assert.equal(reads, 1);
+  c.upload();
+  const first = c.confirmUpload(), second = c.confirmUpload();
+  c.upload(); c.cancelUpload();
+  assert.equal(c.getState().busy, true);
+  await Promise.resolve(); assert.equal(uploads, 1);
+  assert.equal(c.getState().status, 'uploading');
+  gate.resolve({ userId: 'u', remote, metadataError: null });
+  await first; await second;
+  await c.confirmUpload(); assert.equal(uploads, 1);
+  assert.equal(c.getState().status, 'success');
+});
+
+test('successful first upload still requires replacement confirmation when metadata is unavailable', async () => {
+  let uploads = 0;
+  const c = createBackupController({
+    getCurrentBackup: async () => ({ userId: 'u', remote: null }),
+    uploadBackup: async () => { uploads++; return { userId: 'u', remote: null, metadataError: new Error('metadata') }; },
+  }, () => {});
+  await c.refresh(); await c.upload(); assert.equal(uploads, 1);
+  c.upload(); assert.equal(c.getState().status, 'confirm-upload');
+  assert.equal(uploads, 1);
+  c.cancelUpload(); assert.equal(c.getState().status, 'success');
+});
+
+test('replacement UI uses remote date only, themed destructive action and controller callbacks', () => {
+  const h = renderHarness();
+  const Screen = h.load('src/features/backup/BackupScreen.js').default;
+  const themes = h.load('src/styles/themes.js').themes;
+  for (const themeName of Object.keys(themes)) for (const mode of ['light', 'dark']) {
+    for (const value of [remote, { lastModified: null }, { lastModified: 'invalid' }, null]) {
+      let confirmed = 0, canceled = 0;
+      h.setState({ status: 'confirm-upload', busy: false, remote: value, controller: {
+        confirmUpload() { confirmed++; }, cancelUpload() { canceled++; },
+      } });
+      const all = nodes(Screen({ themeName, mode, navigation: {} }));
+      const button = text => all.find(n => n.type === 'TouchableOpacity' && nodes(n).some(c => c.children.includes(text)));
+      assert.equal(button('Crear copia ahora'), undefined);
+      assert.equal(button('Actualizar información'), undefined);
+      const message = all.find(n => n.type === 'Text' && n.children.some(c => typeof c === 'string' && c.startsWith('Ya existe una copia'))).children.join('');
+      assert.equal(message, `Ya existe una copia guardada${value === remote ? ` (${new Date(remote.lastModified).toLocaleString()})` : ''}. Al crear una nueva, esa copia será reemplazada.`);
+      const confirm = button('Reemplazar copia');
+      assert.equal(confirm.props.style[0].backgroundColor, themes[themeName][mode].dangerBackground);
+      confirm.props.onPress(); button('Cancelar').props.onPress();
+      assert.equal(confirmed, 1); assert.equal(canceled, 1);
+    }
   }
 });

@@ -23,6 +23,7 @@ export function backupErrorMessage(error) {
 export function createBackupController(service, onChange) {
   let state = { status: "loading", busy: false, remote: null, userId: null, error: null, message: null };
   let pending = null;
+  let uploadReturnStatus = null;
   let preview = null;
   let preparation = 0;
   const discard = () => { preparation++; service.discardRestore?.(preview); preview = null; };
@@ -36,6 +37,16 @@ export function createBackupController(service, onChange) {
     update({ busy: true, error: null, message: null, ...(preserveWarning ? {} : { warning: null }) });
     pending = Promise.resolve().then(operation).catch(fail).finally(() => { update({ busy: false }); pending = null; });
     return pending;
+  };
+  const performUpload = () => {
+    return run(async () => {
+      update({ status: "uploading" });
+      const result = await service.uploadBackup();
+      update({ status: "success", remote: result.remote, userId: result.userId,
+        error: result.metadataError, message: result.metadataError
+          ? "Copia creada; no se pudo actualizar la información de la última copia."
+          : "Copia creada correctamente." });
+    });
   };
   return {
     getState: () => state,
@@ -76,16 +87,24 @@ export function createBackupController(service, onChange) {
         update({ status: "restored", preview: null, message: "Los datos locales se restauraron correctamente.", warning: result.reminderWarning, error: result.reminderError || null });
       });
     },
+    cancelUpload() {
+      if (state.busy || state.status !== "confirm-upload") return;
+      update({ status: uploadReturnStatus });
+      uploadReturnStatus = null;
+    },
+    confirmUpload() {
+      if (state.busy || state.status !== "confirm-upload") return pending;
+      uploadReturnStatus = null;
+      return performUpload();
+    },
     upload() {
       if (state.busy || !["ready", "empty", "success", "restored"].includes(state.status)) return pending;
-      return run(async () => {
-        update({ status: "uploading" });
-        const result = await service.uploadBackup();
-        update({ status: "success", remote: result.remote, userId: result.userId,
-          error: result.metadataError, message: result.metadataError
-            ? "Copia creada; no se pudo actualizar la información de la última copia."
-            : "Copia creada correctamente." });
-      });
+      if (state.remote || state.status === "success") {
+        uploadReturnStatus = state.status;
+        update({ status: "confirm-upload" });
+        return;
+      }
+      return performUpload();
     },
   };
 }

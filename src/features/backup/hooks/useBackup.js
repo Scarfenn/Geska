@@ -16,7 +16,7 @@ export default function useBackup() {
     let focused = true;
     setState({ ...controller.current.getState(), status: "loading" });
     controller.current.refresh(() => focused);
-    return () => { focused = false; active.current = false; controller.current.cancelPreparation(); };
+    return () => { focused = false; active.current = false; controller.current.cancelPreparation(); controller.current.cancelUpload(); };
   }, []));
   return { ...state, controller: controller.current };
 }

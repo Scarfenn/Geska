@@ -2,6 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { themes } from "@/styles/themes";
+import UploadConfirmation from "@/features/backup/components/UploadConfirmation";
 import RestoreConfirmation from "@/features/backup/components/RestoreConfirmation";
 import useBackup from "@/features/backup/hooks/useBackup";
 import getBackupStyles from "@/features/backup/styles/backupStyles";
@@ -32,9 +33,11 @@ export default function BackupScreen({ navigation, themeName, mode }) {
               <Text style={styles.saveButtonText}>Ir a Cuenta</Text>
             </TouchableOpacity>
           </>}
-          {backup.message && backup.status !== "signed-out" && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={["success", "restored"].includes(backup.status) ? styles.text : styles.error}>{backup.message}</Text>}
+          {backup.message && !["signed-out", "confirm-upload"].includes(backup.status) && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={["success", "restored"].includes(backup.status) ? styles.text : styles.error}>{backup.message}</Text>}
           {backup.warning && <Text accessibilityRole="alert" style={styles.error}>{backup.warning}</Text>}
           {backup.status === "preparing" && <><ActivityIndicator color={theme.primaryText} /><Text style={styles.text}>Descargando y validando la copia…</Text></>}
+          {backup.status === "confirm-upload" && <UploadConfirmation remote={backup.remote} busy={backup.busy} styles={styles}
+            onConfirm={() => backup.controller.confirmUpload()} onCancel={() => backup.controller.cancelUpload()} />}
           {backup.preview && <RestoreConfirmation preview={backup.preview} busy={backup.busy} styles={styles}
             onApply={() => backup.controller.apply()} onCancel={() => backup.controller.cancelPreparation()} />}
           {canUpload && <>
@@ -53,7 +56,7 @@ export default function BackupScreen({ navigation, themeName, mode }) {
             onPress={() => backup.controller.prepare()} style={styles.secondaryButton}>
             <Text style={styles.secondaryText}>Restaurar desde la nube</Text>
           </TouchableOpacity>}
-          {!["confirm-restore", "restoring", "preparing"].includes(backup.status) && backup.status !== "loading" && backup.status !== "signed-out" && <TouchableOpacity accessibilityRole="button"
+          {!["confirm-upload", "confirm-restore", "restoring", "preparing"].includes(backup.status) && backup.status !== "loading" && backup.status !== "signed-out" && <TouchableOpacity accessibilityRole="button"
             accessibilityState={{ disabled: backup.busy }} disabled={backup.busy} onPress={() => backup.controller.refresh()} style={styles.secondaryButton}>
             <Text style={styles.secondaryText}>{["error", "unconfigured"].includes(backup.status) ? "Reintentar" : "Actualizar información"}</Text>
           </TouchableOpacity>}
