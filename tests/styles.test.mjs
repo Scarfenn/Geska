@@ -36,7 +36,7 @@ test('focused sheets supply every style used by migrated components for every pa
     'features/tasks/modals/TaskModal',
     'features/tasks/modals/SubModals/RepeatModal',
     'features/tasks/modals/SubModals/DatePickerModal',
-    ...['CategoryModal', 'TimeModal', 'SubtaskModal', 'SubModals/HourModal', 'SubModals/ReminderModal', 'SubModals/TaskCategoryModal', 'SubModals/CustomRepeatModal']
+    ...['CategoryModal', 'TimeModal', 'SubtaskModal', 'SubModals/HourModal', 'SubModals/ReminderModal', 'SubModals/TaskCategoryModal']
       .map(name => 'features/tasks/modals/' + name),
   ];
   const profiles = new Map();

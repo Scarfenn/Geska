@@ -101,6 +101,7 @@ test('actual Drawer options provide opaque selected backgrounds and readable sel
   };
   for (const name of ['backup/BackupScreen', 'tasks/TasksScreen', 'calendar/CalendarScreen', 'account/AccountScreen', 'settings/SettingsScreen', 'settings/ThemeScreen']) stubs[`@/features/${name}`] = name;
   stubs['@/navigation/SettingsStack'] = { __esModule: true, default: 'SettingsStack', settingsDrawerOptions: () => ({}) };
+  stubs['@/navigation/DrawerSceneTransition'] = { drawerScreenLayout: ({ children }) => children };
   stubs['@/components/CustomDrawer'] = 'CustomDrawer';
   const App = jsx('App.js', stubs);
   for (const { name, mode, theme } of combinations) {

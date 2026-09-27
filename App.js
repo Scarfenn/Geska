@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import TasksScreen from "@/features/tasks/TasksScreen";
 import CalendarScreen from "@/features/calendar/CalendarScreen";
 import SettingsStack, { settingsDrawerOptions } from "@/navigation/SettingsStack";
+import { drawerScreenLayout } from "@/navigation/DrawerSceneTransition";
 import CustomDrawer from "@/components/CustomDrawer";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -49,6 +50,7 @@ export default function App() {
       <NavigationContainer theme={navigationTheme}>
         <Drawer.Navigator
           backBehavior="firstRoute"
+          screenLayout={drawerScreenLayout}
             drawerContent={(props) => (
             <CustomDrawer
               {...props}
