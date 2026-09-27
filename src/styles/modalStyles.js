@@ -8,7 +8,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
     borderWidth: 1,
     padding: 10,
     marginBottom: 10,
-    borderRadius: 5,
+    borderRadius: 8,
     borderColor: theme.inactiveCategoryText,
     backgroundColor: theme.card,
     color: theme.text
@@ -43,7 +43,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
   modalBox: {
     width: "80%",
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 16,
     backgroundColor: theme.card
   },
   modalTitle: {
