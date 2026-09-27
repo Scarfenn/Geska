@@ -13,7 +13,7 @@ export default function ThemeScreen({ navigation, themeName, mode, setThemeName,
       <StatusBar barStyle={mode === "dark" ? "light-content" : "dark-content"} backgroundColor={theme.background} />
       <View style={styles.layout}>
         <View style={styles.header}>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Volver a Ajustes" style={styles.menuButton} onPress={() => navigation.navigate("Ajustes")}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Volver a Ajustes" style={styles.menuButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={theme.text} accessible={false} />
           </TouchableOpacity>
           <Text accessibilityRole="header" style={styles.title}>Tema</Text>

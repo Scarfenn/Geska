@@ -9,10 +9,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import TasksScreen from "@/features/tasks/TasksScreen";
 import CalendarScreen from "@/features/calendar/CalendarScreen";
-import BackupScreen from "@/features/backup/BackupScreen";
-import AccountScreen from "@/features/account/AccountScreen";
-import ThemeScreen from "@/features/settings/ThemeScreen";
-import SettingsScreen from "@/features/settings/SettingsScreen";
+import SettingsStack, { settingsDrawerOptions } from "@/navigation/SettingsStack";
 import CustomDrawer from "@/components/CustomDrawer";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -51,6 +48,7 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer theme={navigationTheme}>
         <Drawer.Navigator
+          backBehavior="firstRoute"
             drawerContent={(props) => (
             <CustomDrawer
               {...props}
@@ -79,7 +77,7 @@ export default function App() {
           <Drawer.Screen
             name="Tareas"
             options={{
-              drawerIcon: ({ color, size }) => 
+              drawerIcon: ({ color, size }) =>
                 <Ionicons
                   name="checkmark-circle-outline"
                   size={size}
@@ -87,7 +85,7 @@ export default function App() {
                 />
             }}
           >
-            {(props) => 
+            {(props) =>
               <TasksScreen
                 {...props}
                 themeName={themeName}
@@ -98,34 +96,17 @@ export default function App() {
 
           <Drawer.Screen
             name="Ajustes"
-            options={{ 
-              drawerIcon: ({ color, size }) => 
-              <Ionicons 
-                name="settings-outline" 
-                size={size} 
-                color={color} 
-              /> 
-            }}
+            options={settingsDrawerOptions}
           >
-            {props => 
-              <SettingsScreen 
-                {...props} 
-                themeName={themeName} 
-                mode={mode} 
-                />
-              }
-          </Drawer.Screen>
-
-          <Drawer.Screen name="ThemeScreen" options={{ drawerItemStyle: { display: "none" }, swipeEnabled: false }}>
-            {props => <ThemeScreen {...props} themeName={themeName} mode={mode} setThemeName={setThemeName} setMode={setMode} />}
-          </Drawer.Screen>
-
-          <Drawer.Screen name="Cuenta" options={{ drawerItemStyle: { display: "none" }, swipeEnabled: false }}>
-            {props => <AccountScreen {...props} themeName={themeName} mode={mode} />}
-          </Drawer.Screen>
-
-          <Drawer.Screen name="BackupScreen" options={{ drawerItemStyle: { display: "none" }, swipeEnabled: false }}>
-            {props => <BackupScreen {...props} themeName={themeName} mode={mode} />}
+            {props => (
+              <SettingsStack
+                {...props}
+                themeName={themeName}
+                mode={mode}
+                setThemeName={setThemeName}
+                setMode={setMode}
+              />
+            )}
           </Drawer.Screen>
 
           {/* PANTALLA CALENDARIO */}

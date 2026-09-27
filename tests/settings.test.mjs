@@ -69,7 +69,7 @@ test('app version falls back to Expo config without native application metadata'
 });
 
 test('navigation JSX compiles after adding Settings', () => {
-  for (const path of ['App.js']) {
+  for (const path of ['App.js', 'src/navigation/SettingsStack.js']) {
     const source = readFileSync(new URL('../' + path, import.meta.url), 'utf8');
     assert.doesNotThrow(() => babel.transformSync(source, { configFile: false, babelrc: false,
       plugins: ['@babel/plugin-transform-modules-commonjs', ['@babel/plugin-transform-react-jsx', { runtime: 'classic' }]],
@@ -85,7 +85,7 @@ test('ThemeScreen renders every real family in both modes, with compact token ac
   const themes = h.load('src/styles/themes.js').themes;
   for (const themeName of Object.keys(themes)) for (const mode of ['light', 'dark']) {
     let familyCall, modeCall, destination;
-    const tree = Screen({ themeName, mode, setThemeName: name => { familyCall = name; }, setMode: value => { modeCall = value; }, navigation: { navigate: name => { destination = name; } } });
+    const tree = Screen({ themeName, mode, setThemeName: name => { familyCall = name; }, setMode: value => { modeCall = value; }, navigation: { goBack: () => { destination = "back"; } } });
     const all = nodes(tree);
     assert.equal(tree.type, 'SafeAreaView');
     assert.equal(tree.props.style.backgroundColor, themes[themeName][mode].background);
@@ -117,7 +117,7 @@ test('ThemeScreen renders every real family in both modes, with compact token ac
       assert.equal(modeCall, value);
     }
     all.find(n => n.props.accessibilityLabel === 'Volver a Ajustes').props.onPress();
-    assert.equal(destination, 'Ajustes');
+    assert.equal(destination, 'back');
   }
 });
 
@@ -131,8 +131,8 @@ test('ThemeScreen derives families dynamically and has no storage or local state
   assert.ok(nodes(tree).some(n => n.props.accessibilityLabel === 'Tema ExtraLongFamilyName' && n.props.accessibilityState.selected));
 });
 
-test('App passes existing preference setters to hidden ThemeScreen and CustomDrawer preserves its hidden options', () => {
-  const source = readFileSync(new URL('../App.js', import.meta.url), 'utf8');
+test('SettingsStack passes preference setters to ThemeScreen and CustomDrawer retains its footer', () => {
+  const source = readFileSync(new URL('../src/navigation/SettingsStack.js', import.meta.url), 'utf8');
   const ast = babel.parseSync(source, { configFile: false, babelrc: false, parserOpts: { plugins: ['jsx'] } });
   let route, screen;
   babel.traverse(ast, { JSXElement(path) {
@@ -141,9 +141,6 @@ test('App passes existing preference setters to hidden ThemeScreen and CustomDra
     if (opening.attributes.some(a => a.name?.name === 'name' && a.value?.value === 'ThemeScreen')) route = opening;
   } });
   assert.ok(route); assert.ok(screen);
-  const options = route.attributes.find(a => a.name?.name === 'options').value.expression;
-  const drawerStyle = options.properties.find(p => p.key.name === 'drawerItemStyle').value;
-  assert.equal(drawerStyle.properties.find(p => p.key.name === 'display').value.value, 'none');
   for (const name of ['themeName', 'mode', 'setThemeName', 'setMode']) {
     assert.equal(screen.attributes.find(a => a.name?.name === name).value.expression.name, name);
   }
@@ -162,10 +159,17 @@ test('App passes existing preference setters to hidden ThemeScreen and CustomDra
     if (spec === '@/styles/themes') return h.load('src/styles/themes.js');
     throw new Error(spec);
   } });
-  const tree = module.exports.default({ themeName: 'basic', mode: 'light', state: { routes: [{ key: 'theme', name: 'ThemeScreen' }] }, descriptors: { theme: { options: { drawerItemStyle: { display: 'none' } } } } });
+  const state = { index: 1, routes: [{ key: 'tasks', name: 'Tareas' }, { key: 'settings', name: 'Ajustes' }] };
+  const tree = module.exports.default({ themeName: 'basic', mode: 'light', state,
+    descriptors: { tasks: { options: {} }, settings: { options: {} } } });
   const lists = nodes(tree).filter(n => n.type === 'DrawerItemList');
   assert.equal(lists.length, 2);
-  for (const list of lists) assert.equal(list.props.descriptors.theme.options.drawerItemStyle.display, 'none');
+  assert.equal(lists[0].props.state, state);
+  assert.equal(lists[1].props.state, state);
+  assert.equal(lists[0].props.descriptors.settings.options.drawerItemStyle.display, 'none');
+  assert.equal(lists[0].props.descriptors.tasks.options.drawerItemStyle, undefined);
+  assert.equal(lists[1].props.descriptors.tasks.options.drawerItemStyle.display, 'none');
+  assert.equal(lists[1].props.descriptors.settings.options.drawerItemStyle, undefined);
 });
 
 test('selection updates the controlled screen and Settings subtitle when App supplies new props', () => {

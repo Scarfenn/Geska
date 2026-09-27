@@ -1,6 +1,6 @@
 # Optional account flow
 
-Settings navigates to the hidden Drawer route `Cuenta`. AccountScreen composes a
+Settings navigates to the `Cuenta` route in SettingsStack. Back returns to the previous screen, including BackupScreen when opened from there. AccountScreen composes a
 form, themed styles and useAccount; only the hook imports storage/supabase/auth.
 The screen-local controller receives that facade and never imports SQLite.
 

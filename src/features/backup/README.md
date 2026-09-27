@@ -46,7 +46,7 @@ materialized in memory. Local writes made during upload belong to the next backu
 
 ## Manual backup screen
 
-Settings now links to the hidden Drawer route `BackupScreen`. `useBackup` refreshes
+Settings links to `BackupScreen` in SettingsStack. Opening Cuenta pushes it onto the same stack, so Back returns to BackupScreen. `useBackup` refreshes
 on focus only, using a screen-local controller. A pending upload blocks duplicate
 calls; a focus refresh waits for it. There is no global session check or provider.
 UI imports neither SQLite nor the Supabase client. It uses existing themed style
@@ -121,3 +121,13 @@ file between prepare/apply, empty backup replacement, corrupted/incompatible
 backup, logged-out/account-change states, offline download, rapid taps, pending
 native scheduling during apply, notification permission denial, previously shown
 notifications, large fonts and task-list/editor refresh when returning from Restore.
+
+### Confirmation navigation
+
+`SettingsStack.js` owns a nested BackupStack: `BackupHome`, `UploadConfirmation`,
+and `RestoreConfirmation`, using the same horizontal transition as Settings.
+`BackupFlow` owns one `useBackup` instance and passes it to all three screens.
+Pushing a confirmation keeps the flow focused, so it does not refresh metadata or
+discard a prepared restore. Back/cancel discards unconfirmed work; completing an
+operation returns to Copias to display success or errors. Returning after visiting
+Cuenta refreshes the session as before. No controller or callbacks go into route params.

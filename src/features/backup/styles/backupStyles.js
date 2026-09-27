@@ -17,7 +17,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
   secondaryText: { color: theme.primaryText, fontSize: 16, fontWeight: "600" },
   dangerButton: { minHeight: 48, padding: 15, borderRadius: 8, alignItems: "center", backgroundColor: theme.dangerBackground },
   dangerButtonText: { color: theme.onDanger, fontSize: 16, fontWeight: "bold" },
-  cancelButton: { minHeight: 24, justifyContent: "center", alignItems: "center", padding: 4, marginTop: 12 },
+  cancelButton: { minHeight: 24, justifyContent: "center", alignItems: "center", padding: 4, marginVertical: 6 },
   cancelButtonText: { color: theme.primaryText, fontSize: 16, fontWeight: "600" },
   disabled: { opacity: 0.5 },
 }));

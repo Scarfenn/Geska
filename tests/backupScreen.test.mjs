@@ -62,13 +62,15 @@ function renderHarness() {
   const cache = new Map(); let state;
   const React = { createElement(type, props, ...children) {
     return typeof type === 'function' ? type({ ...props, children }) : { type, props: props || {}, children };
-  }, Fragment: 'Fragment' };
+  }, Fragment: 'Fragment', useCallback: fn => fn, useRef: value => ({ current: value }) };
   function load(path) {
     if (cache.has(path)) return cache.get(path);
     const module = { exports: {} };
     const source = readFileSync(new URL('../' + path, import.meta.url), 'utf8');
     const code = babel.transformSync(source, { configFile: false, babelrc: false, plugins: ['@babel/plugin-transform-modules-commonjs', ['@babel/plugin-transform-react-jsx', { runtime: 'classic' }]] }).code;
     vm.runInNewContext(code, { React, Date, module, exports: module.exports, require(spec) {
+      if (spec === 'react') return React;
+      if (spec === '@react-navigation/native') return { useFocusEffect() {} };
       if (spec === 'react-native') return { ...Object.fromEntries(['View', 'Text', 'TouchableOpacity', 'ScrollView', 'StatusBar', 'ActivityIndicator'].map(n => [n, n])), StyleSheet: { create: x => x } };
       if (spec === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
       if (spec === '@expo/vector-icons') return { Ionicons: 'Ionicons' };
@@ -79,11 +81,11 @@ function renderHarness() {
     } });
     cache.set(path, module.exports); return module.exports;
   }
-  return { load, setState: value => { state = value; } };
+  return { load, get state() { return state; }, setState: value => { state = value; } };
 }
 const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.children || [])] : [];
 
-test('real JSX renders all states in all 10 families/modes, routes to Account/Settings and disables upload', () => {
+test('real JSX renders all states in all 10 families/modes, routes to Account and goes back and disables upload', () => {
   const h = renderHarness();
   const Screen = h.load('src/features/backup/BackupScreen.js').default;
   const themes = h.load('src/styles/themes.js').themes;
@@ -93,17 +95,17 @@ test('real JSX renders all states in all 10 families/modes, routes to Account/Se
       let destination, uploaded = 0;
       h.setState({ status, busy: status === 'uploading', remote: ['ready', 'success'].includes(status) ? remote : null,
         message: ['unconfigured', 'error'].includes(status) ? 'Error claro' : null,
-        controller: { upload() { uploaded++; }, refresh() {} } });
-      const tree = Screen({ themeName, mode, navigation: { navigate(name) { destination = name; } } });
+        controller: { getState: () => ({ status, busy: status === "uploading" }), upload() { uploaded++; }, refresh() {} } });
+      const tree = Screen({ themeName, mode, backup: h.state, navigation: { navigate(name) { destination = name; }, goBack() { destination = "back"; } } });
       const all = nodes(tree);
       assert.equal(tree.props.style.backgroundColor, themes[themeName][mode].background);
-      all.find(n => n.props.accessibilityLabel === 'Volver a Ajustes').props.onPress(); assert.equal(destination, 'Ajustes');
+      all.find(n => n.props.accessibilityLabel === 'Volver a Ajustes').props.onPress(); assert.equal(destination, 'back');
       const buttonWithText = text => all.find(n => n.type === 'TouchableOpacity' && nodes(n).some(child => child.type === 'Text' && child.children.includes(text)));
       if (status === 'signed-out') { buttonWithText('Ir a Cuenta').props.onPress(); assert.equal(destination, 'Cuenta'); }
       if (status === 'uploading') assert.equal(buttonWithText('Creando copia…').props.disabled, true);
-      if (status === 'ready') { buttonWithText('Crear copia ahora').props.onPress(); assert.equal(uploaded, 1); }
+      if (status === 'ready') { buttonWithText('Crear copia de seguridad').props.onPress(); assert.equal(uploaded, 1); }
       if (status === 'empty') assert.ok(all.some(n => n.children.includes('Sin copia en la nube')));
-      if (status === 'error') assert.equal(buttonWithText('Crear copia ahora'), undefined);
+      if (status === 'error') assert.equal(buttonWithText('Crear copia de seguridad'), undefined);
     }
   }
 });
@@ -203,17 +205,17 @@ test('successful first upload still requires replacement confirmation when metad
   c.cancelUpload(); assert.equal(c.getState().status, 'success');
 });
 
-test('replacement UI uses remote date only, themed destructive action and controller callbacks', () => {
+test('replacement UI uses remote date only, themed destructive action and controller callbacks', async () => {
   const h = renderHarness();
-  const Screen = h.load('src/features/backup/BackupScreen.js').default;
+  const Screen = h.load('src/features/backup/BackupConfirmationScreen.js').default;
   const themes = h.load('src/styles/themes.js').themes;
   for (const themeName of Object.keys(themes)) for (const mode of ['light', 'dark']) {
     for (const value of [remote, { lastModified: null }, { lastModified: 'invalid' }, null]) {
       let confirmed = 0, canceled = 0;
       h.setState({ status: 'confirm-upload', busy: false, remote: value, controller: {
-        confirmUpload() { confirmed++; }, cancelUpload() { canceled++; },
+        getState: () => ({ busy: false }), confirmUpload() { confirmed++; }, cancelUpload() { canceled++; },
       } });
-      const all = nodes(Screen({ themeName, mode, navigation: {} }));
+      const all = nodes(Screen({ themeName, mode, backup: h.state, route: { name: "UploadConfirmation" }, navigation: { goBack() {}, isFocused: () => false } }));
       const button = text => all.find(n => n.type === 'TouchableOpacity' && nodes(n).some(c => c.children.includes(text)));
       assert.equal(button('Crear copia ahora'), undefined);
       assert.equal(button('Actualizar información'), undefined);
@@ -221,7 +223,7 @@ test('replacement UI uses remote date only, themed destructive action and contro
       assert.equal(message, `Ya existe una copia guardada${value === remote ? ` (${new Date(remote.lastModified).toLocaleString()})` : ''}. Al crear una nueva, esa copia será reemplazada.`);
       const confirm = button('Reemplazar copia');
       assert.equal(confirm.props.style[0].backgroundColor, themes[themeName][mode].dangerBackground);
-      confirm.props.onPress(); button('Cancelar').props.onPress();
+      await confirm.props.onPress(); button('Cancelar').props.onPress();
       assert.equal(confirmed, 1); assert.equal(canceled, 1);
     }
   }

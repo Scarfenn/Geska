@@ -25,7 +25,7 @@ export default function AccountScreen({ navigation, themeName, mode }) {
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Volver a Ajustes" style={styles.menuButton} onPress={() => navigation.navigate("Ajustes")}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Volver" style={styles.menuButton} onPress={() => navigation.goBack()}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
             <Text accessibilityRole="header" style={styles.title}>Cuenta</Text>

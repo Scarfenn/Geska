@@ -2,21 +2,29 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { themes } from "@/styles/themes";
-import UploadConfirmation from "@/features/backup/components/UploadConfirmation";
-import RestoreConfirmation from "@/features/backup/components/RestoreConfirmation";
-import useBackup from "@/features/backup/hooks/useBackup";
 import getBackupStyles from "@/features/backup/styles/backupStyles";
 
-export default function BackupScreen({ navigation, themeName, mode }) {
+export default function BackupScreen({ navigation, themeName, mode, backup }) {
   const theme = themes[themeName][mode], styles = getBackupStyles(themeName, mode);
-  const backup = useBackup();
+  function upload() {
+    if (backup.controller.getState().busy) return;
+    backup.controller.upload();
+    if (backup.controller.getState().status === "confirm-upload") navigation.navigate("UploadConfirmation");
+  }
+  async function restore() {
+    if (backup.controller.getState().busy) return;
+    await backup.controller.prepare();
+    if (navigation.isFocused() && backup.controller.getState().status === "confirm-restore") {
+      navigation.navigate("RestoreConfirmation");
+    }
+  }
   const canUpload = ["ready", "empty", "success", "uploading", "restored"].includes(backup.status);
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle={mode === "dark" ? "light-content" : "dark-content"} backgroundColor={theme.background} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Volver a Ajustes" style={styles.menuButton} onPress={() => navigation.navigate("Ajustes")}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Volver a Ajustes" style={styles.menuButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </TouchableOpacity>
           <Text accessibilityRole="header" style={styles.title}>Copias de seguridad</Text>
@@ -36,10 +44,6 @@ export default function BackupScreen({ navigation, themeName, mode }) {
           {backup.message && !["signed-out", "confirm-upload"].includes(backup.status) && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={["success", "restored"].includes(backup.status) ? styles.text : styles.error}>{backup.message}</Text>}
           {backup.warning && <Text accessibilityRole="alert" style={styles.error}>{backup.warning}</Text>}
           {backup.status === "preparing" && <><ActivityIndicator color={theme.primaryText} /><Text style={styles.text}>Descargando y validando la copia…</Text></>}
-          {backup.status === "confirm-upload" && <UploadConfirmation remote={backup.remote} busy={backup.busy} styles={styles}
-            onConfirm={() => backup.controller.confirmUpload()} onCancel={() => backup.controller.cancelUpload()} />}
-          {backup.preview && <RestoreConfirmation preview={backup.preview} busy={backup.busy} styles={styles}
-            onApply={() => backup.controller.apply()} onCancel={() => backup.controller.cancelPreparation()} />}
           <View style={styles.backupInfoHeader}>
             {canUpload && <View style={styles.backupInfoDetails}>
               <Text style={styles.rowTitle}>Última copia</Text>
@@ -56,13 +60,13 @@ export default function BackupScreen({ navigation, themeName, mode }) {
           {canUpload && <>
             <Text style={styles.note}>Se conserva una sola copia por cuenta. Una nueva copia reemplaza la anterior en la nube.</Text>
             <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: backup.busy, busy: backup.busy }} disabled={backup.busy}
-              onPress={() => backup.controller.upload()} style={[styles.saveButton, backup.busy && styles.disabled]}>
+              onPress={upload} style={[styles.saveButton, backup.busy && styles.disabled]}>
               <Text style={styles.saveButtonText}>{backup.busy ? "Creando copia…" : "Crear copia de seguridad"}</Text>
               {backup.busy && <ActivityIndicator color={theme.onPrimary} />}
             </TouchableOpacity>
           </>}
           {canUpload && backup.remote && <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: backup.busy }} disabled={backup.busy}
-            onPress={() => backup.controller.prepare()} style={styles.secondaryButton}>
+            onPress={restore} style={styles.secondaryButton}>
             <Text style={styles.secondaryText}>Restaurar desde la nube</Text>
           </TouchableOpacity>}
         </View>
