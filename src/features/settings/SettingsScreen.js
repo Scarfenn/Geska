@@ -28,7 +28,7 @@ export default function SettingsScreen({ navigation, themeName, mode }) {
         <SettingsSection title="CUENTA Y NUBE" styles={styles} note="La cuenta es opcional. Puedes seguir usando Geska sin conexión.">
           <SettingsRow {...rowProps} title="Cuenta" subtitle="Gestionar cuenta" icon="person-circle-outline" onPress={() => navigation.navigate("Cuenta")} />
           <View style={styles.divider} />
-          <SettingsRow {...rowProps} title="Copias de seguridad" subtitle="Próximamente" icon="cloud-upload-outline" />
+          <SettingsRow {...rowProps} title="Copias de seguridad" subtitle="Respaldo manual en la nube" icon="cloud-upload-outline" onPress={() => navigation.navigate("BackupScreen")} />
         </SettingsSection>
         <SettingsSection title="GESKA" styles={styles}>
           <SettingsRow {...rowProps} title="Apoya el proyecto" subtitle="Próximamente" icon="heart-outline" />

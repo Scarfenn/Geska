@@ -364,3 +364,14 @@ test('impossible schedules, exhausted bounds and year overflow return an empty p
   assert.equal(plan(task({ date: '9999-12-31' }), { now: new Date(9999, 11, 31, 10) }).length, 0);
   assert.equal(plan(task({ reminder_value: Number.MAX_VALUE })).length, 0);
 });
+
+test('restore cleanup dismisses only Geska task notifications already presented', async () => {
+  const h = notificationHarness();
+  h.native.getPresentedNotificationsAsync = async () => [
+    { request: { identifier: 'task-notice', content: { title: '⏰ Recordatorio', data: { taskId: 't' } } } },
+    { request: { identifier: 'unrelated', content: { title: 'Other', data: {} } } },
+  ];
+  await h.api.cancelAllTaskReminders({ dismissPresented: true });
+  assert.ok(h.calls.some(call => call[0] === 'dismiss' && call[1] === 'task-notice'));
+  assert.ok(!h.calls.some(call => call[0] === 'dismiss' && call[1] === 'unrelated'));
+});

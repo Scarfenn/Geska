@@ -1,3 +1,4 @@
+import { assertLocalAccess, getLocalRevision } from "@/storage/sqlite/restoreMaintenance";
 import { execute } from "@/storage/sqlite/connection";
 import { migrateDatabase } from "@/storage/sqlite/migrations";
 let initializationPromise = null;
@@ -74,6 +75,11 @@ export function initDB() {
 
 // Public reads and writes also work before any screen has initialized the DB.
 export async function withDatabase(operation, options) {
+  const revision = getLocalRevision();
+  assertLocalAccess(revision, options?.restoreToken);
   await initDB();
-  return execute(operation, options);
+  return execute(db => {
+    assertLocalAccess(revision, options?.restoreToken);
+    return operation(db);
+  }, options);
 }

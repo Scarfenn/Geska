@@ -1,3 +1,4 @@
+import { trackLocalOperation } from "@/storage/sqlite/restoreMaintenance";
 import {
   newTaskId, createTaskWithSubtasks, editTaskWithSubtasks, replaceTaskSubtasks,
   changeTaskCompletion, removeTaskWithSnapshot, updateTaskNotificationIds,
@@ -12,7 +13,8 @@ const pending = new Map();
 function forTask(id, operation) {
   if (id == null) throw new TypeError("Falta el identificador de la tarea");
   const key = String(id);
-  const result = (pending.get(key) || Promise.resolve()).catch(() => {}).then(operation);
+  const earlier = pending.get(key) || Promise.resolve();
+  const result = trackLocalOperation(() => earlier.catch(() => {}).then(operation));
   pending.set(key, result);
   const release = () => { if (pending.get(key) === result) pending.delete(key); };
   result.then(release, release);
@@ -90,14 +92,16 @@ export function removeTask(id) {
   });
 }
 
-export async function saveCategory(category) {
+export function saveCategory(category) {
+  return trackLocalOperation(async () => {
   const name = category.name?.trim();
   if (!name) throw new Error("La categoría necesita un nombre");
   if (!category.id) return addCategory(name);
   await updateCategory({ id: category.id, name });
   return { id: category.id, name };
+  });
 }
 
-export async function removeCategory(id) {
-  await deleteCategory(id);
+export function removeCategory(id) {
+  return trackLocalOperation(() => deleteCategory(id));
 }

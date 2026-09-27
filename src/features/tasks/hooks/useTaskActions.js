@@ -1,3 +1,4 @@
+import { getLocalRevision, assertLocalAccess } from "@/storage/sqlite/restoreMaintenance";
 import { useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import { createTaskActions } from "@/features/tasks/services/taskMutations";
@@ -5,6 +6,7 @@ import { createTaskActions } from "@/features/tasks/services/taskMutations";
 const commands = createTaskActions();
 
 export default function useTaskActions(loadTasks) {
+  const revision = useRef(getLocalRevision());
   const inFlight = useRef(new Map());
   const mounted = useRef(true);
   const [pending, setPending] = useState({});
@@ -18,7 +20,7 @@ export default function useTaskActions(loadTasks) {
   function run(key, action) {
     if (inFlight.current.has(key)) return inFlight.current.get(key);
     if (mounted.current) setPending(current => ({ ...current, [key]: true }));
-    const result = Promise.resolve().then(action).then(async result => {
+    const result = Promise.resolve().then(() => { assertLocalAccess(revision.current); return action(); }).then(async result => {
       // A refresh failure must never turn an already committed save into a
       // failed submission. useTasksData normally exposes its own load error.
       try { await loadTasks(); }

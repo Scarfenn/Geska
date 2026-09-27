@@ -9,7 +9,9 @@ const snapshot = { schemaVersion: 1, createdAt: '2026-09-26T12:00:00.000Z', tabl
 } };
 function harness(options = {}) {
   const calls = []; let snapshots = 0, serializations = 0;
-  const client = { storage: { from(bucket) { return { async upload(path, body, config) {
+  const client = { storage: { from(bucket) { return { async info(path) {
+    return options.info ? options.info(path) : { data: { id: 'object-id', lastModified: '2026-09-26T12:01:00.000Z', size: 123 }, error: null };
+  }, async upload(path, body, config) {
     calls.push({ bucket, path, body, config });
     return options.upload ? options.upload(path, body, config) : { data: { id: 'object-id', fullPath: `${bucket}/${path}` }, error: null };
   } }; } } };
@@ -31,8 +33,10 @@ test('authenticated upload uses existing serializer, exact path, bucket, upsert 
   assert.equal(call.config.upsert, true); assert.equal(call.config.contentType, 'application/json');
   assert.equal(Object.prototype.toString.call(call.body), '[object ArrayBuffer]');
   assert.equal(Buffer.from(call.body).toString('utf8'), format.serializeBackup(snapshot));
-  assert.deepEqual({ ...result }, {
+  assert.deepEqual(JSON.parse(JSON.stringify(result)), {
     path: 'user-123/backup.json', bucket: 'geska-backups', id: 'object-id', fullPath: 'geska-backups/user-123/backup.json',
+    userId: 'user-123', metadataError: null,
+    remote: { path: 'user-123/backup.json', bucket: 'geska-backups', id: 'object-id', lastModified: '2026-09-26T12:01:00.000Z', sizeBytes: 123 },
     createdAt: snapshot.createdAt, schemaVersion: 1, formatVersion: 1, sizeBytes: Buffer.byteLength(format.serializeBackup(snapshot)),
   });
   assert.equal(JSON.stringify(result).includes('Café'), false);
@@ -103,4 +107,28 @@ test('real SQLite COMMIT precedes upload; pending network never blocks local wri
   assert.equal((await db.api.getAllTasks())[0].title, 'While uploading');
   assert.equal(JSON.parse(Buffer.from(h.calls[0].body).toString('utf8')).tables.tasks[0].title, 'Original 📝');
   release(); await pending;
+});
+
+
+test('remote info is authoritative; only explicit object absence returns null', async () => {
+  const missing = { statusCode: 'NoSuchKey', message: 'missing' };
+  const h = harness({ info: async path => {
+    assert.equal(path, 'user-123/backup.json');
+    return { data: null, error: missing };
+  } });
+  assert.equal((await h.getCurrentBackup()).remote, null);
+  for (const error of [{ statusCode: '403' }, { statusCode: '404', message: 'Bucket not found' }, { statusCode: '404' }, new Error('offline')]) {
+    await assert.rejects(harness({ info: async () => ({ data: null, error }) }).getCurrentBackup(), e => e.code === 'BACKUP_METADATA_FAILED' && e.cause === error);
+  }
+});
+
+test('successful upload survives metadata errors and never substitutes capture time for remote time', async () => {
+  const error = new Error('offline after upload');
+  const h = harness({ info: async () => { throw error; } });
+  const result = await h.uploadBackup();
+  assert.equal(h.calls.length, 1);
+  assert.equal(result.remote, null);
+  assert.equal(result.metadataError.code, 'BACKUP_METADATA_FAILED');
+  assert.equal(result.metadataError.cause, error);
+  assert.equal(result.createdAt, snapshot.createdAt);
 });

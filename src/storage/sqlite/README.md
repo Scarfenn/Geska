@@ -62,8 +62,8 @@ occurrence with its original ID. Category deletion still detaches tasks; a parti
 unique index permits reusing a deleted category's name with a new ID.
 
 The optional backup service can upload raw snapshots; see
-`features/backup/README.md`. No restore/reset command, retention purge or device
-synchronization is implemented. Backups include raw rows from every table
+`features/backup/README.md`. Restore v1 replaces local data atomically as documented below. No retention purge
+or device synchronization is implemented. Backups include raw rows from every table
 (including tombstones), not just `getAllTasks()`. A sync
 protocol still needs conflict resolution and device-clock handling; these local
 wall-clock timestamps alone do not provide either.
@@ -89,13 +89,22 @@ Legacy `updated_at` is migration time, not an inferred historical edit time.
 `{ format: "geska-sqlite-backup", formatVersion: 1, schemaVersion, createdAt, tables }`.
 Format and row-schema versions evolve independently. This is a logical data export,
 not a byte-for-byte SQLite file or a backup of AsyncStorage settings. Notification
-IDs are preserved as raw data but are device-local; a future restore must handle
-that explicitly. There is no restore implementation or restore-time validation yet.
+IDs are preserved as raw data but are device-local; Restore v1 normalizes them before insertion. Restore-time validation is implemented separately in backupValidation.js.
 
 Supabase's optional `getSupabaseClient()` lives in `storage/supabase/client.js`.
 It creates one client on demand or returns null when either environment variable
 is missing. Invalid non-empty configuration can throw at the accessor; it is not
 used by the local startup or task repositories. Optional Auth is documented in
-`../supabase/README.md`. Upload infrastructure is optional and separate; no
-backup scheduling, hooks or UI are connected.
+`../supabase/README.md`. Upload infrastructure is optional and separate; BackupScreen provides manual upload and restore; no backup scheduling is connected.
 Snapshot and JSON creation work entirely offline.
+
+
+## Restore maintenance
+
+The facade exposes `replaceDatabaseFromBackup`. It validates the complete current
+backup schema, drains task/reminder work through `restoreMaintenance.js`, and
+replaces all five tables with bound inserts in a single transaction. Foreign-key
+checks are explicit because older connections may not enforce them automatically.
+No table definitions or schemaVersion change is required. The API does not download
+or access cloud services. See `features/backup/README.md` for the two-phase flow,
+normalization, UI generation reset, and post-commit notification warning contract.

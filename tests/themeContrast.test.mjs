@@ -99,11 +99,13 @@ test('actual Drawer options provide opaque selected backgrounds and readable sel
     'react-native-safe-area-context': { SafeAreaProvider: 'SafeAreaProvider' },
     'react-native-gesture-handler': { GestureHandlerRootView: 'GestureHandlerRootView' },
   };
-  for (const name of ['tasks/TasksScreen', 'calendar/CalendarScreen', 'account/AccountScreen', 'settings/SettingsScreen', 'settings/ThemeScreen']) stubs[`@/features/${name}`] = name;
+  for (const name of ['backup/BackupScreen', 'tasks/TasksScreen', 'calendar/CalendarScreen', 'account/AccountScreen', 'settings/SettingsScreen', 'settings/ThemeScreen']) stubs[`@/features/${name}`] = name;
   stubs['@/components/CustomDrawer'] = 'CustomDrawer';
   const App = jsx('App.js', stubs);
   for (const { name, mode, theme } of combinations) {
     preferences = { themeName: name, mode, currentTheme: theme, isThemeLoaded: true };
+    const backupRoute = flatten(App()).find(node => node.type === 'DrawerScreen' && node.props.name === 'BackupScreen');
+    assert.equal(backupRoute.props.options.drawerItemStyle.display, 'none');
     const options = flatten(App()).find(node => node.type === 'DrawerNavigator').props.screenOptions;
     assert.equal(options.drawerActiveBackgroundColor, theme.primary);
     assert.equal(options.drawerActiveTintColor, theme.onPrimary);

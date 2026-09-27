@@ -49,11 +49,13 @@ test('settings renders offline in every theme/mode; menu, theme and account are 
     const all = nodes(tree);
     assert.equal(tree.props.style.backgroundColor, themes[themeName][mode].background);
     const buttons = all.filter(n => n.props.accessibilityRole === 'button');
-    assert.equal(buttons.length, 3);
+    assert.equal(buttons.length, 4);
     buttons.find(n => n.props.accessibilityLabel === 'Abrir menú de navegación').props.onPress();
     assert.equal(opened, 1);
     buttons.find(n => n.props.accessibilityLabel.startsWith("Cuenta.")).props.onPress();
     assert.equal(destination, "Cuenta");
+    buttons.find(n => n.props.accessibilityLabel.startsWith("Copias de seguridad.")).props.onPress();
+    assert.equal(destination, "BackupScreen");
     assert.ok(buttons.some(n => n.props.accessibilityLabel.includes(mode === 'dark' ? 'Oscuro' : 'Claro')));
     assert.ok(all.some(n => n.props.accessibilityLabel === 'Acerca de Geska. Versión 1.2.3'));
     buttons.find(n => n.props.accessibilityLabel.startsWith("Tema.")).props.onPress();

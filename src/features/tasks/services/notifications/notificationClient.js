@@ -141,3 +141,13 @@ export async function openReminderSoundSettings() {
   });
   return true;
 }
+
+
+export async function dismissPresentedTaskReminders() {
+  const presented = await Notifications.getPresentedNotificationsAsync();
+  for (const notification of presented) {
+    if (isTaskNotification(notification.request)) {
+      await Notifications.dismissNotificationAsync(notification.request.identifier);
+    }
+  }
+}

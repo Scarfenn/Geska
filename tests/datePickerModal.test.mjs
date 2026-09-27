@@ -174,7 +174,7 @@ test('TimeModal routes date selection to the task draft without modifying repeti
       if (spec.endsWith('/useModalAnimation')) return () => ({ animateOpen() {}, animateClose() {} });
       if (spec.endsWith('/useScheduleDraft')) return () => ({
         draft, activeModal: 'date', draftDate: draft.date, draftEndDate: draft.endDate, minTaskDate: new Date(2026, 8, 14),
-        handleDateSelected: date => { draft = scheduleDraftReducer(draft, { field: 'date', value: date }); },
+        handleDateSelected: date => { draft = scheduleDraftReducer(draft, { field: 'date', value: date, today: new Date(2026, 8, 14) }); },
         setActiveModal() {},
       });
       if (spec.includes('/SubModals/')) return spec.split('/').at(-1);

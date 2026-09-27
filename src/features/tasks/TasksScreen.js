@@ -1,5 +1,6 @@
+import { getLocalRevision, isRestoring, subscribeRestore } from "@/storage/sqlite/restoreMaintenance";
 import { canSelectTaskDate } from "@/features/tasks/domain/taskDates";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Text, View, TouchableOpacity, StatusBar, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,7 +15,24 @@ import useTasksData from "@/features/tasks/hooks/useTasksData";
 import useTaskEditor from "@/features/tasks/hooks/useTaskEditor";
 import { selectTasksForDay } from "@/features/tasks/domain/taskSelectors";
 import useTaskActions from "@/features/tasks/hooks/useTaskActions";
-export default function TasksScreen({
+export default function TasksScreen(props) {
+  const [localState, setLocalState] = useState(() => ({ revision: getLocalRevision(), restoring: isRestoring() }));
+  useEffect(() => {
+    const update = () => setLocalState({ revision: getLocalRevision(), restoring: isRestoring() });
+    const unsubscribe = subscribeRestore(update);
+    update();
+    return unsubscribe;
+  }, []);
+  if (localState.restoring) return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: themes[props.themeName][props.mode].background }}>
+      <ActivityIndicator color={themes[props.themeName][props.mode].primaryText} />
+      <Text style={{ color: themes[props.themeName][props.mode].text }}>Restaurando datos locales…</Text>
+    </SafeAreaView>
+  );
+  return <TasksContent key={localState.revision} {...props} />;
+}
+
+function TasksContent({
   navigation,
   themeName,
   mode,

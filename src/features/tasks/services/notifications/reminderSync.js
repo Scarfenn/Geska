@@ -1,14 +1,16 @@
+import { trackLocalOperation } from "@/storage/sqlite/restoreMaintenance";
 import { planTaskReminders } from "@/features/tasks/services/notifications/reminderPlanner";
 import {
   buildContent, cancelNotifications, getScheduledTaskReminders,
-  initNotifications, normalizeIds, scheduleBatch, NotificationOperationError,
+  initNotifications, normalizeIds, scheduleBatch, NotificationOperationError, dismissPresentedTaskReminders,
 } from "@/features/tasks/services/notifications/notificationClient";
 
 let pending = Promise.resolve();
 // Serialize reconciliation and cancellation in this JS runtime. Internal helpers
 // never enqueue themselves; public functions must not be called inside the queue.
 function enqueue(operation) {
-  const result = pending.then(operation);
+  const earlier = pending;
+  const result = trackLocalOperation(() => earlier.then(operation));
   pending = result.catch(() => {});
   return result;
 }
@@ -151,8 +153,11 @@ export function cancelTaskReminders(ids, { taskId } = {}) {
   });
 }
 
-export function cancelAllTaskReminders() {
-  return enqueue(async () => cancelNotifications((await getScheduledTaskReminders()).map(n => n.identifier)));
+export function cancelAllTaskReminders({ dismissPresented = false } = {}) {
+  return enqueue(async () => {
+    await cancelNotifications((await getScheduledTaskReminders()).map(n => n.identifier));
+    if (dismissPresented) await dismissPresentedTaskReminders();
+  });
 }
 
 export async function scheduleTaskReminder(task) {

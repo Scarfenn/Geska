@@ -8,7 +8,8 @@ const insets = { top: 24, bottom: 24 };
 const size = { width: 220, height: 110 };
 test('menu uses modal-local coordinates below the selected card', () => {
   const p = taskMenuPosition({ x: 10, y: 100, height: 60 }, viewport, size, insets);
-  assert.equal(p.left, 42); assert.equal(p.top, 160);
+  // Modal-local top: 100 - 24 + 60 + the intentional 28-point gap.
+  assert.equal(p.left, 42); assert.equal(p.top, 164);
 });
 test('last card stays near its bottom edge and shifts only enough to fit', () => {
   const p = taskMenuPosition({ x: 200, y: 680, height: 60 }, viewport, size, insets);

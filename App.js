@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import TasksScreen from "@/features/tasks/TasksScreen";
 import CalendarScreen from "@/features/calendar/CalendarScreen";
+import BackupScreen from "@/features/backup/BackupScreen";
 import AccountScreen from "@/features/account/AccountScreen";
 import ThemeScreen from "@/features/settings/ThemeScreen";
 import SettingsScreen from "@/features/settings/SettingsScreen";
@@ -121,6 +122,10 @@ export default function App() {
 
           <Drawer.Screen name="Cuenta" options={{ drawerItemStyle: { display: "none" }, swipeEnabled: false }}>
             {props => <AccountScreen {...props} themeName={themeName} mode={mode} />}
+          </Drawer.Screen>
+
+          <Drawer.Screen name="BackupScreen" options={{ drawerItemStyle: { display: "none" }, swipeEnabled: false }}>
+            {props => <BackupScreen {...props} themeName={themeName} mode={mode} />}
           </Drawer.Screen>
 
           {/* PANTALLA CALENDARIO */}
