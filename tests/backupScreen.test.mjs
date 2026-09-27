@@ -136,21 +136,32 @@ test('hook queries only on focus and ignores updates after blur', async () => {
 });
 
 
-test('restore confirmation displays downloaded metadata/counts and explicit destructive action in every theme', () => {
+test('restore confirmation shows active counts and history without technical metadata in every theme', () => {
   const h = renderHarness();
   const Confirmation = h.load('src/features/backup/components/RestoreConfirmation.js').default;
   const getStyles = h.load('src/features/backup/styles/backupStyles.js').default;
   const themes = h.load('src/styles/themes.js').themes;
   for (const themeName of Object.keys(themes)) for (const mode of ['light', 'dark']) {
     let applied = 0;
-    const tree = Confirmation({ preview: { createdAt: '2026-09-26T12:00:00.000Z', formatVersion: 1, schemaVersion: 1, counts: { tasks: { total: 12, deleted: 2 } } },
+    const preview = { createdAt: '2026-09-26T12:00:00.000Z', formatVersion: 731, schemaVersion: 842, counts: {
+      categories: { total: 8, deleted: 3 }, tasks: { total: 12, deleted: 2 }, subtasks: { total: 6, deleted: 6 },
+      task_occurrences: { total: 951, deleted: 17 }, subtask_occurrences: { total: 963, deleted: 19 },
+    } };
+    const original = JSON.stringify(preview);
+    const tree = Confirmation({ preview,
       styles: getStyles(themeName, mode), busy: false, onApply() { applied++; }, onCancel() {} });
     const all = nodes(tree);
     const button = all.find(n => n.type === 'TouchableOpacity' && n.children.some(c => c.children?.includes('Reemplazar datos locales')));
     button.props.onPress(); assert.equal(applied, 1);
     assert.equal(button.props.style[0].backgroundColor, themes[themeName][mode].dangerBackground);
     assert.ok(all.some(n => n.props.accessibilityRole === 'alert' && n.children.join('').includes('No hay opción de deshacer')));
-    assert.ok(all.some(n => n.children.includes(12) && n.children.includes(2)));
+    const texts = all.filter(n => n.type === 'Text').map(n => n.children.join(''));
+    for (const expected of ['Categorías: 5', 'Tareas: 10', 'Subtareas: 0',
+      `Copia del ${new Date(preview.createdAt).toLocaleString()}`,
+      'La copia también incluye el historial de las tareas.']) assert.ok(texts.includes(expected));
+    assert.doesNotMatch(texts.join(' '), /formatVersion|schemaVersion|Formato|Esquema|eliminadas|Ocurrencias|task_occurrences|subtask_occurrences|731|842|951|963/);
+    assert.equal(texts.filter(text => /^(Categorías|Tareas|Subtareas):/.test(text)).length, 3);
+    assert.equal(JSON.stringify(preview), original);
   }
 });
 

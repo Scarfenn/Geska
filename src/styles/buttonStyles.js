@@ -4,7 +4,7 @@ import createThemedStyles from "@/styles/createThemedStyles";
 export default createThemedStyles(theme => ({
   saveButton: {
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 8,
     alignItems: "center",
     marginBottom: 3,
     backgroundColor: theme.primary

@@ -40,25 +40,30 @@ export default function BackupScreen({ navigation, themeName, mode }) {
             onConfirm={() => backup.controller.confirmUpload()} onCancel={() => backup.controller.cancelUpload()} />}
           {backup.preview && <RestoreConfirmation preview={backup.preview} busy={backup.busy} styles={styles}
             onApply={() => backup.controller.apply()} onCancel={() => backup.controller.cancelPreparation()} />}
+          <View style={styles.backupInfoHeader}>
+            {canUpload && <View style={styles.backupInfoDetails}>
+              <Text style={styles.rowTitle}>Última copia</Text>
+              <Text style={styles.text}>{backup.status === "empty" ? "Sin copia en la nube" : backup.remote?.lastModified
+                ? new Date(backup.remote.lastModified).toLocaleString()
+                : "Fecha remota no disponible"}</Text>
+            </View>}
+            {!["confirm-upload", "confirm-restore", "restoring", "preparing"].includes(backup.status) && backup.status !== "loading" && backup.status !== "signed-out" && <TouchableOpacity accessibilityRole="button"
+              accessibilityState={{ disabled: backup.busy }} disabled={backup.busy} onPress={() => backup.controller.refresh()} style={[styles.refreshButton, backup.busy && styles.disabled]}>
+              <Ionicons name="refresh-outline" size={16} color={theme.primaryText} />
+              <Text style={styles.refreshText}>Actualizar</Text>
+            </TouchableOpacity>}
+          </View>
           {canUpload && <>
-            <Text style={styles.rowTitle}>Última copia</Text>
-            <Text style={styles.text}>{backup.status === "empty" ? "Sin copia en la nube" : backup.remote?.lastModified
-              ? new Date(backup.remote.lastModified).toLocaleString()
-              : "Fecha remota no disponible"}</Text>
             <Text style={styles.note}>Se conserva una sola copia por cuenta. Una nueva copia reemplaza la anterior en la nube.</Text>
             <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: backup.busy, busy: backup.busy }} disabled={backup.busy}
               onPress={() => backup.controller.upload()} style={[styles.saveButton, backup.busy && styles.disabled]}>
-              <Text style={styles.saveButtonText}>{backup.busy ? "Creando copia…" : "Crear copia ahora"}</Text>
+              <Text style={styles.saveButtonText}>{backup.busy ? "Creando copia…" : "Crear copia de seguridad"}</Text>
               {backup.busy && <ActivityIndicator color={theme.onPrimary} />}
             </TouchableOpacity>
           </>}
           {canUpload && backup.remote && <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: backup.busy }} disabled={backup.busy}
             onPress={() => backup.controller.prepare()} style={styles.secondaryButton}>
             <Text style={styles.secondaryText}>Restaurar desde la nube</Text>
-          </TouchableOpacity>}
-          {!["confirm-upload", "confirm-restore", "restoring", "preparing"].includes(backup.status) && backup.status !== "loading" && backup.status !== "signed-out" && <TouchableOpacity accessibilityRole="button"
-            accessibilityState={{ disabled: backup.busy }} disabled={backup.busy} onPress={() => backup.controller.refresh()} style={styles.secondaryButton}>
-            <Text style={styles.secondaryText}>{["error", "unconfigured"].includes(backup.status) ? "Reintentar" : "Actualizar información"}</Text>
           </TouchableOpacity>}
         </View>
       </ScrollView>

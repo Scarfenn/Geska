@@ -10,7 +10,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
   },
   iconButton: {
     padding: 10,
-    borderRadius: 12,
+    borderRadius: 8,
     backgroundColor: theme.card,
     borderWidth: 1,
     borderColor: theme.border,

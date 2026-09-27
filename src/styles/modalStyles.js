@@ -19,7 +19,7 @@ export default createThemedStyles((theme, mode, themeName) => ({
   categoryDeleteButton: {
     marginTop: 12,
     padding: 12,
-    borderRadius: 6,
+    borderRadius: 8,
     backgroundColor: theme.dangerBackground
   },
   categoryDeleteLabel: {
