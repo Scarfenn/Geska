@@ -13,9 +13,10 @@ export default createThemedStyles((theme, mode, themeName) => ({
   disabled: { opacity: 0.5 },
   deleteSection: { borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 16, marginTop: 16, gap: 8 },
   deleteActionText: { color: theme.danger, fontSize: 16, fontWeight: "600" },
-  deleteButton: { minHeight: 48, padding: 14, borderRadius: 16, alignItems: "center", gap: 8, backgroundColor: theme.dangerBackground },
+  deleteButton: { minHeight: 48, padding: 14, borderRadius: 8, alignItems: "center", gap: 8, backgroundColor: theme.dangerBackground },
   deleteButtonText: { color: theme.onDanger, fontSize: 16, fontWeight: "bold" },
   localDataNotice: { color: theme.text, fontSize: 15, lineHeight: 22, fontWeight: "bold" },
   error: { color: theme.danger, fontSize: 15, lineHeight: 22, marginVertical: 12 },
   message: { color: theme.text, fontSize: 15, lineHeight: 22, marginVertical: 12 },
+  note: { marginHorizontal: 4, color: theme.inactiveCategoryText, fontSize: 13, lineHeight: 20, marginVertical: 10 },
 }));
