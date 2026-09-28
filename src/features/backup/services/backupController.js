@@ -1,5 +1,8 @@
 export function backupErrorMessage(error) {
   const messages = {
+    BACKUP_UPLOAD_BUSY: "Ya hay una copia en curso. Espera a que termine y actualiza la información.",
+    BACKUP_TOO_LARGE: "La copia supera el límite de restauración (20 MiB o 100.000 registros). No se reemplazó la copia remota.",
+    BACKUP_INVALID: "Los datos no cumplen el formato de restauración. No se reemplazó la copia remota.",
     RESTORE_INVALID_JSON: "El archivo de respaldo está dañado y no se puede leer. No se cambiaron los datos locales.",
     RESTORE_INVALID_BACKUP: "La copia contiene datos o relaciones inválidos. No se cambiaron los datos locales.",
     RESTORE_INCOMPATIBLE_VERSION: "Esta versión de la copia no es compatible con Geska. No se cambiaron los datos locales.",

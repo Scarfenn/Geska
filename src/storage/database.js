@@ -13,4 +13,4 @@ export {
 
 // Full raw snapshot for backups; normal UI repositories retain their filters.
 export { getBackupSnapshot } from "@/storage/sqlite/backupSnapshot";
-export { replaceDatabaseFromBackup } from "@/storage/sqlite/restoreSnapshot";
+export { replaceDatabaseFromBackup, hasPendingRestoreNotificationCleanup, completeRestoreNotificationCleanup } from "@/storage/sqlite/restoreSnapshot";

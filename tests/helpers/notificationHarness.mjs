@@ -39,6 +39,7 @@ export function notificationHarness({ platform = 'android' } = {}) {
     'expo-intent-launcher': { ActivityAction: { CHANNEL_NOTIFICATION_SETTINGS: 'settings' }, startActivityAsync: async (...args) => calls.push(['settings', ...args]) },
     'expo-task-manager': { defineTask: (...args) => calls.push(['defineTask', ...args]) },
     '@/features/tasks/services/taskCompletion': { completeTask: async (...args) => { calls.push(['complete', ...args]); return true; } },
+    '@/storage/database': { hasPendingRestoreNotificationCleanup: async () => false, completeRestoreNotificationCleanup: async () => {} },
   };
   const context = vm.createContext({ Date, console: { error() {}, warn() {} } });
   function load(path = 'features/tasks/services/notifications.js') {

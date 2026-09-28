@@ -20,6 +20,16 @@ export async function replaceDatabaseFromBackup(input) {
       counts[table] = result.count;
     }
     if ((await db.getAllAsync("PRAGMA foreign_key_check")).length) throw new Error("Restore foreign key check failed");
+    // Commit the retry obligation with the replacement, including across crashes.
+    await db.runAsync("INSERT OR IGNORE INTO restore_notification_cleanup (id) VALUES (1)");
     return counts;
   }, { transaction: true, restoreToken }));
+}
+
+export function hasPendingRestoreNotificationCleanup() {
+  return withDatabase(async db => !!await db.getFirstAsync("SELECT id FROM restore_notification_cleanup WHERE id=1"));
+}
+
+export function completeRestoreNotificationCleanup() {
+  return withDatabase(db => db.runAsync("DELETE FROM restore_notification_cleanup WHERE id=1"));
 }

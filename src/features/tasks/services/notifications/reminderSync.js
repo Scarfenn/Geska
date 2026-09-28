@@ -1,4 +1,5 @@
 import { trackLocalOperation } from "@/storage/sqlite/restoreMaintenance";
+import { hasPendingRestoreNotificationCleanup, completeRestoreNotificationCleanup } from "@/storage/database";
 import { planTaskReminders } from "@/features/tasks/services/notifications/reminderPlanner";
 import {
   buildContent, cancelNotifications, getScheduledTaskReminders,
@@ -116,13 +117,22 @@ export async function rescheduleTaskReminders(task, persistTask) {
 export function syncTaskReminders(tasks, persistTask, { now } = {}) {
   if (!Array.isArray(tasks) && typeof tasks !== "function") return Promise.resolve();
   return enqueue(async () => {
+    const failures = [];
+    // The durable marker also covers process death after the SQL commit. Keep
+    // cleanup and reconciliation in this queue; never enqueue recursively.
+    if (await hasPendingRestoreNotificationCleanup()) {
+      try {
+        await cleanupTaskReminders(true);
+        await completeRestoreNotificationCleanup();
+      } catch (cause) { failures.push({ cause }); }
+    }
     // Read after entering the queue so earlier edits/deletions cannot be undone
     // by a snapshot captured while another reconciliation was pending.
     if (typeof tasks === "function") tasks = await tasks();
     const getNow = () => now || new Date();
     const permission = permissionCheck();
     const inventory = await getScheduledTaskReminders();
-    const results = [], failures = [];
+    const results = [];
     for (const task of tasks) {
       try { results.push({ taskId: task.id, ...await reconcile(task, persistTask, getNow, permission, inventory) }); }
       catch (cause) { failures.push({ taskId: task.id, cause }); }
@@ -154,10 +164,18 @@ export function cancelTaskReminders(ids, { taskId } = {}) {
 }
 
 export function cancelAllTaskReminders({ dismissPresented = false } = {}) {
-  return enqueue(async () => {
-    await cancelNotifications((await getScheduledTaskReminders()).map(n => n.identifier));
-    if (dismissPresented) await dismissPresentedTaskReminders();
-  });
+  return enqueue(() => cleanupTaskReminders(dismissPresented));
+}
+
+async function cleanupTaskReminders(dismissPresented) {
+  const failures = [];
+  try { await cancelNotifications((await getScheduledTaskReminders()).map(n => n.identifier)); }
+  catch (cause) { failures.push({ cause }); }
+  if (dismissPresented) {
+    try { await dismissPresentedTaskReminders(); }
+    catch (cause) { failures.push({ cause }); }
+  }
+  if (failures.length) throw new NotificationOperationError("No se pudieron limpiar todos los recordatorios", { failures });
 }
 
 export async function scheduleTaskReminder(task) {

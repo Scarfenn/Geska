@@ -6,6 +6,9 @@ export function initDB() {
   if (!initializationPromise) {
     initializationPromise = execute(async db => {
       await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS restore_notification_cleanup (
+        id INTEGER PRIMARY KEY CHECK (id = 1)
+      );
       CREATE TABLE IF NOT EXISTS categories (
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT NOT NULL

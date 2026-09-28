@@ -33,8 +33,9 @@ export function getSupabaseClient() {
 }
 
 // Only after confirmed remote deletion. No network request or SDK-private API.
-export async function clearDeletedAccountSession() {
+export async function clearDeletedAccountSession(expectedClient = client) {
   if (!client) return;
+  if (expectedClient && expectedClient !== client) throw new Error("La sesión de eliminación ya no corresponde al cliente actual");
   cleanupPending = true;
   const clearing = sessionStorage.clear();
   const results = await Promise.allSettled([clearing, client.auth.dispose()]);

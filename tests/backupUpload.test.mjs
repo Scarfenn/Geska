@@ -5,7 +5,11 @@ const format = loadDatabase(null, { entry: '../../src/features/backup/domain/bac
 const { encodeUtf8 } = loadDatabase(null, { entry: '../../src/features/backup/domain/utf8.js' });
 const session = { user: { id: 'user-123' }, access_token: 'test-token' };
 const snapshot = { schemaVersion: 1, createdAt: '2026-09-26T12:00:00.000Z', tables: {
-  categories: [], tasks: [{ id: 'task', title: 'Café 📝 漢字', updated_at: 123, deleted_at: 124 }], subtasks: [], task_occurrences: [], subtask_occurrences: [],
+  categories: [], tasks: [{ id: 'task', title: 'Café 📝 漢字', updated_at: 125, deleted_at: 124,
+    description: null, done: 0, date: null, time: null, repeat_mode: null, repeat_days: null, repeat_end: null, repeat_interval: 1,
+    reminder_minutes: null, reminder_type: null, reminder_value: null, reminder_unit: null, reminder_at: null,
+    notification_id: null, notification_ids: '[]', category_id: null,
+  }], subtasks: [], task_occurrences: [], subtask_occurrences: [],
 } };
 function harness(options = {}) {
   const calls = []; let snapshots = 0, serializations = 0;

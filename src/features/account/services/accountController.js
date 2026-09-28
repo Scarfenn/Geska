@@ -1,6 +1,7 @@
 export function authErrorMessage(error) {
   if (error?.code === "SUPABASE_NOT_CONFIGURED") return "La cuenta no está disponible en esta instalación. Puedes seguir usando Geska sin cuenta.";
   const messages = {
+    ACCOUNT_AUTH_BUSY: "Hay una operación de cuenta en curso. Espera a que termine y vuelve a intentarlo.",
     ACCOUNT_FUNCTION_NOT_DEPLOYED: "El servicio de eliminación de cuentas no está desplegado en este proyecto. No se inició la eliminación.",
     ACCOUNT_FUNCTION_AUTH_FAILED: "El servidor rechazó la autorización para eliminar la cuenta. Revisa la sesión y la configuración del servicio.",
     ACCOUNT_AUTH_CHECK_FAILED: "No se pudo comprobar la cuenta con el servicio de autenticación. No se inició la eliminación. Inténtalo de nuevo.",

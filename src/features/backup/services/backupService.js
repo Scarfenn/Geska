@@ -2,6 +2,7 @@ import { getSession } from "@/storage/supabase/auth";
 import { getBackupSnapshot } from "@/storage/database";
 import { serializeBackup, BACKUP_FORMAT_VERSION } from "@/features/backup/domain/backupFormat";
 import { encodeUtf8 } from "@/features/backup/domain/utf8";
+import { parseBackupDocument, MAX_RESTORE_BYTES } from "@/features/backup/domain/backupValidation";
 import { uploadBackupFile, getBackupFileInfo } from "@/storage/supabase/backupStorage";
 
 function failure(code, message, cause) {
@@ -42,7 +43,15 @@ export async function getCurrentBackup() {
 }
 
 // Explicitly invoked application operation. Never imported by SQLite or startup.
+let uploading = false;
 export async function uploadBackup() {
+  if (uploading) throw failure("BACKUP_UPLOAD_BUSY", "Ya hay una copia en curso. Espera antes de volver a subir.");
+  uploading = true;
+  try { return await performUpload(); }
+  finally { uploading = false; }
+}
+
+async function performUpload() {
   const session = await requireSession();
   const userId = session.user.id;
   let snapshot;
@@ -53,9 +62,22 @@ export async function uploadBackup() {
     throw failure("BACKUP_SNAPSHOT_FAILED", "No se pudo crear la copia local", cause);
   }
   let body;
-  try { body = encodeUtf8(serializeBackup(snapshot)); }
+  let json;
+  try { json = serializeBackup(snapshot); }
   catch (cause) {
     throw failure("BACKUP_SERIALIZATION_FAILED", "No se pudo serializar la copia de seguridad", cause);
+  }
+  // Validate the exact document Restore will receive before replacing the only
+  // remote copy. Keep raw snapshot values; Restore owns its normalization.
+  try {
+    parseBackupDocument(json);
+    body = encodeUtf8(json);
+    if (body.byteLength > MAX_RESTORE_BYTES) {
+      throw failure("RESTORE_TOO_LARGE", "El backup excede el tamaño permitido");
+    }
+  } catch (cause) {
+    throw failure(cause?.code === "RESTORE_TOO_LARGE" ? "BACKUP_TOO_LARGE" : "BACKUP_INVALID",
+      "La copia no cumple el contrato de restauración. No se reemplazó la copia remota.", cause);
   }
   // Capture/encoding may take time: do not knowingly send under a changed account.
   const current = await requireSession();

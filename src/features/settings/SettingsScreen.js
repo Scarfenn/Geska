@@ -31,8 +31,8 @@ export default function SettingsScreen({ navigation, themeName, mode }) {
           <SettingsRow {...rowProps} title="Copias de seguridad" subtitle="Respaldo manual en la nube" icon="cloud-upload-outline" onPress={() => navigation.navigate("BackupScreen")} />
         </SettingsSection>
         <SettingsSection title="GESKA" styles={styles}>
-          <SettingsRow {...rowProps} title="Apoya el proyecto" subtitle="Próximamente" icon="heart-outline" />
-          <View style={styles.divider} />
+          {/* <SettingsRow {...rowProps} title="Apoya el proyecto" subtitle="Próximamente" icon="heart-outline" /> 
+          <View style={styles.divider} />*/}
           <SettingsRow {...rowProps} title="Acerca de Geska" subtitle={`Versión ${appVersion}`} icon="information-circle-outline" />
         </SettingsSection>
       </ScrollView>

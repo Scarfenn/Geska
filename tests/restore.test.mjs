@@ -49,14 +49,16 @@ test('prepare freezes the exact document, reports counts, and apply never downlo
   assert.ok(Object.isFrozen(preview) && Object.isFrozen(preview.counts));
   h.setJSON('changed remotely');
   await h.api.saveTask({ id: 'not-in-backup', title: 'Remove me' });
-  h.stubs['@/features/tasks/services/notifications'].cancelAllTaskReminders = async () => {
+  h.stubs['@/features/tasks/services/notifications'].syncTaskReminders = async () => {
     assert.equal(h.calls.at(-1).sql, 'COMMIT');
     assert.equal(h.maintenance.isRestoring(), false);
-    h.notifications.push('cancel');
+    h.notifications.push('sync');
+    assert.equal(await h.api.hasPendingRestoreNotificationCleanup(), true);
+    return [];
   };
   const result = await h.restore.applyRestore(preview);
   assert.equal(result.status, 'restored'); assert.equal(h.downloads, 1);
-  assert.deepEqual(h.notifications, ['cancel', 'sync']);
+  assert.deepEqual(h.notifications, ['sync']);
   const actual = await h.api.getBackupSnapshot();
   const expected = h.validation.validateBackupDocument(backup);
   assert.deepEqual(plain(actual.tables), plain(expected.tables));

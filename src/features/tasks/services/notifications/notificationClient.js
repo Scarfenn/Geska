@@ -145,9 +145,12 @@ export async function openReminderSoundSettings() {
 
 export async function dismissPresentedTaskReminders() {
   const presented = await Notifications.getPresentedNotificationsAsync();
+  const failures = [];
   for (const notification of presented) {
     if (isTaskNotification(notification.request)) {
-      await Notifications.dismissNotificationAsync(notification.request.identifier);
+      try { await Notifications.dismissNotificationAsync(notification.request.identifier); }
+      catch (cause) { failures.push({ id: notification.request.identifier, cause }); }
     }
   }
+  if (failures.length) throw new NotificationOperationError("No se pudieron retirar todos los recordatorios visibles", { failures });
 }

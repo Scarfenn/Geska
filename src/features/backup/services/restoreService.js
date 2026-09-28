@@ -2,7 +2,7 @@ import { getSession } from "@/storage/supabase/auth";
 import { downloadBackupFile } from "@/storage/supabase/backupStorage";
 import { parseBackupDocument, MAX_RESTORE_BYTES } from "@/features/backup/domain/backupValidation";
 import { replaceDatabaseFromBackup, getAllTasks, updateTaskNotificationIds } from "@/storage/database";
-import { cancelAllTaskReminders, syncTaskReminders } from "@/features/tasks/services/notifications";
+import { syncTaskReminders } from "@/features/tasks/services/notifications";
 
 const preparedDocuments = new WeakMap();
 let applying = false;
@@ -47,7 +47,7 @@ export async function applyRestore(preview) {
     // COMMIT has completed. Native APIs cannot participate in the SQL rollback.
     let reminderWarning = null;
     try {
-      await cancelAllTaskReminders({ dismissPresented: true });
+      // Reconciliation consumes the durable cleanup marker committed by SQLite.
       const results = await syncTaskReminders(getAllTasks, updateTaskNotificationIds);
       if (results?.some(result => result.status === "permission-denied")) reminderWarning = "Activa los permisos de notificaciones para recibir recordatorios.";
     } catch (cause) {
