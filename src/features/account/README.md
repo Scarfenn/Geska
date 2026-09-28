@@ -25,3 +25,18 @@ Before cloud backups: configure and test confirmation emails/redirect destinatio
 in the Supabase project, verify real-device session persistence and keyboard/accessibility,
 and decide whether to add foreground refresh control and Auth event subscriptions
 within the optional flow. No Storage, backup UI or restore logic is included.
+
+## Optional account deletion
+
+The signed-in view offers a separate destructive action and an explicit confirmation
+that local tasks/data are kept. Only confirmation calls `auth.deleteAccount`;
+the controller guards duplicate submissions and cancels unsubmitted confirmation
+on blur. The facade also guards overlapping requests and checks the confirmed local
+identity before invoking the function (no user ID is sent to authorize deletion).
+
+Remote success clears the session via the controlled auth storage adapter and public
+`auth.dispose()`. Disk failures have a separate `cleanup-pending` state: retry only
+local cleanup, not the remote deletion. No SQLite/backup/restore service participates.
+The original errors remain internal; UI messages distinguish deployment, gateway,
+identity lookup, Storage, Auth deletion, uncertain outcomes and local cleanup failures.
+See `supabase/README.md` for deployment and the deferred old-JWT security consideration.

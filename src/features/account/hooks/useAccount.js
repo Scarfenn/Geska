@@ -14,7 +14,7 @@ export default function useAccount(clearPasswords) {
     active.current = true;
     setState(controller.current.getState());
     controller.current.load();
-    return () => { active.current = false; clearPasswords(); };
+    return () => { active.current = false; controller.current.cancelDeletion(); clearPasswords(); };
   }, [clearPasswords]));
   return { ...state, controller: controller.current };
 }

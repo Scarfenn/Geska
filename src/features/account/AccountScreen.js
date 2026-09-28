@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { themes } from "@/styles/themes";
 import useAccount from "@/features/account/hooks/useAccount";
 import AccountForm from "@/features/account/components/AccountForm";
+import DeleteAccountConfirmation from "@/features/account/components/DeleteAccountConfirmation";
 import getAccountStyles from "@/features/account/styles/accountStyles";
 
 export default function AccountScreen({ navigation, themeName, mode }) {
@@ -36,6 +37,10 @@ export default function AccountScreen({ navigation, themeName, mode }) {
             <Text accessibilityLiveRegion="polite" style={styles.message}>Consultando sesión…</Text>
           </View>}
           {account.message && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={account.error ? styles.error : styles.message}>{account.message}</Text>}
+          {account.status === "cleanup-pending" && <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: account.busy }} disabled={account.busy}
+            onPress={() => account.controller.retryCleanup()} style={styles.secondaryButton}>
+            <Text style={styles.secondaryText}>{account.busy ? "Limpiando sesión…" : "Reintentar limpieza local"}</Text>
+          </TouchableOpacity>}
           {account.status === "unavailable" && <TouchableOpacity accessibilityRole="button" disabled={account.busy} onPress={() => account.controller.load()} style={styles.secondaryButton}>
             <Text style={styles.secondaryText}>Reintentar</Text>
           </TouchableOpacity>}
@@ -45,10 +50,18 @@ export default function AccountScreen({ navigation, themeName, mode }) {
           {account.status === "signed-in" && <View style={styles.form}>
             <Text style={styles.rowTitle}>Sesión iniciada</Text>
             <Text selectable style={styles.message}>{account.session.user?.email || "Cuenta conectada"}</Text>
-            <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: account.busy, busy: account.busy }} disabled={account.busy}
+            {!account.confirmDelete && <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: account.busy, busy: account.busy }} disabled={account.busy}
               onPress={() => account.controller.logout()} style={[styles.saveButton, account.busy && styles.disabled]}>
               <Text style={styles.saveButtonText}>{account.busy ? "Cerrando sesión…" : "Cerrar sesión"}</Text>
-            </TouchableOpacity>
+            </TouchableOpacity>}
+            {account.confirmDelete ? <DeleteAccountConfirmation busy={account.busy} styles={styles}
+              onConfirm={() => account.controller.deleteAccount()} onCancel={() => account.controller.cancelDeletion()} />
+              : <View style={styles.deleteSection}>
+                <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled: account.busy }} disabled={account.busy}
+                  onPress={() => account.controller.requestDeletion()} style={styles.secondaryButton}>
+                  <Text style={styles.deleteActionText}>Eliminar cuenta</Text>
+                </TouchableOpacity>
+              </View>}
           </View>}
         </ScrollView>
       </KeyboardAvoidingView>

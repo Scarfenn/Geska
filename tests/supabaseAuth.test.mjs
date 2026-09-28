@@ -6,8 +6,8 @@ import vm from 'node:vm';
 import { databaseHarness, loadDatabase } from './helpers/databaseHarness.mjs';
 const require = createRequire(import.meta.url);
 
-function clientHarness(env = {}) {
-  const calls = [], storage = {}, client = {};
+function clientHarness(env = {}, options = {}) {
+  const calls = [], storage = options.storage || {}, client = options.client || {};
   const module = { exports: {} };
   const code = require('@babel/core').transformSync(readFileSync(new URL('../src/storage/supabase/client.js', import.meta.url), 'utf8'), {
     configFile: false, babelrc: false, plugins: ['@babel/plugin-transform-modules-commonjs'],
@@ -17,6 +17,7 @@ function clientHarness(env = {}) {
     require(name) {
       if (name === 'react-native-url-polyfill/auto') return {};
       if (name === '@react-native-async-storage/async-storage') return storage;
+      if (name === '@/storage/supabase/authSessionStorage') return loadDatabase(null, { entry: '../../src/storage/supabase/authSessionStorage.js' });
       if (name === '@supabase/supabase-js') return { createClient(...args) { calls.push(args); return client; } };
       throw new Error(`Unexpected import ${name}`);
     },
@@ -42,8 +43,9 @@ test('client stays lazy with configuration present and is created once with Asyn
   assert.equal(h.calls.length, 1);
   assert.equal(h.calls[0][0], h.env.EXPO_PUBLIC_SUPABASE_URL);
   assert.equal(h.calls[0][1], h.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+  for (const method of ['getItem', 'setItem', 'removeItem']) assert.equal(typeof h.calls[0][2].auth.storage[method], 'function');
   assert.deepEqual({ ...h.calls[0][2].auth }, {
-    storage: h.storage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false,
+    storage: h.calls[0][2].auth.storage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false,
   });
 });
 
@@ -109,4 +111,28 @@ test('local tasks and backups work after an unconfigured Auth failure without im
   await h.api.deleteTask('offline');
   assert.equal((await h.api.getAllTasks()).length, 0);
   assert.equal(client.calls.length, 0);
+});
+
+
+test('confirmed deletion cleanup blocks retired client, retries disk failure and recreates lazily', async () => {
+  const values = new Map([['sdk-owned', 'session'], ['theme', 'dark']]);
+  let fail = true, disposed = 0;
+  const h = clientHarness({ EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co', EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'public-test' }, {
+    client: { auth: { dispose: async () => { disposed++; } } },
+    storage: { getItem: async key => values.get(key) ?? null, setItem: async (key, value) => values.set(key, value),
+      removeItem: async key => { if (fail) throw new Error('disk'); values.delete(key); } },
+  });
+  h.getSupabaseClient(); const old = h.calls[0][2].auth.storage;
+  assert.equal(await old.getItem('sdk-owned'), 'session');
+  await assert.rejects(h.clearDeletedAccountSession(), /disk/);
+  assert.throws(h.getSupabaseClient, e => e.code === 'ACCOUNT_LOCAL_CLEANUP_FAILED');
+  assert.equal(await old.getItem('sdk-owned'), null);
+  fail = false; await h.clearDeletedAccountSession();
+  assert.equal(h.calls.length, 1); assert.equal(disposed, 2);
+  assert.deepEqual([...values], [['theme', 'dark']]);
+  h.getSupabaseClient(); assert.equal(h.calls.length, 2);
+  const fresh = h.calls[1][2].auth.storage;
+  await fresh.setItem('sdk-owned', 'new-session');
+  await old.setItem('sdk-owned', 'stale'); await old.removeItem('sdk-owned');
+  assert.equal(await fresh.getItem('sdk-owned'), 'new-session');
 });

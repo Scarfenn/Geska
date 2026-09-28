@@ -35,3 +35,30 @@ Optional Storage transport now lives in `backupStorage.js`, coordinated by
 or startup integration. AsyncStorage is the requested
 session adapter; it is not encrypted credential storage. The SDK persists session
 tokens there, not the password supplied to sign-up/sign-in.
+
+## Account deletion and supported local cleanup
+
+`deleteAccount(expectedUserId)` calls the authenticated `delete-account` function;
+`expectedUserId` is only a local confirmation check, never a request authority.
+After explicit remote success, `finishAccountDeletion()` clears local Auth storage.
+A local failure can retry this step without repeating the server deletion.
+
+`authSessionStorage.js` implements Supabase's public `getItem`/`setItem`/`removeItem`
+contract over AsyncStorage, keeping existing sessions compatible. It tracks only
+keys supplied by the SDK; it neither interprets tokens nor computes internal key
+names. After deletion it retires the old adapter synchronously, drains local I/O
+and removes observed keys. Late SDK reads return null, writes/removals cannot touch
+a replacement client's session, and failed removals all settle before retry.
+`client.auth.dispose()` is a public API; it stops the old client's background work
+but does not itself cancel in-flight fetches. The retired adapter isolates those.
+
+There is no `AsyncStorage.clear()`, SDK-private call, password persistence or SQLite
+access. The lazy accessor refuses a retired client while cleanup remains pending;
+a successful retry releases it for lazy recreation. Physical storage failures are
+reported, not treated as completed cleanup. Pending cleanup state is runtime-local;
+a process crash/disk failure is not a durable deletion receipt. The server remains
+authoritative about account existence. No cross-device JWT revocation guarantee is
+made; additional RLS hardening was explicitly deferred.
+
+Public contracts: https://supabase.com/docs/reference/javascript/auth and
+https://supabase.com/docs/reference/javascript/auth-dispose
